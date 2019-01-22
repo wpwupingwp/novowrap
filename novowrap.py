@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from subprocess import run
+from timeit import default_timer as timer
 import argparse
 
 
@@ -89,6 +90,7 @@ def clean(name):
 
 
 def main():
+    start = timer()
     arg = parse_args()
     arg.seed_failed = {}
     name = Path(Path(arg.f).stem)
@@ -104,6 +106,8 @@ def main():
         else:
             arg.seed_failed.add(arg.seed)
         return -1
+    end = timer()
+    print('Cost {:.3f} secondes.'.format(end-start))
     return
 
 

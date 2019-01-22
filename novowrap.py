@@ -79,12 +79,11 @@ Use Quality Scores    = no
 
 
 def clean(name):
-    fq = name.stem
-    contigs = Path('.').glob('Contigs_*{}*'.format(fq))
-    options = Path('.').glob('Option_*{}*'.format(fq))
-    merged = Path('.').glob('Merged_contigs_{}.txt'.format(fq))
-    tmp = Path('.').glob('contigs_tmp_{}.txt'.format(fq))
-    log = Path('.').glob('log_{}.txt'.format(fq))
+    contigs = Path('.').glob('Contigs_*{}*'.format(name))
+    options = Path('.').glob('Option_*{}*'.format(name))
+    merged = Path('.').glob('Merged_contigs_{}*'.format(name))
+    tmp = Path('.').glob('contigs_tmp_{}*'.format(name))
+    log = Path('.').glob('log_{}.txt'.format(name))
     for i in [*contigs, *options, *merged, *tmp, *log]:
         i.rename(name/i)
 

@@ -1,9 +1,25 @@
 #!/usr/bin/python3
 
+from Bio import Entrez
 from pathlib import Path
 from subprocess import run
-from timeit import default_timer as timer
 import argparse
+import logging
+
+
+# define logger
+FMT = '%(asctime)s %(levelname)-8s %(message)s'
+DATEFMT = '%I:%M:%S'
+TEMP_LOG = 'Temp.log'
+logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO,
+                    handlers=[logging.StreamHandler(),
+                              logging.FileHandler(TEMP_LOG)])
+try:
+    import coloredlogs
+    coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
+except ImportError:
+    pass
+log = logging.getLogger(__name__)
 
 
 def parse_args():
@@ -20,6 +36,68 @@ def parse_args():
     # arg.add_argument('-split', default=1_000_000,
     #                  help='reads to use (million), set to 0 to skip split')
     return arg.parse_args()
+
+
+def get_full_taxon(taxon):
+    """
+    Get string.
+    Return lineage list, only contains Kingdom, Phylum, Class, Order, Family,
+    Genus, Species.
+    """
+    split = taxon.split(' ')
+    if len(split) >= 2 and split[0][0].isupper() and split[0][1].islower():
+        name = ' '.join(split[0:2])
+    else:
+        name = split[0]
+    Entrez.email = 'guest@example.org'
+    search = Entrez.read(Entrez.esearch(db='taxonomy', term=f'"{name}"'))
+    if search['Count'] == '0':
+        log.critical(f'Cannot find {name} in NCBI Taxonomy.')
+    taxon_id = search['IdList'][0]
+    record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
+    names = [i['ScientificName'] for i in record['LineageEx']]
+    full_lineage = {i['Rank']: i['ScientificName'] for i in
+                    record['LineageEx']}
+    full_lineage[record['Rank']] = record['ScientificName']
+    if 'kingdom' not in full_lineage:
+        full_lineage['kingdom'] = full_lineage['superkingdom']
+    if ('class' not in full_lineage and 'order' in full_lineage):
+        last_phyta = ''
+        for i in names[::-1]:
+            if i.endswith('phyta'):
+                last_phyta = i
+                break
+        # virus do not have phylum?
+        phylum = full_lineage.get('phylum', None)
+        if last_phyta != phylum:
+            full_lineage['class'] = last_phyta
+    target = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus',
+              'species']
+    lineage = []
+    for i in target:
+        lineage.append(full_lineage.get(i, ''))
+    if ' ' in lineage[-1]:
+        lineage[-1] = lineage[-1].split(' ')[-1]
+    return lineage
+
+
+def get_seq(lineage, output):
+    for taxon in reversed(lineage):
+        if taxon == '':
+            continue
+        query_str = f'{taxon}[organism] AND chloroplast[filter]'
+        search = Entrez.read(Entrez.esearch(db='nuccore', term=query_str,
+                                            usehistory='y'))
+        if search['Count'] == '0':
+            continue
+        else:
+            data = Entrez.efetch(db='nuccore', webenv=search['WebEnv'],
+                                 query_key=search['QueryKey'], rettype='gb',
+                                 retmode='text', retmax=10)
+            with open(output, 'wt') as out:
+                out.write(data.read())
+            return True
+    return False
 
 
 def get_seed(arg):
@@ -89,7 +167,6 @@ def clean(name):
 
 
 def main():
-    start = timer()
     arg = parse_args()
     arg.seed_failed = {}
     name = Path(Path(arg.f).stem)
@@ -105,8 +182,6 @@ def main():
         else:
             arg.seed_failed.add(arg.seed)
         return -1
-    end = timer()
-    print('Cost {:.3f} secondes.'.format(end-start))
     return
 
 

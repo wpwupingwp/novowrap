@@ -98,8 +98,8 @@ def get_seed(taxon, output):
             log.info(f'Querying {out}.')
             # down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
             down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
-                       f'{gene} -og cp -out {out} -max_len {MAX_LEN} -stop 1 '
-                       f'-expand 0 -rename -seq_n 10', shell=True)
+                       f'{gene} -og cp -out {output/out} -max_len {MAX_LEN} '
+                       f'-stop 1 ' f'-expand 0 -rename -seq_n 10', shell=True)
             if down.returncode == 0:
                 fasta = Path(out) / 'by-gene' / f'{gene}.fasta'
                 if fasta.exists:
@@ -140,7 +140,7 @@ Insert Range          = 1.8
 Insert Range strict   = 1.3
 Use Quality Scores    = no
 """
-    config_file = out / f'{seed}_config.ini'
+    config_file = out / f'{seed.stem}_config.ini'
     with open(config_file, 'w') as out:
         out.write(config)
     return config_file

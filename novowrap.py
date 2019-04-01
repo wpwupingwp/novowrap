@@ -2,9 +2,11 @@
 
 from Bio import Entrez
 from pathlib import Path
+from platform import system
 from subprocess import run
 import argparse
 import logging
+import re
 
 
 # define logger
@@ -29,10 +31,10 @@ def parse_args():
     arg.add_argument('-r', required=True, help='reverse fastq file')
     arg.add_argument('-kmer', choices=range(23, 40, 2), default=39, type=int,
                      help='kmer size')
-    arg.add_argument('-min', default=120_000, help='minimum genome size (kb)')
-    arg.add_argument('-max', default=200_000, help='minimum genome size (kb)')
+    arg.add_argument('-min', default=40000, help='minimum genome size (kb)')
+    arg.add_argument('-max', default=300000, help='minimum genome size (kb)')
     arg.add_argument('-reads_len', default=150, help='reads length')
-    arg.add_argument('-seed', help='seed file')
+    arg.add_argument('-taxon', required=True, help='Taxonomy name')
     # arg.add_argument('-split', default=1_000_000,
     #                  help='reads to use (million), set to 0 to skip split')
     return arg.parse_args()
@@ -81,44 +83,36 @@ def get_full_taxon(taxon):
     return lineage
 
 
-def get_seq(lineage, output):
-    for taxon in reversed(lineage):
+def get_seed(taxon, output):
+    genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23', 'rrn5')
+    MAX_LEN = 250000
+    if system() == 'Windows':
+        python = 'python'
+    else:
+        python = 'python3'
+    for taxon in reversed(get_full_taxon(taxon)):
         if taxon == '':
             continue
-        query_str = f'{taxon}[organism] AND chloroplast[filter]'
-        search = Entrez.read(Entrez.esearch(db='nuccore', term=query_str,
-                                            usehistory='y'))
-        if search['Count'] == '0':
-            continue
-        else:
-            data = Entrez.efetch(db='nuccore', webenv=search['WebEnv'],
-                                 query_key=search['QueryKey'], rettype='gb',
-                                 retmode='text', retmax=10)
-            with open(output, 'wt') as out:
-                out.write(data.read())
-            return True
-    return False
+        for gene in genes:
+            out = f'{taxon}-{gene}'
+            log.info(f'Querying {out}.')
+            down = run(f'{python} -m BarcodeFinder -taxon {taxon} '
+                       '-gene {gene} -out {out} -og cp -rename'
+                       '-max_len {MAX_LEN} -stop 1 -expand 0',
+                       shell=True)
+            if down.returncode == 0:
+                fasta = Path(out) / 'by-gene' / f'{gene}'.fasta
+                if fasta.exists:
+                    yield fasta
 
 
-def get_seed(arg):
-    folder = Path('seed')
-    seed_candidate = [folder/i for i in ('rbcL.fasta', 'rrn23.fasta',
-                                         'psaC.fasta', 'rrn5.fasta')]
-    if arg.seed is not None:
-        seed_candidate = [arg.seed, *seed_candidate]
-    for i in seed_candidate:
-        if i not in arg.seed_failed:
-            return i
-    raise Exception('All seeds failed.')
-
-
-def config(name, arg):
-    template = """Project:
+def config(out, seed, arg):
+    config = f"""Project:
 -----------------------
-Project name          = {name}
+Project name          = {out}
 Type                  = chloro
-Genome Range          = {min_size}-{max_size}
-K-mer                 = {kmer}
+Genome Range          = {arg.min}-{arg.max}
+K-mer                 = {arg.kmer}
 Max memory            =
 Extended log          = 0
 Save assembled reads  = no
@@ -131,13 +125,13 @@ Chloroplast sequence  =
 
 Dataset 1:
 -----------------------
-Read Length           = {reads_len}
+Read Length           = {arg.reads_len}
 Insert size           = 300
 Platform              = illumina
 Single/Paired         = PE
 Combined reads        =
-Forward reads         = {forward}
-Reverse reads         = {reverse}
+Forward reads         = {arg.f}
+Reverse reads         = {arg.r}
 
 Optional:
 -----------------------
@@ -146,11 +140,7 @@ Insert Range          = 1.8
 Insert Range strict   = 1.3
 Use Quality Scores    = no
 """
-    config = template.format(name=name, min_size=arg.min, max_size=arg.max,
-                             kmer=arg.kmer, seed=arg.seed,
-                             reads_len=arg.reads_len, forward=arg.f,
-                             reverse=arg.r)
-    config_file = name / 'config.ini'
+    config_file = out / f'{seed}_config.ini'
     with open(config_file, 'w') as out:
         out.write(config)
     return config_file
@@ -168,20 +158,30 @@ def clean(name):
 
 def main():
     arg = parse_args()
-    arg.seed_failed = {}
-    name = Path(Path(arg.f).stem)
-    name.mkdir()
-    while True:
-        arg.seed = get_seed(arg)
-        config_file = config(name, arg)
+    out = Path(Path(arg.f).stem)
+    out.mkdir()
+    success = False
+    pattern = re.compile(r'^Assembly length\s+: +(\d+) bp$')
+    for seed in get_seed(arg.taxon, out):
+        log.info(f'Use {seed} as seed file.')
+        config_file = config(seed, arg)
         test = run('perl NOVOPlasty2.7.2.pl -c {}'.format(config_file),
                    shell=True)
         if test.returncode == 0:
-            clean(name)
-            break
-        else:
-            arg.seed_failed.add(arg.seed)
-        return -1
+            merged = Path('.').glob('Merged_contigs_{}*'.format(out))[0]
+            if merged.exists():
+                with open(merged, 'r') as _:
+                    length = re.findall(pattern, _.read())
+                if len(length) != 0:
+                    if min(length) >= arg.min and max(length) <= arg.max:
+                        log.info(f'Assembly length (bp): {*length}')
+                        success = True
+                        break
+        clean(out)
+    if not success:
+        log.critical('Failed to assemble {arg.f} and {arg.r}.')
+    with open('Failed.csv', 'a') as out:
+        out.write(f'{arg.f} {arg.r}\n')
     return
 
 

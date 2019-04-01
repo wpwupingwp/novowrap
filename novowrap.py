@@ -169,7 +169,7 @@ def main():
         test = run('perl NOVOPlasty2.7.2.pl -c {}'.format(config_file),
                    shell=True)
         if test.returncode == 0:
-            merged = Path('.').glob('Merged_contigs_{}*'.format(out))[0]
+            merged = list(Path('.').glob('Merged_contigs_{}*'.format(out)))[0]
             if merged.exists():
                 with open(merged, 'r') as _:
                     length = re.findall(pattern, _.read())

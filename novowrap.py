@@ -96,12 +96,12 @@ def get_seed(taxon, output):
         for gene in genes:
             out = f'{taxon}-{gene}'
             log.info(f'Querying {out}.')
-            down = run(f'{python} -m BarcodeFinder -taxon {taxon} '
-                       '-gene {gene} -out {out} -og cp -rename'
-                       '-max_len {MAX_LEN} -stop 1 -expand 0',
-                       shell=True)
+            # down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
+            down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
+                       f'{gene} -og cp -out {out} -max_len {MAX_LEN} -stop 1 '
+                       f'-expand 0 -rename -seq_n 10', shell=True)
             if down.returncode == 0:
-                fasta = Path(out) / 'by-gene' / f'{gene}'.fasta
+                fasta = Path(out) / 'by-gene' / f'{gene}.fasta'
                 if fasta.exists:
                     yield fasta
 
@@ -164,7 +164,7 @@ def main():
     pattern = re.compile(r'^Assembly length\s+: +(\d+) bp$')
     for seed in get_seed(arg.taxon, out):
         log.info(f'Use {seed} as seed file.')
-        config_file = config(seed, arg)
+        config_file = config(out, seed, arg)
         test = run('perl NOVOPlasty2.7.2.pl -c {}'.format(config_file),
                    shell=True)
         if test.returncode == 0:
@@ -174,7 +174,7 @@ def main():
                     length = re.findall(pattern, _.read())
                 if len(length) != 0:
                     if min(length) >= arg.min and max(length) <= arg.max:
-                        log.info(f'Assembly length (bp): {*length}')
+                        log.info(f'Assembly length (bp): {", ".join(length)}')
                         success = True
                         break
         clean(out)

@@ -160,14 +160,15 @@ def clean(name):
 def main():
     arg = parse_args()
     out = Path(Path(arg.f).stem)
+    MAX_FAIL = 10
     out.mkdir()
     success = False
+    fail = 0
     pattern = re.compile(r'^Assembly length\s+: +(\d+) bp$')
     for seed in get_seed(arg.taxon, out):
         log.info(f'Use {seed} as seed file.')
         config_file = config(out, seed, arg)
-        test = run('perl NOVOPlasty2.7.2.pl -c {}'.format(config_file),
-                   shell=True)
+        test = run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         if test.returncode == 0:
             merged = list(Path('.').glob('Merged_contigs_{}*'.format(out)))
             if len(merged) != 0:
@@ -179,8 +180,11 @@ def main():
                         success = True
                         break
         clean(out)
+        fail += 1
+        if fail >= MAX_FAIL:
+            break
     if not success:
-        log.critical('Failed to assemble {arg.f} and {arg.r}.')
+        log.critical(f'Failed to assemble {arg.f} and {arg.r}.')
     with open('Failed.csv', 'a') as out:
         out.write(f'{arg.f} {arg.r}\n')
     return

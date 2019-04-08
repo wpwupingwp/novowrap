@@ -34,7 +34,7 @@ def parse_args():
     arg.add_argument('-min', default=40000, help='minimum genome size (kb)')
     arg.add_argument('-max', default=300000, help='minimum genome size (kb)')
     arg.add_argument('-reads_len', default=150, help='reads length')
-    arg.add_argument('-taxon', required=True, help='Taxonomy name')
+    arg.add_argument('-taxon', default='Zea mays', help='Taxonomy name')
     # arg.add_argument('-split', default=1_000_000,
     #                  help='reads to use (million), set to 0 to skip split')
     return arg.parse_args()

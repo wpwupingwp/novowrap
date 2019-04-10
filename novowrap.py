@@ -81,6 +81,9 @@ def get_full_taxon(taxon):
         lineage.append(full_lineage.get(i, ''))
     if ' ' in lineage[-1]:
         lineage[-1] = lineage[-1].split(' ')[-1]
+    # species name contains genus
+    if lineage[-1] != '' and lineage[-2] != '':
+        lineage[-1] = f'"{lineage[-2]} {lineage[-1]}"'
     return lineage
 
 

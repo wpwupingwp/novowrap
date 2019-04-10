@@ -98,6 +98,9 @@ def get_seed(taxon, output):
         if taxon == '':
             continue
         for gene in genes:
+            if ' ' in taxon:
+                taxon = taxon.strip('"')
+                taxon = taxon.replace(' ', '_')
             out = output / f'{taxon}-{gene}'
             log.info(f'Querying {out}.')
             # down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
@@ -164,7 +167,7 @@ def clean(name):
 def main():
     arg = parse_args()
     out = Path(Path(arg.f).stem)
-    MAX_FAIL = 10
+    MAX_FAIL = 20
     out.mkdir()
     success = False
     fail = 0

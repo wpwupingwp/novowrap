@@ -88,7 +88,7 @@ def get_full_taxon(taxon):
 
 
 def get_seed(taxon, output):
-    genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23', 'rrn5')
+    genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
     MAX_LEN = 250000
     if system() == 'Windows':
         python = 'python'

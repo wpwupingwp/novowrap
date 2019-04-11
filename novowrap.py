@@ -94,6 +94,7 @@ def get_seed(taxon, output):
         python = 'python'
     else:
         python = 'python3'
+    last_taxon = ''
     for taxon in reversed(get_full_taxon(taxon)):
         if taxon == '':
             continue
@@ -103,15 +104,22 @@ def get_seed(taxon, output):
                 taxon = taxon.replace(' ', '_')
             out = output / f'{taxon}-{gene}'
             log.info(f'Querying {out}.')
-            # down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
-            down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
-                       f'{gene} -og cp -out {out} -max_len {MAX_LEN} '
-                       f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no',
-                       shell=True)
+            if last_taxon != '':
+                down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
+                           f'{gene} -og cp -out {out} -max_len {MAX_LEN} '
+                           f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no '
+                           f'-exclude "{last_taxon}"[organism]',
+                           shell=True)
+            else:
+                down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
+                           f'{gene} -og cp -out {out} -max_len {MAX_LEN} '
+                           f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no ',
+                           shell=True)
             if down.returncode == 0:
                 fasta = out / 'by-gene' / f'{gene}.fasta'
                 if fasta.exists:
                     yield fasta
+        last_taxon = taxon
 
 
 def config(out, seed, arg):

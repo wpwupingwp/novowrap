@@ -118,7 +118,7 @@ def get_seed(taxon, output):
             if down.returncode == 0:
                 fasta = out / 'by-gene' / f'{gene}.fasta'
                 if fasta.exists:
-                    yield fasta
+                    yield fasta, out
         last_taxon = taxon
 
 
@@ -162,14 +162,14 @@ Use Quality Scores    = no
     return config_file
 
 
-def clean(name):
-    contigs = Path('.').glob('Contigs_*{}*'.format(name))
-    options = Path('.').glob('Option_*{}*'.format(name))
-    merged = Path('.').glob('Merged_contigs_{}*'.format(name))
-    tmp = Path('.').glob('contigs_tmp_{}*'.format(name))
-    log = Path('.').glob('log_{}.txt'.format(name))
+def clean(source, dest):
+    contigs = list(source.glob('Contigs_*'))
+    options = list(source.glob('Option_*'))
+    merged = list(source.glob('Merged_contigs_*'))
+    tmp = list(source.glob('contigs_tmp_*'))
+    log = list(source.glob('log_*.txt'))
     for i in [*contigs, *options, *merged, *tmp, *log]:
-        i.rename(name/i)
+        i.rename(dest/i)
 
 
 def main():
@@ -180,12 +180,12 @@ def main():
     success = False
     fail = 0
     pattern = re.compile(r'^Assembly length\s+: +(\d+) bp$')
-    for seed in get_seed(arg.taxon, out):
+    for seed, folder in get_seed(arg.taxon, out):
         log.info(f'Use {seed} as seed file.')
         config_file = config(out, seed, arg)
         test = run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         if test.returncode == 0:
-            merged = list(Path('.').glob('Merged_contigs*.txt'))
+            merged = list(out.glob('Merged_contigs*.txt'))
             if len(merged) != 0:
                 with open(merged[0], 'r') as _:
                     length = re.findall(pattern, _.read())
@@ -194,7 +194,7 @@ def main():
                         log.info(f'Assembly length (bp): {", ".join(length)}')
                         success = True
                         break
-        clean(out)
+        clean(out, folder)
         fail += 1
         if fail >= MAX_FAIL:
             break

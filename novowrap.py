@@ -185,16 +185,18 @@ def main():
         config_file = config(out, seed, arg)
         test = run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         if test.returncode == 0:
-            merged = list(out.glob('Merged_contigs*.txt'))
+            merged = list(Path('.').glob('Merged_contigs*.txt'))
             if len(merged) != 0:
                 with open(merged[0], 'r') as _:
                     length = re.findall(pattern, _.read())
                 if len(length) != 0:
+                    length = [int(i) for i in length]
                     if min(length) >= arg.min and max(length) <= arg.max:
                         log.info(f'Assembly length (bp): {", ".join(length)}')
                         success = True
+                        clean(Path('.'), folder)
                         break
-        clean(out, folder)
+        clean(Path('.'), folder)
         fail += 1
         if fail >= MAX_FAIL:
             break

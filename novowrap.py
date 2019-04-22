@@ -185,7 +185,7 @@ def main():
         config_file = config(out, seed, arg)
         test = run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         if test.returncode == 0:
-            merged = list(Path('.').glob('Merged_contigs_{}*'.format(out)))
+            merged = list(Path('.').glob('Merged_contigs*.txt'))
             if len(merged) != 0:
                 with open(merged[0], 'r') as _:
                     length = re.findall(pattern, _.read())

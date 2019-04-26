@@ -6,7 +6,6 @@ from platform import system
 from subprocess import run
 import argparse
 import logging
-import re
 
 
 # define logger
@@ -168,10 +167,18 @@ def clean(source, dest):
     contigs = list(source.glob('Contigs_*'))
     options = list(source.glob('Option_*'))
     merged = list(source.glob('Merged_contigs_*'))
+    fasta = []
+    seq_len = []
+    for i in merged:
+        f, s = merge_to_fasta(i)
+        if f is not None:
+            fasta.append(f)
+            seq_len.append(s)
     tmp = list(source.glob('contigs_tmp_*'))
     log = list(source.glob('log_*.txt'))
-    for i in [*contigs, *options, *merged, *tmp, *log]:
+    for i in [*contigs, *options, *merged, *tmp, *log, *fasta]:
         i.rename(dest/i)
+    return seq_len
 
 
 def merge_to_fasta(merge):
@@ -181,11 +188,14 @@ def merge_to_fasta(merge):
         for line in raw:
             if line.startswith('>'):
                 options.append([line, next(raw)])
-    with open(fasta, 'w') as out:
-        for i in options:
-            out.write(i[0])
-            out.write(i[1])
-    return fasta
+    if options:
+        with open(fasta, 'w') as out:
+            for i in options:
+                out.write(i[0])
+                out.write(i[1])
+        return fasta, max([len(i) for i in options])
+    else:
+        return None, 0
 
 
 def main():
@@ -194,24 +204,18 @@ def main():
     out.mkdir()
     success = False
     fail = 0
-    pattern = re.compile(r'^Assembly length\s+: +(\d+) bp$')
     for seed, folder in get_seed(arg.taxon, out):
         log.info(f'Use {seed} as seed file.')
         config_file = config(out, seed, arg)
-        test = run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
-        if test.returncode == 0:
-            merged = list(Path('.').glob('Merged_contigs*.txt'))
-            if len(merged) != 0:
-                with open(merged[0], 'r') as _:
-                    length = re.findall(pattern, _.read())
-                if len(length) != 0:
-                    length = [int(i) for i in length]
-                    if min(length) >= arg.min and max(length) <= arg.max:
-                        log.info(f'Assembly length (bp): {", ".join(length)}')
-                        success = True
-                        clean(Path('.'), folder)
-                        break
-        clean(Path('.'), folder)
+        run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
+        seq_len = clean(Path('.'), folder)
+        if len(seq_len) != 0:
+            # f-string cannot use *
+            log.info('Assembled length:\t{}.'.format(*seq_len))
+            if min(seq_len) >= arg.min and max(seq_len) <= arg.max:
+                break
+        else:
+            log.warn('Assembled failed.')
         fail += 1
         if fail >= arg.try_n:
             break

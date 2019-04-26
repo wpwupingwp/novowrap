@@ -183,7 +183,7 @@ def clean(source, dest):
 
 def merge_to_fasta(merge):
     options = []
-    fasta = merge + '.fasta'
+    fasta = str(merge) + '.fasta'
     with open(merge, 'r') as raw:
         for line in raw:
             if line.startswith('>'):

@@ -32,10 +32,12 @@ def parse_args():
     arg.add_argument('-kmer', choices=range(23, 40, 2), default=39, type=int,
                      help='kmer size')
     arg.add_argument('-min', default=40000, help='minimum genome size (kb)')
-    arg.add_argument('-max', default=300000, help='minimum genome size (kb)')
+    arg.add_argument('-max', default=300000, help='maximum genome size (kb)')
     arg.add_argument('-reads_len', default=150, help='reads length')
     arg.add_argument('-taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
+    arg.add_argument('-try', dest='try_n', type=int, default=12,
+                     help='maximum tried times')
     # arg.add_argument('-split', default=1_000_000,
     #                  help='reads to use (million), set to 0 to skip split')
     return arg.parse_args()
@@ -172,10 +174,23 @@ def clean(source, dest):
         i.rename(dest/i)
 
 
+def merge_to_fasta(merge):
+    options = []
+    fasta = merge + '.fasta'
+    with open(merge, 'r') as raw:
+        for line in raw:
+            if line.startswith('>'):
+                options.append([line, next(raw)])
+    with open(fasta, 'w') as out:
+        for i in options:
+            out.write(i[0])
+            out.write(i[1])
+    return fasta
+
+
 def main():
     arg = parse_args()
     out = Path(Path(arg.f).stem)
-    MAX_FAIL = 20
     out.mkdir()
     success = False
     fail = 0
@@ -198,7 +213,7 @@ def main():
                         break
         clean(Path('.'), folder)
         fail += 1
-        if fail >= MAX_FAIL:
+        if fail >= arg.try_n:
             break
     if not success:
         log.critical(f'Failed to assemble {arg.f} and {arg.r}.')

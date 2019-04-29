@@ -193,7 +193,7 @@ def merge_to_fasta(merge):
             for i in options:
                 out.write(i[0])
                 out.write(i[1])
-        return fasta, max([len(i) for i in options])
+        return Path(fasta), max([len(i) for i in options])
     else:
         return None, 0
 

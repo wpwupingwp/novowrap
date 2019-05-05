@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from Bio import Entrez
+from Bio import Entrez, SeqIO
+from os import devnull
 from pathlib import Path
 from platform import system
 from subprocess import run
@@ -163,22 +164,65 @@ Use Quality Scores    = no
     return config_file
 
 
-def clean(source, dest):
-    contigs = list(source.glob('Contigs_*'))
-    options = list(source.glob('Option_*'))
-    merged = list(source.glob('Merged_contigs_*'))
-    fasta = []
-    seq_len = []
-    for i in merged:
-        f, s = merge_to_fasta(i)
-        if f is not None:
-            fasta.append(f)
-            seq_len.append(s)
-    tmp = list(source.glob('contigs_tmp_*'))
-    log = list(source.glob('log_*.txt'))
-    for i in [*contigs, *options, *merged, *tmp, *log, *fasta]:
-        i.rename(dest/i)
-    return seq_len
+def parse_blast_tab(filename):
+    """
+    Parse BLAST result (tab format).
+    """
+    query = []
+    with open(filename, 'r', encoding='utf-8') as raw:
+        for line in raw:
+            if line.startswith('# BLAST'):
+                yield query
+                query.clear()
+            elif line.startswith('#'):
+                pass
+            else:
+                query.append(line.strip())
+
+
+def repeat(fasta):
+    """
+    Duplicate sequence to get full length of IR which may locate in start or
+    end of sequences that BLAST cannot get whole length.
+    """
+    new_fasta = fasta + '.new'
+    new = []
+    for i in SeqIO.parse(fasta, 'fasta'):
+        i.seq = i.seq + i.seq
+        new.apend(i)
+    SeqIO.write(new, new_fasta, 'fasta')
+    return new_fasta
+
+
+def rotate(fasta):
+    MIN_IR = 1000
+    MAX_IR = 100000
+    with open(devnull, 'w') as out:
+        _ = run(f'makeblastdb -in {fasta} -dbtype nucl', shell=True,
+                stdout=out)
+    if _.returncode != 0:
+        exit('Cannot run BLAST.')
+    fmt = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
+    blast_out = 'blast.txt'
+    blast = run(f'blastn -query {fasta} -db {fasta} -outfmt "7 {fmt}" -out '
+                f'{blast_out}', shell=True)
+    if blast.returncode != 0:
+        exit('Cannot run BLAST.')
+    for query in parse_blast_tab(blast_out):
+        for hit in query:
+            (qseqid, sseqid, qseq, sseq, pident, gapopen,
+             qstart, qend, sstart, send, *_) = hit.split('\t')
+            if float(pident) != 100 or qseqid != sseqid or int(gapopen) != 0:
+                continue
+            qlen = abs(int(qstart)-int(qend)) + 1
+            if qlen > MAX_IR or qlen < MIN_IR:
+                continue
+            else:
+                print(qseqid, sseqid, qlen, qstart, qend, sstart, send)
+                print('next')
+                # break
+
+    # return new
 
 
 def merge_to_fasta(merge):
@@ -196,6 +240,24 @@ def merge_to_fasta(merge):
         return Path(fasta), max([len(i) for i in options])
     else:
         return None, 0
+
+
+def clean(source, dest):
+    contigs = list(source.glob('Contigs_*'))
+    options = list(source.glob('Option_*'))
+    merged = list(source.glob('Merged_contigs_*'))
+    fasta = []
+    seq_len = []
+    for i in merged:
+        f, s = merge_to_fasta(i)
+        if f is not None:
+            fasta.append(f)
+            seq_len.append(s)
+    tmp = list(source.glob('contigs_tmp_*'))
+    log = list(source.glob('log_*.txt'))
+    for i in [*contigs, *options, *merged, *tmp, *log, *fasta]:
+        i.rename(dest/i)
+    return seq_len
 
 
 def main():

@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
 from Bio import Entrez, SeqIO
-from os import devnull
+from glob import glob
+from os import devnull, remove
 from pathlib import Path
 from platform import system
 from subprocess import run
@@ -164,6 +165,39 @@ Use Quality Scores    = no
     return config_file
 
 
+def repeat(fasta):
+    """
+    Duplicate sequence to get full length of IR which may locate in start or
+    end of sequences that BLAST cannot get whole length.
+    """
+    new_fasta = fasta + '.new'
+    new = []
+    for i in SeqIO.parse(fasta, 'fasta'):
+        i.seq = i.seq + i.seq
+        new.append(i)
+    SeqIO.write(new, new_fasta, 'fasta')
+    return new_fasta
+
+
+def blast(fasta):
+    """
+    Use simple BLAST with special output format.
+    """
+    FMT = 'qseqid sseqid qseq sseq qlen pident gapopen qstart qend sstart send'
+    # check blast
+    with open(devnull, 'w') as out:
+        _ = run(f'makeblastdb -in {fasta} -dbtype nucl', shell=True,
+                stdout=out)
+    if _.returncode != 0:
+        exit('Cannot run BLAST.')
+    blast_out = fasta + '.blast'
+    blast = run(f'blastn -query {fasta} -db {fasta} -outfmt "7 {FMT}" -out '
+                f'{blast_out}', shell=True)
+    if blast.returncode != 0:
+        exit('Cannot run BLAST.')
+    return blast_out
+
+
 def parse_blast_tab(filename):
     """
     Parse BLAST result (tab format).
@@ -177,55 +211,44 @@ def parse_blast_tab(filename):
             elif line.startswith('#'):
                 pass
             else:
-                query.append(line.strip())
-
-
-def repeat(fasta):
-    """
-    Duplicate sequence to get full length of IR which may locate in start or
-    end of sequences that BLAST cannot get whole length.
-    """
-    new_fasta = fasta + '.new'
-    new = []
-    for i in SeqIO.parse(fasta, 'fasta'):
-        i.seq = i.seq + i.seq
-        new.apend(i)
-    SeqIO.write(new, new_fasta, 'fasta')
-    return new_fasta
+                line = line.strip().split('\t')
+                line[4:] = list(map(float, line[4:]))
+                line[4:] = list(map(int, line[4:]))
+                query.append(line)
 
 
 def rotate(fasta):
-    MIN_IR = 1000
-    MAX_IR = 100000
-    with open(devnull, 'w') as out:
-        _ = run(f'makeblastdb -in {fasta} -dbtype nucl', shell=True,
-                stdout=out)
-    if _.returncode != 0:
-        exit('Cannot run BLAST.')
-    fmt = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
-    blast_out = 'blast.txt'
-    blast = run(f'blastn -query {fasta} -db {fasta} -outfmt "7 {fmt}" -out '
-                f'{blast_out}', shell=True)
-    if blast.returncode != 0:
-        exit('Cannot run BLAST.')
-    for query in parse_blast_tab(blast_out):
+    # FMT = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
+    repeat_fasta = repeat(fasta)
+    blast_result = blast(repeat_fasta)
+    for query in parse_blast_tab(blast_result):
+        max_aln_len = 0
         for hit in query:
-            (qseqid, sseqid, qseq, sseq, pident, gapopen,
-             qstart, qend, sstart, send, *_) = hit.split('\t')
-            if float(pident) != 100 or qseqid != sseqid or int(gapopen) != 0:
+            (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
+             qstart, qend, sstart, send) = hit
+            if pident != 100 or qseqid != sseqid or gapopen != 0:
                 continue
-            qlen = abs(int(qstart)-int(qend)) + 1
-            if qlen > MAX_IR or qlen < MIN_IR:
+            aln_len = abs(qstart-qend) + 1
+            if aln_len < max_aln_len or aln_len in (qlen, qlen//2):
                 continue
             else:
-                print(qseqid, sseqid, qlen, qstart, qend, sstart, send)
-                print('next')
+                max_aln_len = aln_len
+
+            print(f'{qseqid}: {qstart} {qend}\t{sseqid}: {sstart} '
+                  f'{send}\t{qlen//2}\t{qlen}\t{aln_len}')
+        print('next')
                 # break
 
+    # clean
+    for i in glob(fasta+'.*'):
+        remove(i)
     # return new
 
 
 def merge_to_fasta(merge):
+    """
+    Extract fasta from Merge file.
+    """
     options = []
     fasta = str(merge) + '.fasta'
     with open(merge, 'r') as raw:

@@ -223,21 +223,33 @@ def rotate(fasta):
     blast_result = blast(repeat_fasta)
     for query in parse_blast_tab(blast_result):
         max_aln_len = 0
+        locations = []
         for hit in query:
             (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
              qstart, qend, sstart, send) = hit
+            raw_qlen = qlen // 2
+            # mismatch
             if pident != 100 or qseqid != sseqid or gapopen != 0:
                 continue
+            location = tuple(sorted([qstart, qend, sstart, send]))
+            # hit across origin and repeat
+            if location[-1] - location[0] > raw_qlen:
+                continue
             aln_len = abs(qstart-qend) + 1
-            if aln_len < max_aln_len or aln_len in (qlen, qlen//2):
+            # short hit or hit of whole sequence or whole repeat sequence
+            if aln_len < max_aln_len or aln_len in (qlen, raw_qlen):
                 continue
             else:
                 max_aln_len = aln_len
-
+            if location not in locations:
+                locations.append(location)
+            else:
+                continue
             print(f'{qseqid}: {qstart} {qend}\t{sseqid}: {sstart} '
                   f'{send}\t{qlen//2}\t{qlen}\t{aln_len}')
-        print('next')
-                # break
+        locations.sort(key=lambda x: x[0])
+        locations = locations[:2]
+        print(locations)
 
     # clean
     for i in glob(fasta+'.*'):

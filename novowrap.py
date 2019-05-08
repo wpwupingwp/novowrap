@@ -224,10 +224,13 @@ def rotate(fasta):
     for query in parse_blast_tab(blast_result):
         max_aln_len = 0
         locations = []
+        name = ''
+        length = 0
         for hit in query:
             (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
              qstart, qend, sstart, send) = hit
-            raw_qlen = qlen // 2
+            name = qseqid
+            length = raw_qlen = qlen // 2
             # mismatch
             if pident != 100 or qseqid != sseqid or gapopen != 0:
                 continue
@@ -245,11 +248,13 @@ def rotate(fasta):
                 locations.append(location)
             else:
                 continue
-            print(f'{qseqid}: {qstart} {qend}\t{sseqid}: {sstart} '
-                  f'{send}\t{qlen//2}\t{qlen}\t{aln_len}')
         locations.sort(key=lambda x: x[0])
+        if not locations:
+            continue
         locations = locations[:2]
-        print(locations)
+        # print(name, length, locations)
+        print('\n{}: {} {}\t{} {}\t{}'.format(name, *locations[0], length))
+        print('{}: {} {}\t{} {}\t{}'.format(name, *locations[1], length))
 
     # clean
     for i in glob(fasta+'.*'):

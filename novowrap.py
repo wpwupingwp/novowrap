@@ -90,8 +90,12 @@ def get_full_taxon(taxon):
     return lineage
 
 
-def get_seed(taxon, output):
-    genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
+def get_seed(taxon, output, gene=None):
+    if gene is None:
+        genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
+    else:
+        genes = (gene, )
+    # +, -, -, -, +
     MAX_LEN = 250000
     if system() == 'Windows':
         python = 'python'
@@ -165,11 +169,20 @@ Use Quality Scores    = no
     return config_file
 
 
-def repeat(fasta):
+def repeat_and_reverse(fasta, taxon):
     """
     Duplicate sequence to get full length of IR which may locate in start or
     end of sequences that BLAST cannot get whole length.
     """
+    rbcL, rbcL_folder = get_rbcL_ref(taxon)
+    rbcL_blast = blast(rbcL, fasta)
+    for query in parse_blast_tab(rbcL_blast):
+        for hit in query:
+            (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
+             qstart, qend, sstart, send) = hit
+            print(qstart, qend, sstart, send)
+            exit(-1)
+        # to be continued
     new_fasta = fasta + '.new'
     new = []
     for i in SeqIO.parse(fasta, 'fasta'):
@@ -179,19 +192,19 @@ def repeat(fasta):
     return new_fasta
 
 
-def blast(fasta):
+def blast(query, target):
     """
     Use simple BLAST with special output format.
     """
     FMT = 'qseqid sseqid qseq sseq qlen pident gapopen qstart qend sstart send'
     # check blast
     with open(devnull, 'w') as out:
-        _ = run(f'makeblastdb -in {fasta} -dbtype nucl', shell=True,
+        _ = run(f'makeblastdb -in {target} -dbtype nucl', shell=True,
                 stdout=out)
     if _.returncode != 0:
         exit('Cannot run BLAST.')
-    blast_out = fasta + '.blast'
-    blast = run(f'blastn -query {fasta} -db {fasta} -outfmt "7 {FMT}" -out '
+    blast_out = query + '.blast'
+    blast = run(f'blastn -query {query} -db {target} -outfmt "7 {FMT}" -out '
                 f'{blast_out}', shell=True)
     if blast.returncode != 0:
         exit('Cannot run BLAST.')
@@ -201,6 +214,8 @@ def blast(fasta):
 def parse_blast_tab(filename):
     """
     Parse BLAST result (tab format).
+    Return [qseqid, sseqid, qseq, sseq, pident, gapopen, qstart, qend, sstart,
+    send]
     """
     query = []
     with open(filename, 'r', encoding='utf-8') as raw:
@@ -217,10 +232,28 @@ def parse_blast_tab(filename):
                 query.append(line)
 
 
-def rotate(fasta):
+def get_rbcL_ref(taxon):
+    """
+    Get reference rbcL sequences.
+    Return rbcL filename (str) and folder.
+    """
+    output_folder = Path().cwd()
+    rbcL_file = output_folder / f'{taxon}-rbcL_ref' / 'by-gene' / 'rbcL.fasta'
+    if rbcL_file.exists():
+        pass
+    else:
+        rbcL_file, _ = next(get_seed(taxon, output_folder, 'rbcL'))
+    return str(rbcL_file), output_folder
+
+
+def rotate(fasta, taxon):
+    """
+    Rotate sequences, from LSC (trnH-psbA) to IRa, SSC, IRb.
+    Use rbcL to detect strand direction (on positive direction).
+    """
     # FMT = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
-    repeat_fasta = repeat(fasta)
-    blast_result = blast(repeat_fasta)
+    repeat_fasta = repeat_and_reverse(fasta, taxon)
+    blast_result = blast(repeat_fasta, repeat_fasta)
     for query in parse_blast_tab(blast_result):
         max_aln_len = 0
         locations = []
@@ -282,10 +315,11 @@ def merge_to_fasta(merge):
         return None, 0
 
 
-def clean(source, dest):
+def neaten_out(source, dest):
     """
-    Clean NOVOPlasty output.
-    return sequence lengths and fasta filename list.
+    Organize NOVOPlasty output.
+    Return sequence lengths and fasta filename list.
+    According to seed, adjust direction of assembled sequences.
     """
     contigs = list(source.glob('Contigs_*'))
     options = list(source.glob('Option_*'))
@@ -310,16 +344,25 @@ def main():
     out.mkdir()
     success = False
     fail = 0
+    rbcL_list = []
     for seed, folder in get_seed(arg.taxon, out):
+        # collect rbcL
+        if seed.endswith('rbcL.fasta'):
+            rbcL_list.append(seed)
         log.info(f'Use {seed} as seed file.')
         config_file = config(out, seed, arg)
         run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
-        seq_len, assembled = clean(Path('.'), folder)
+        # novoplasty generates outputs in current folder
+        # use rbcL to detect strand direction
+        seq_len, assembled = neaten_out(arg, Path().cwd(), folder, rbcL_list)
         if len(seq_len) != 0:
             # f-string cannot use *
             log.info('Assembled length:\t{}.'.format(*seq_len))
             if min(seq_len) >= arg.min and max(seq_len) <= arg.max:
-                break
+                rotated, rbcL_list = rotate(assembled, arg.taxon, rbcL_list)
+                # break
+    # rotate
+    #             break
         else:
             log.warn('Assembled failed.')
         fail += 1

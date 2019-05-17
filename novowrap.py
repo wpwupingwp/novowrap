@@ -283,6 +283,10 @@ def merge_to_fasta(merge):
 
 
 def clean(source, dest):
+    """
+    Clean NOVOPlasty output.
+    return sequence lengths and fasta filename list.
+    """
     contigs = list(source.glob('Contigs_*'))
     options = list(source.glob('Option_*'))
     merged = list(source.glob('Merged_contigs_*'))
@@ -297,7 +301,7 @@ def clean(source, dest):
     log = list(source.glob('log_*.txt'))
     for i in [*contigs, *options, *merged, *tmp, *log, *fasta]:
         i.rename(dest/i)
-    return seq_len
+    return seq_len, fasta
 
 
 def main():
@@ -310,7 +314,7 @@ def main():
         log.info(f'Use {seed} as seed file.')
         config_file = config(out, seed, arg)
         run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
-        seq_len = clean(Path('.'), folder)
+        seq_len, assembled = clean(Path('.'), folder)
         if len(seq_len) != 0:
             # f-string cannot use *
             log.info('Assembled length:\t{}.'.format(*seq_len))

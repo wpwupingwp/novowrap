@@ -6,6 +6,7 @@ from os import devnull, remove
 from pathlib import Path
 from platform import system
 from subprocess import run
+from tempfile import TemporaryDirectory
 import argparse
 import logging
 
@@ -23,6 +24,8 @@ try:
 except ImportError:
     pass
 log = logging.getLogger(__name__)
+# temporary directory
+TMP = TemporaryDirectory()
 
 
 def parse_args():
@@ -46,9 +49,14 @@ def parse_args():
 
 def get_full_taxon(taxon):
     """
-    Get string.
+    Get full lineage of given taxon
     Return lineage list, only contains Kingdom, Phylum, Class, Order, Family,
     Genus, Species.
+    Arg:
+        taxon(str): given taxon name, could be common name, use quotation mark
+        if necessary
+    Return:
+        lineage(list): lineage list, from higher to lower rank
     """
     split = taxon.split(' ')
     if len(split) >= 2 and split[0][0].isupper() and split[0][1].islower():
@@ -90,7 +98,17 @@ def get_full_taxon(taxon):
     return lineage
 
 
-def get_seed(taxon, output, gene=None):
+def get_seq(taxon, output, gene=None):
+    """
+    Use BarcodeFinder to get seed or reference sequence.
+    Arg:
+        taxon(str): given taxon name
+        output(Path): output folder
+        gene(tuple): gene name
+    Return:
+        fasta(Path): fasta file
+        out(Path): fasta file's folder
+    """
     if gene is None:
         genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
     else:
@@ -130,6 +148,15 @@ def get_seed(taxon, output, gene=None):
 
 
 def config(out, seed, arg):
+    """
+    Generate config file for NOVOPlasty.
+    Arg:
+        out(str): output folder
+        seed(str): seed file
+        arg(NameSpace): parameters user provided
+    Return:
+        config_file(Path): config file
+    """
     config = f"""Project:
 -----------------------
 Project name          = {out}
@@ -173,8 +200,20 @@ def repeat_and_reverse(fasta, taxon):
     """
     Duplicate sequence to get full length of IR which may locate in start or
     end of sequences that BLAST cannot get whole length.
+    Detect direction of sequence by BLASTing rbcL, reverse if needed.
+    Args:
+        fasta(str): fasta filename
+        taxon(str): taxonomy of given fasta
+    Return:
+        new_fasta(str): new_fasta's name
     """
-    rbcL, rbcL_folder = get_rbcL_ref(taxon)
+    # get rbcL reference
+    rbcL = Path(TMP.name) / f'{taxon}-rbcL_ref' / 'by-gene' / 'rbcL.fasta'
+    if rbcL.exists():
+        pass
+    else:
+        rbcL, _ = next(get_seq(taxon, Path(TMP.name), 'rbcL'))
+
     rbcL_blast = blast(rbcL, fasta)
     for query in parse_blast_tab(rbcL_blast):
         for hit in query:
@@ -195,6 +234,11 @@ def repeat_and_reverse(fasta, taxon):
 def blast(query, target):
     """
     Use simple BLAST with special output format.
+    Args:
+        query(str): query filename
+        target(str): target filename
+    Return:
+        blast_out(str): blast result filename
     """
     FMT = 'qseqid sseqid qseq sseq qlen pident gapopen qstart qend sstart send'
     # check blast
@@ -232,24 +276,15 @@ def parse_blast_tab(filename):
                 query.append(line)
 
 
-def get_rbcL_ref(taxon):
-    """
-    Get reference rbcL sequences.
-    Return rbcL filename (str) and folder.
-    """
-    output_folder = Path().cwd()
-    rbcL_file = output_folder / f'{taxon}-rbcL_ref' / 'by-gene' / 'rbcL.fasta'
-    if rbcL_file.exists():
-        pass
-    else:
-        rbcL_file, _ = next(get_seed(taxon, output_folder, 'rbcL'))
-    return str(rbcL_file), output_folder
-
-
 def rotate(fasta, taxon):
     """
     Rotate sequences, from LSC (trnH-psbA) to IRa, SSC, IRb.
-    Use rbcL to detect strand direction (on positive direction).
+    Arg:
+        fasta(str): fasta filename
+        taxon(str): fasta's taxon
+    Return:
+        new_fasta???
+
     """
     # FMT = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
     repeat_fasta = repeat_and_reverse(fasta, taxon)
@@ -295,32 +330,35 @@ def rotate(fasta, taxon):
     # return new
 
 
-def merge_to_fasta(merge):
-    """
-    Extract fasta from Merge file.
-    """
-    options = []
-    fasta = str(merge) + '.fasta'
-    with open(merge, 'r') as raw:
-        for line in raw:
-            if line.startswith('>'):
-                options.append([line, next(raw)])
-    if options:
-        with open(fasta, 'w') as out:
-            for i in options:
-                out.write(i[0])
-                out.write(i[1])
-        return Path(fasta), max([len(i) for i in options])
-    else:
-        return None, 0
-
 
 def neaten_out(source, dest):
     """
     Organize NOVOPlasty output.
     Return sequence lengths and fasta filename list.
     According to seed, adjust direction of assembled sequences.
+    Arg:
+        source(Path): current directory
+        dest(Path): directory to move
+    Return:
+        seq_len(list): sequences length
+        fasta(list): assembled fasta
     """
+    def merge_to_fasta(merge):
+        options = []
+        fasta = str(merge) + '.fasta'
+        with open(merge, 'r') as raw:
+            for line in raw:
+                if line.startswith('>'):
+                    options.append([line, next(raw)])
+        if options:
+            with open(fasta, 'w') as out:
+                for i in options:
+                    out.write(i[0])
+                    out.write(i[1])
+            return Path(fasta), max([len(i) for i in options])
+        else:
+            return None, 0
+
     contigs = list(source.glob('Contigs_*'))
     options = list(source.glob('Option_*'))
     merged = list(source.glob('Merged_contigs_*'))
@@ -345,7 +383,7 @@ def main():
     success = False
     fail = 0
     rbcL_list = []
-    for seed, folder in get_seed(arg.taxon, out):
+    for seed, folder in get_seq(arg.taxon, out):
         # collect rbcL
         if seed.endswith('rbcL.fasta'):
             rbcL_list.append(seed)
@@ -372,6 +410,8 @@ def main():
         log.critical(f'Failed to assemble {arg.f} and {arg.r}.')
     with open('Failed.csv', 'a') as out:
         out.write(f'{arg.f} {arg.r}\n')
+    log.info(f'Clean temporary files {TMP.name}.')
+    TMP.cleanup()
     return
 
 

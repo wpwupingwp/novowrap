@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 from Bio import Entrez, SeqIO
-from glob import glob
 from os import devnull, remove
 from pathlib import Path
 from platform import system
@@ -120,6 +119,7 @@ def get_seq(taxon, output, gene=None):
     else:
         python = 'python3'
     last_taxon = ''
+    null_handle = open(devnull, 'w')
     for taxon in reversed(get_full_taxon(taxon)):
         if taxon == '':
             continue
@@ -134,16 +134,18 @@ def get_seq(taxon, output, gene=None):
                            f'{gene} -og cp -out {out} -max_len {MAX_LEN} '
                            f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no '
                            f'-exclude "{last_taxon}"[organism]',
-                           shell=True)
+                           shell=True, stdout=null_handle)
             else:
                 down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
                            f'{gene} -og cp -out {out} -max_len {MAX_LEN} '
                            f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no ',
-                           shell=True)
+                           shell=True, stdout=null_handle)
             if down.returncode == 0:
                 fasta = out / 'by-gene' / f'{gene}.fasta'
                 if fasta.exists:
                     yield fasta, out
+            else:
+                log.critical('Failed to run BarcodeFinder.')
         last_taxon = taxon
 
 
@@ -207,6 +209,7 @@ def repeat_and_reverse(fasta, taxon):
     Return:
         new_fasta(Path): new_fasta's name
     """
+    strand = {}
     # get rbcL reference
     rbcL = Path(TMP.name) / f'{taxon}-rbcL_ref' / 'by-gene' / 'rbcL.fasta'
     if rbcL.exists():
@@ -219,15 +222,20 @@ def repeat_and_reverse(fasta, taxon):
         for hit in query:
             (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
              qstart, qend, sstart, send) = hit
-            print(qstart, qend, sstart, send)
-            exit(-1)
-        # to be continued
+            if qstart < qend and sstart < send:
+                strand[sseqid] = '+'
+            else:
+                strand[sseqid] = '-'
+                log.warning(f'Detected reversed sequence {sseqid}.')
     new_fasta = fasta.with_suffix('.new')
     new = []
     for i in SeqIO.parse(fasta, 'fasta'):
         i.seq = i.seq + i.seq
+        if strand[i.id] == '-':
+            i.seq = i.seq[::-1]
         new.append(i)
     SeqIO.write(new, new_fasta, 'fasta')
+    log.info(f'Generate new fasta {new_fasta}.')
     return new_fasta
 
 
@@ -243,15 +251,19 @@ def blast(query, target):
     FMT = 'qseqid sseqid qseq sseq qlen pident gapopen qstart qend sstart send'
     # check blast
     with open(devnull, 'w') as out:
-        _ = run(f'makeblastdb -in {target} -dbtype nucl', shell=True,
-                stdout=out)
+        _ = run(f'makeblastdb -in {target} -dbtype nucl -out {target}',
+                shell=True, stdout=out)
     if _.returncode != 0:
         exit('Cannot run BLAST.')
     blast_out = query.with_suffix('.blast')
     blast = run(f'blastn -query {query} -db {target} -outfmt "7 {FMT}" -out '
                 f'{blast_out}', shell=True)
+    # remove makeblastdb result
+    remove(str(target)+'.nhr')
+    remove(str(target)+'.nin')
+    remove(str(target)+'.nsq')
     if blast.returncode != 0:
-        exit('Cannot run BLAST.')
+        log.critical('Cannot run BLAST.')
     return blast_out
 
 
@@ -269,7 +281,8 @@ def parse_blast_tab(filename):
     with open(filename, 'r', encoding='utf-8') as raw:
         for line in raw:
             if line.startswith('# BLAST'):
-                yield query
+                if query:
+                    yield query
                 query.clear()
             elif line.startswith('#'):
                 pass
@@ -278,19 +291,22 @@ def parse_blast_tab(filename):
                 line[4:] = list(map(float, line[4:]))
                 line[4:] = list(map(int, line[4:]))
                 query.append(line)
+        yield query
 
 
 def rotate(fasta, taxon):
     """
     Rotate sequences, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Arg:
-        fasta(Path): fasta filename
+        fasta(Path or str): fasta filename
         taxon(str): fasta's taxon
     Return:
         new_fasta???
 
     """
     # FMT = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
+    if not isinstance(fasta, Path):
+        fasta = Path(fasta)
     repeat_fasta = repeat_and_reverse(fasta, taxon)
     blast_result = blast(repeat_fasta, repeat_fasta)
     for query in parse_blast_tab(blast_result):
@@ -328,9 +344,8 @@ def rotate(fasta, taxon):
         print('\n{}: {} {}\t{} {}\t{}'.format(name, *locations[0], length))
         print('{}: {} {}\t{} {}\t{}'.format(name, *locations[1], length))
 
-    # clean
-    for i in glob(fasta+'.*'):
-        remove(i)
+    remove(repeat_fasta)
+    remove(blast_result)
     # return new
 
 

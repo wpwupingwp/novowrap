@@ -151,8 +151,8 @@ def config(out, seed, arg):
     """
     Generate config file for NOVOPlasty.
     Arg:
-        out(str): output folder
-        seed(str): seed file
+        out(Path): output folder
+        seed(Path): seed file
         arg(NameSpace): parameters user provided
     Return:
         config_file(Path): config file
@@ -202,10 +202,10 @@ def repeat_and_reverse(fasta, taxon):
     end of sequences that BLAST cannot get whole length.
     Detect direction of sequence by BLASTing rbcL, reverse if needed.
     Args:
-        fasta(str): fasta filename
-        taxon(str): taxonomy of given fasta
+        fasta(Path): fasta filename
+        taxon(Path): taxonomy of given fasta
     Return:
-        new_fasta(str): new_fasta's name
+        new_fasta(Path): new_fasta's name
     """
     # get rbcL reference
     rbcL = Path(TMP.name) / f'{taxon}-rbcL_ref' / 'by-gene' / 'rbcL.fasta'
@@ -222,7 +222,7 @@ def repeat_and_reverse(fasta, taxon):
             print(qstart, qend, sstart, send)
             exit(-1)
         # to be continued
-    new_fasta = fasta + '.new'
+    new_fasta = fasta.with_suffix('.new')
     new = []
     for i in SeqIO.parse(fasta, 'fasta'):
         i.seq = i.seq + i.seq
@@ -235,10 +235,10 @@ def blast(query, target):
     """
     Use simple BLAST with special output format.
     Args:
-        query(str): query filename
-        target(str): target filename
+        query(Path): query filename
+        target(Path): target filename
     Return:
-        blast_out(str): blast result filename
+        blast_out(Path): blast result filename
     """
     FMT = 'qseqid sseqid qseq sseq qlen pident gapopen qstart qend sstart send'
     # check blast
@@ -247,7 +247,7 @@ def blast(query, target):
                 stdout=out)
     if _.returncode != 0:
         exit('Cannot run BLAST.')
-    blast_out = query + '.blast'
+    blast_out = query.with_suffix('.blast')
     blast = run(f'blastn -query {query} -db {target} -outfmt "7 {FMT}" -out '
                 f'{blast_out}', shell=True)
     if blast.returncode != 0:
@@ -260,6 +260,10 @@ def parse_blast_tab(filename):
     Parse BLAST result (tab format).
     Return [qseqid, sseqid, qseq, sseq, pident, gapopen, qstart, qend, sstart,
     send]
+    Arg:
+        filename(Path): blast result file
+    Return:
+        line(list): parsed result
     """
     query = []
     with open(filename, 'r', encoding='utf-8') as raw:
@@ -280,7 +284,7 @@ def rotate(fasta, taxon):
     """
     Rotate sequences, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Arg:
-        fasta(str): fasta filename
+        fasta(Path): fasta filename
         taxon(str): fasta's taxon
     Return:
         new_fasta???
@@ -330,7 +334,6 @@ def rotate(fasta, taxon):
     # return new
 
 
-
 def neaten_out(source, dest):
     """
     Organize NOVOPlasty output.
@@ -345,7 +348,7 @@ def neaten_out(source, dest):
     """
     def merge_to_fasta(merge):
         options = []
-        fasta = str(merge) + '.fasta'
+        fasta = merge.with_suffix('.fasta')
         with open(merge, 'r') as raw:
             for line in raw:
                 if line.startswith('>'):

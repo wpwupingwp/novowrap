@@ -415,6 +415,8 @@ def neaten_out(source, dest):
     contigs = list(source.glob('Contigs_*'))
     options = list(source.glob('Option_*'))
     merged = list(source.glob('Merged_contigs_*'))
+    circularized = list(source.glob('Circularized_assembly*'))
+    merged.extend(circularized)
     print(merged)
     fasta = []
     seq_len = []
@@ -424,9 +426,10 @@ def neaten_out(source, dest):
             fasta.append(f)
             seq_len.append(s)
     tmp = list(source.glob('contigs_tmp_*'))
+    print(tmp)
     log = list(source.glob('log_*.txt'))
     for i in [*contigs, *options, *merged, *tmp, *log, *fasta]:
-        i.rename(dest/i)
+        i.replace(dest/i.name)
     return seq_len, fasta
 
 
@@ -447,6 +450,7 @@ def main():
         # novoplasty generates outputs in current folder
         # use rbcL to detect strand direction
         seq_len, assembled = neaten_out(Path().cwd(), folder)
+        exit(-1)
         if len(seq_len) != 0:
             # f-string cannot use *
             log.info('Assembled length:\t{}.'.format(*seq_len))

@@ -13,7 +13,7 @@ import logging
 # define logger
 FMT = '%(asctime)s %(levelname)-8s %(message)s'
 DATEFMT = '%I:%M:%S'
-TEMP_LOG = 'Temp.log'
+TEMP_LOG = 'novowrap.log'
 logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO,
                     handlers=[logging.StreamHandler(),
                               logging.FileHandler(TEMP_LOG)])
@@ -161,7 +161,7 @@ def config(out, seed, arg):
     """
     config = f"""Project:
 -----------------------
-Project name          = {out}
+Project name          = {out.name}
 Type                  = chloro
 Genome Range          = {arg.min}-{arg.max}
 K-mer                 = {arg.kmer}
@@ -398,7 +398,7 @@ def neaten_out(source, dest):
     """
     def merge_to_fasta(merge):
         options = []
-        fasta = merge.with_suffix('.fasta')
+        fasta = merge.with_suffix('.long.fasta')
         with open(merge, 'r') as raw:
             for line in raw:
                 if line.startswith('>'):
@@ -417,7 +417,6 @@ def neaten_out(source, dest):
     merged = list(source.glob('Merged_contigs_*'))
     circularized = list(source.glob('Circularized_assembly*'))
     merged.extend(circularized)
-    print(merged)
     fasta = []
     seq_len = []
     for i in merged:
@@ -426,7 +425,6 @@ def neaten_out(source, dest):
             fasta.append(f)
             seq_len.append(s)
     tmp = list(source.glob('contigs_tmp_*'))
-    print(tmp)
     log = list(source.glob('log_*.txt'))
     for i in [*contigs, *options, *merged, *tmp, *log, *fasta]:
         i.replace(dest/i.name)
@@ -435,7 +433,7 @@ def neaten_out(source, dest):
 
 def main():
     arg = parse_args()
-    out = Path(Path(arg.f).stem)
+    out = Path(Path(arg.f).stem+'-out').absolute()
     out.mkdir()
     success = False
     fail = 0
@@ -446,6 +444,7 @@ def main():
             rbcL_list.append(seed)
         log.info(f'Use {seed} as seed file.')
         config_file = config(out, seed, arg)
+        print(config_file)
         run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         # novoplasty generates outputs in current folder
         # use rbcL to detect strand direction

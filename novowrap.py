@@ -415,6 +415,7 @@ def neaten_out(source, dest):
     contigs = list(source.glob('Contigs_*'))
     options = list(source.glob('Option_*'))
     merged = list(source.glob('Merged_contigs_*'))
+    print(merged)
     fasta = []
     seq_len = []
     for i in merged:
@@ -445,7 +446,7 @@ def main():
         run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         # novoplasty generates outputs in current folder
         # use rbcL to detect strand direction
-        seq_len, assembled = neaten_out(arg, Path().cwd(), folder, rbcL_list)
+        seq_len, assembled = neaten_out(Path().cwd(), folder)
         if len(seq_len) != 0:
             # f-string cannot use *
             log.info('Assembled length:\t{}.'.format(*seq_len))

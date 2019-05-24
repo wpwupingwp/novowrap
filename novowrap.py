@@ -39,7 +39,7 @@ def parse_args():
     arg.add_argument('-reads_len', default=150, help='reads length')
     arg.add_argument('-taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
-    arg.add_argument('-try', dest='try_n', type=int, default=12,
+    arg.add_argument('-try', dest='try_n', type=int, default=5,
                      help='maximum tried times')
     # arg.add_argument('-split', default=1_000_000,
     #                  help='reads to use (million), set to 0 to skip split')
@@ -134,12 +134,12 @@ def get_seq(taxon, output, gene=None):
                            f'{gene} -og cp -out {out} -max_len {MAX_LEN} '
                            f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no '
                            f'-exclude "{last_taxon}"[organism]',
-                           shell=True, stdout=null_handle)
+                           shell=True, stdout=null_handle, stderr=null_handle)
             else:
                 down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
                            f'{gene} -og cp -out {out} -max_len {MAX_LEN} '
                            f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no ',
-                           shell=True, stdout=null_handle)
+                           shell=True, stdout=null_handle, stderr=null_handle)
             if down.returncode == 0:
                 fasta = out / 'by-gene' / f'{gene}.fasta'
                 if fasta.exists:
@@ -231,11 +231,12 @@ def repeat_and_reverse(fasta, taxon):
     new = []
     for i in SeqIO.parse(fasta, 'fasta'):
         i.seq = i.seq + i.seq
-        if strand[i.id] == '-':
+        # negative strand or not found by blast
+        if strand.get(i.id, '-') == '-':
             i.seq = i.seq[::-1]
+            log.warning(f'Posible negative strand found: {i.id}.')
         new.append(i)
     SeqIO.write(new, new_fasta, 'fasta')
-    log.info(f'Generate new fasta {new_fasta}.')
     return new_fasta
 
 
@@ -314,10 +315,13 @@ def rotate(fasta, taxon):
         locations = []
         name = ''
         length = 0
+        seqs = []
         for hit in query:
+            # print(hit[-4:])
             (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
              qstart, qend, sstart, send) = hit
             name = qseqid
+            seqs.append(qseq)
             length = raw_qlen = qlen // 2
             # mismatch
             if pident != 100 or qseqid != sseqid or gapopen != 0:
@@ -336,13 +340,44 @@ def rotate(fasta, taxon):
                 locations.append(location)
             else:
                 continue
-        locations.sort(key=lambda x: x[0])
         if not locations:
             continue
+        locations.sort(key=lambda x: x[0])
+        # remove extra hit, first two if enough
         locations = locations[:2]
-        # print(name, length, locations)
         print('\n{}: {} {}\t{} {}\t{}'.format(name, *locations[0], length))
         print('{}: {} {}\t{} {}\t{}'.format(name, *locations[1], length))
+        # ira_start, ira_end, irb_start, irb_end
+        a = slice(locations[0][0]-1, locations[0][1])
+        b = slice(locations[0][1], locations[0][2]-1)
+        c = slice(locations[0][2]-1, locations[0][3])
+        d = slice(locations[1][1], locations[1][2]-1)
+        if (locations[0][2]-locations[0][1]) > (
+                locations[1][2]-locations[1][1]):
+            region_LSC = b
+            region_IRa = c
+            region_SSC = d
+            region_IRb = a
+        else:
+            region_LSC = d
+            region_IRa = a
+            region_SSC = b
+            region_IRb = c
+        print(f'{name}, LSC {region_LSC}, IRa {region_IRa}, SSC {region_SSC},'
+              f'IRb {region_IRb}')
+        old_seq = sorted(seqs, key=lambda x: len(x))[-1]
+        new_seq = ''.join([old_seq[region_LSC], old_seq[region_IRa],
+                           old_seq[region_SSC], old_seq[region_IRb]])
+        # remove repeat
+        half_old_seq = old_seq[0:len(old_seq)//2]
+        print('old', len(half_old_seq), 'new', len(new_seq))
+        with open('/tmp/test.fasta', 'w') as out:
+            out.write('>old\n{}\n'.format(half_old_seq))
+            out.write('>new\n{}\n'.format(new_seq))
+            out.write(f'>lsc\n{old_seq[region_LSC]}\n')
+            out.write(f'>ssc\n{old_seq[region_SSC]}\n')
+            out.write(f'>ira\n{old_seq[region_IRa]}\n')
+            out.write(f'>irb\n{old_seq[region_IRb]}\n')
 
     remove(repeat_fasta)
     remove(blast_result)
@@ -403,7 +438,7 @@ def main():
     rbcL_list = []
     for seed, folder in get_seq(arg.taxon, out):
         # collect rbcL
-        if seed.endswith('rbcL.fasta'):
+        if str(seed).endswith('rbcL.fasta'):
             rbcL_list.append(seed)
         log.info(f'Use {seed} as seed file.')
         config_file = config(out, seed, arg)

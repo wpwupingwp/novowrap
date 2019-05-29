@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 
 from Bio import Entrez, SeqIO
+from Bio.Alphabet import IUPAC
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio.SeqFeature import SeqFeature, FeatureLocation
 from os import devnull, remove
 from pathlib import Path
 from platform import system
@@ -310,19 +314,21 @@ def rotate(fasta, taxon):
         fasta = Path(fasta)
     repeat_fasta = repeat_and_reverse(fasta, taxon)
     blast_result = blast(repeat_fasta, repeat_fasta)
+    # analyze blast result
+    new_fasta = fasta.with_suffix('.rotate')
+    new_regions = fasta.with_suffix('.regions')
+    new_gb = fasta.with_suffix('.gb')
     for query in parse_blast_tab(blast_result):
         max_aln_len = 0
         locations = []
         name = ''
-        length = 0
         seqs = []
         for hit in query:
-            # print(hit[-4:])
             (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
              qstart, qend, sstart, send) = hit
             name = qseqid
             seqs.append(qseq)
-            length = raw_qlen = qlen // 2
+            raw_qlen = qlen // 2
             # mismatch
             if pident != 100 or qseqid != sseqid or gapopen != 0:
                 continue
@@ -343,10 +349,13 @@ def rotate(fasta, taxon):
         if not locations:
             continue
         locations.sort(key=lambda x: x[0])
+        if len(locations) < 2:
+            log.critical(f'Cannot find IR region of {qseqid}.')
+            remove(repeat_fasta)
+            remove(blast_result)
+            return
         # remove extra hit, first two if enough
         locations = locations[:2]
-        print('\n{}: {} {}\t{} {}\t{}'.format(name, *locations[0], length))
-        print('{}: {} {}\t{} {}\t{}'.format(name, *locations[1], length))
         # ira_start, ira_end, irb_start, irb_end
         a = slice(locations[0][0]-1, locations[0][1])
         b = slice(locations[0][1], locations[0][2]-1)
@@ -363,25 +372,48 @@ def rotate(fasta, taxon):
             region_IRa = a
             region_SSC = b
             region_IRb = c
-        print(f'{name}, LSC {region_LSC}, IRa {region_IRa}, SSC {region_SSC},'
-              f'IRb {region_IRb}')
         old_seq = sorted(seqs, key=lambda x: len(x))[-1]
-        new_seq = ''.join([old_seq[region_LSC], old_seq[region_IRa],
-                           old_seq[region_SSC], old_seq[region_IRb]])
+        seq_LSC = old_seq[region_LSC]
+        seq_IRa = old_seq[region_IRa]
+        seq_SSC = old_seq[region_SSC]
+        seq_IRb = old_seq[region_IRb]
+        log.info(f'{name}, LSC {region_LSC}, IRa {region_IRa}, '
+                 f'SSC {region_SSC}, IRb {region_IRb}')
+        new_seq = ''.join([seq_LSC, seq_IRa, seq_SSC, seq_IRb])
         # remove repeat
         half_old_seq = old_seq[0:len(old_seq)//2]
-        print('old', len(half_old_seq), 'new', len(new_seq))
-        with open('/tmp/test.fasta', 'w') as out:
-            out.write('>old\n{}\n'.format(half_old_seq))
-            out.write('>new\n{}\n'.format(new_seq))
-            out.write(f'>lsc\n{old_seq[region_LSC]}\n')
-            out.write(f'>ssc\n{old_seq[region_SSC]}\n')
-            out.write(f'>ira\n{old_seq[region_IRa]}\n')
-            out.write(f'>irb\n{old_seq[region_IRb]}\n')
+        log.info(f'old, {len(half_old_seq)}, new, {len(new_seq)}')
+        record = SeqRecord(Seq(new_seq, alphabet=IUPAC.ambiguous_dna))
+        record.annotations['accession'] = 'Unknown'
+        record.annotations['organism'] = name
+        # output
+        offset = -1
+        for f_name, f in zip(('LSC', 'IRa', 'SSC', 'IRb'),
+                             (region_LSC, region_IRa, region_SSC, region_IRb)):
+            length = f.stop - f.start
+            record.features.append(SeqFeature(
+                FeatureLocation(offset+1, length+offset+1),
+                type='misc_feature',
+                qualifiers={'name': f_name, 'note': f_name}, strand=1))
+            offset += length
+        assert seq_SSC == str(record.features[2].extract(record).seq)
+        with open(new_fasta, 'a') as out:
+            # out.write('>old\n{}\n'.formak(half_old_seq))
+            out.write(f'>{name}\n{new_seq}\n')
+        with open(new_regions, 'a') as out2:
+            out2.write(f'>{name}-LSC\n{seq_LSC}\n')
+            out2.write(f'>{name}-IRa\n{seq_IRa}\n')
+            out2.write(f'>{name}-SSC\n{seq_SSC}\n')
+            out2.write(f'>{name}-IRb\n{seq_IRb}\n')
+        with open(new_gb, 'a') as out3:
+            SeqIO.write(record, out3, 'gb')
+        with open('validate.f', 'w') as out:
+            for i in record.features:
+                SeqIO.write(i.extract(record), out, 'fasta')
 
     remove(repeat_fasta)
     remove(blast_result)
-    # return new
+    return new_fasta, new_gb
 
 
 def neaten_out(source, dest):

@@ -112,12 +112,13 @@ def get_seq(taxon, output, gene=None):
         fasta(Path): fasta file
         out(Path): fasta file's folder
     """
+    # strand: +, -, -, -, +
+    candidate_genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
     if gene is None:
-        genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
+        genes = candidate_genes
     else:
-        genes = (gene, )
-    # +, -, -, -, +
-    MAX_LEN = 250000
+        genes = tuple([gene, ].extend(candidate_genes))
+    log.info(f'Candidate seed genes: {",".join(genes)}.')
     if system() == 'Windows':
         python = 'python'
     else:
@@ -132,10 +133,10 @@ def get_seq(taxon, output, gene=None):
                 taxon = taxon.strip('"')
                 taxon = taxon.replace(' ', '_')
             out = output / f'{taxon}-{gene}'
-            log.info(f'Querying {out}.')
+            log.info(f'Querying {gene} of {taxon}.')
             if last_taxon != '':
                 down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
-                           f'{gene} -og cp -out {out} -max_len {MAX_LEN} '
+                           f'{gene} -og cp -out {out} '
                            f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no '
                            f'-exclude "{last_taxon}"[organism]',
                            shell=True, stdout=null_handle, stderr=null_handle)
@@ -306,8 +307,8 @@ def rotate(fasta, taxon):
         fasta(Path or str): fasta filename
         taxon(str): fasta's taxon
     Return:
-        new_fasta???
-
+        success(bool): success or not
+        new_fasta(Path): rotated file name
     """
     # FMT = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
     if not isinstance(fasta, Path):
@@ -350,10 +351,9 @@ def rotate(fasta, taxon):
             continue
         locations.sort(key=lambda x: x[0])
         if len(locations) < 2:
-            log.critical(f'Cannot find IR region of {qseqid}.')
             remove(repeat_fasta)
             remove(blast_result)
-            return
+            return fasta, False
         # remove extra hit, first two if enough
         locations = locations[:2]
         # ira_start, ira_end, irb_start, irb_end
@@ -413,7 +413,7 @@ def rotate(fasta, taxon):
 
     remove(repeat_fasta)
     remove(blast_result)
-    return new_fasta, new_gb
+    return new_fasta, True
 
 
 def neaten_out(source, dest):
@@ -466,14 +466,21 @@ def neaten_out(source, dest):
     fasta.extend(circularized)
     tmp = list(source.glob('contigs_tmp_*'))
     log = list(source.glob('log_*.txt'))
-    for i in [*contigs, *options, *merged, *tmp, *log, *fasta]:
+    for i in (*contigs, *options, *merged, *tmp, *log):
         i.replace(dest/i.name)
-    return seq_len, fasta
+    assembled = []
+    for i in fasta:
+        new_loc = dest / i.name
+        i.replace(new_loc)
+        assembled.append(new_loc)
+    return seq_len, assembled
 
 
 def main():
+    log.info('Welcome to novowrap.')
     arg = parse_args()
     out = Path(Path(arg.f).stem+'-out').absolute()
+    log.info('Use {out} as output folder.')
     out.mkdir()
     success = False
     fail = 0
@@ -484,21 +491,27 @@ def main():
             rbcL_list.append(seed)
         log.info(f'Use {seed} as seed file.')
         config_file = config(out, seed, arg)
-        print(config_file)
         run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         # novoplasty generates outputs in current folder
         # use rbcL to detect strand direction
+        log.info('Organize NOVOPlasty output of {seed}.')
         seq_len, assembled = neaten_out(Path().cwd(), folder)
         if len(seq_len) != 0:
             # f-string cannot use *
             log.info('Assembled length:\t{}.'.format(*seq_len))
-            if min(seq_len) >= arg.min and max(seq_len) <= arg.max:
-                rotated, rbcL_list = rotate(assembled, arg.taxon, rbcL_list)
-                # break
-    # rotate
-    #             break
+            if min(seq_len) < arg.min or max(seq_len) > arg.max:
+                log.warning('Length does not fulfill requirement.')
+            else:
+                rotate_result = [rotate(i, arg.taxon) for i in assembled]
+                # (filename, True/False)
+                rotated = [i for i in rotate_result if i[1] is True]
+                if rotated:
+                    success = True
+                    break
+                else:
+                    log.warning('Cannot find correct conformation.')
         else:
-            log.warn('Assembled failed.')
+            log.warn(f'Assembled with {seed} failed.')
         fail += 1
         if fail >= arg.try_n:
             break
@@ -506,8 +519,9 @@ def main():
         log.critical(f'Failed to assemble {arg.f} and {arg.r}.')
     with open('Failed.csv', 'a') as out:
         out.write(f'{arg.f} {arg.r}\n')
-    log.info(f'Clean temporary files {TMP.name}.')
+    log.info(f'Clean temporary files.')
     TMP.cleanup()
+    log.info('Bye.')
     return
 
 

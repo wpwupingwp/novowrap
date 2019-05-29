@@ -29,6 +29,7 @@ except ImportError:
 log = logging.getLogger(__name__)
 # temporary directory
 TMP = TemporaryDirectory()
+NULL = open(devnull, 'w')
 
 
 def parse_args():
@@ -117,14 +118,14 @@ def get_seq(taxon, output, gene=None):
     if gene is None:
         genes = candidate_genes
     else:
-        genes = tuple([gene, ].extend(candidate_genes))
-    log.info(f'Candidate seed genes: {",".join(genes)}.')
+        genes = [gene, ]
+        genes.extend(candidate_genes)
+    log.info(f'Candidate seed genes: {", ".join(genes)}.')
     if system() == 'Windows':
         python = 'python'
     else:
         python = 'python3'
     last_taxon = ''
-    null_handle = open(devnull, 'w')
     for taxon in reversed(get_full_taxon(taxon)):
         if taxon == '':
             continue
@@ -136,21 +137,21 @@ def get_seq(taxon, output, gene=None):
             log.info(f'Querying {gene} of {taxon}.')
             if last_taxon != '':
                 down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
-                           f'{gene} -og cp -out {out} '
-                           f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no '
+                           f'{gene} -og cp -out {out} -stop 1 -expand 0 '
+                           f'-rename -seq_n 10 -uniq no '
                            f'-exclude "{last_taxon}"[organism]',
-                           shell=True, stdout=null_handle, stderr=null_handle)
+                           shell=True, stdout=NULL, stderr=NULL)
             else:
                 down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
-                           f'{gene} -og cp -out {out} -max_len {MAX_LEN} '
+                           f'{gene} -og cp -out {out} '
                            f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no ',
-                           shell=True, stdout=null_handle, stderr=null_handle)
+                           shell=True, stdout=NULL, stderr=NULL)
             if down.returncode == 0:
                 fasta = out / 'by-gene' / f'{gene}.fasta'
                 if fasta.exists:
                     yield fasta, out
             else:
-                log.critical('Failed to run BarcodeFinder.')
+                log.critical('Failed to run BarcodeFinder. Retry...')
         last_taxon = taxon
 
 
@@ -239,7 +240,6 @@ def repeat_and_reverse(fasta, taxon):
         # negative strand or not found by blast
         if strand.get(i.id, '-') == '-':
             i.seq = i.seq[::-1]
-            log.warning(f'Posible negative strand found: {i.id}.')
         new.append(i)
     SeqIO.write(new, new_fasta, 'fasta')
     return new_fasta
@@ -255,19 +255,21 @@ def blast(query, target):
         blast_out(Path): blast result filename
     """
     FMT = 'qseqid sseqid qseq sseq qlen pident gapopen qstart qend sstart send'
-    # check blast
-    with open(devnull, 'w') as out:
-        _ = run(f'makeblastdb -in {target} -dbtype nucl -out {target}',
-                shell=True, stdout=out)
-    if _.returncode != 0:
-        exit('Cannot run BLAST.')
+    # # check blast
+    # _ = run(f'makeblastdb -in {target} -dbtype nucl -out {target}',
+    #         shell=True, stdout=NULL, stderr=NULL)
+    # if _.returncode != 0:
+    #     # if BLAST fail, directly quit
+    #     log.critical('Cannot run BLAST.')
+    #     log.info('Exit.')
+    #     exit(-1)
     blast_out = query.with_suffix('.blast')
-    blast = run(f'blastn -query {query} -db {target} -outfmt "7 {FMT}" -out '
-                f'{blast_out}', shell=True)
+    blast = run(f'blastn -query {query} -subject {target} -outfmt "7 {FMT}" '
+                f'-out {blast_out}', shell=True)
     # remove makeblastdb result
-    remove(str(target)+'.nhr')
-    remove(str(target)+'.nin')
-    remove(str(target)+'.nsq')
+    #remove(str(target)+'.nhr')
+    #remove(str(target)+'.nin')
+    #remove(str(target)+'.nsq')
     if blast.returncode != 0:
         log.critical('Cannot run BLAST.')
     return blast_out
@@ -521,6 +523,7 @@ def main():
         out.write(f'{arg.f} {arg.r}\n')
     log.info(f'Clean temporary files.')
     TMP.cleanup()
+    NULL.close()
     log.info('Bye.')
     return
 

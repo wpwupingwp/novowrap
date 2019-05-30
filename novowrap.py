@@ -232,7 +232,6 @@ def repeat_and_reverse(fasta, taxon):
                 strand[sseqid] = '+'
             else:
                 strand[sseqid] = '-'
-                log.warning(f'Detected reversed sequence {sseqid}.')
     new_fasta = fasta.with_suffix('.new')
     new = []
     for i in SeqIO.parse(fasta, 'fasta'):
@@ -240,6 +239,7 @@ def repeat_and_reverse(fasta, taxon):
         # negative strand or not found by blast
         if strand.get(i.id, '-') == '-':
             i.seq = i.seq[::-1]
+            log.warning(f'Detected reversed sequence {i.name}. Reverse back.')
         new.append(i)
     SeqIO.write(new, new_fasta, 'fasta')
     return new_fasta
@@ -255,21 +255,11 @@ def blast(query, target):
         blast_out(Path): blast result filename
     """
     FMT = 'qseqid sseqid qseq sseq qlen pident gapopen qstart qend sstart send'
-    # # check blast
-    # _ = run(f'makeblastdb -in {target} -dbtype nucl -out {target}',
-    #         shell=True, stdout=NULL, stderr=NULL)
-    # if _.returncode != 0:
-    #     # if BLAST fail, directly quit
-    #     log.critical('Cannot run BLAST.')
-    #     log.info('Exit.')
-    #     exit(-1)
     blast_out = query.with_suffix('.blast')
+    # use blastn -subject instead of makeblastdb
     blast = run(f'blastn -query {query} -subject {target} -outfmt "7 {FMT}" '
                 f'-out {blast_out}', shell=True)
     # remove makeblastdb result
-    #remove(str(target)+'.nhr')
-    #remove(str(target)+'.nin')
-    #remove(str(target)+'.nsq')
     if blast.returncode != 0:
         log.critical('Cannot run BLAST.')
     return blast_out
@@ -325,41 +315,35 @@ def rotate(fasta, arg):
     new_fasta = fasta.with_suffix('.rotate')
     new_regions = fasta.with_suffix('.regions')
     new_gb = fasta.with_suffix('.gb')
-    for query in parse_blast_tab(blast_result):
-        max_aln_len = 0
-        locations = []
+    # blast and fasta use same order
+    for query, seq in zip(parse_blast_tab(blast_result),
+                          SeqIO.parse(fasta, 'fasta')):
+        locations = set()
         name = ''
-        seqs = []
+        original_seq_len = len(seq)
         for hit in query:
             (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
              qstart, qend, sstart, send) = hit
             name = qseqid
-            seqs.append(qseq)
-            raw_qlen = qlen // 2
             # mismatch
             if pident != 100 or qseqid != sseqid or gapopen != 0:
                 continue
             location = tuple(sorted([qstart, qend, sstart, send]))
             # hit across origin and repeat
-            if location[-1] - location[0] > raw_qlen:
+            if location[-1] - location[0] > original_seq_len:
                 continue
             aln_len = abs(qstart-qend) + 1
-            # short hit or hit of whole sequence or whole repeat sequence
-            if aln_len < max_aln_len or aln_len in (qlen, raw_qlen):
+            # self to self or self to repeat self
+            if aln_len in (len(seq), len(seq)*2):
                 continue
-            else:
-                max_aln_len = aln_len
-            if location not in locations:
-                locations.append(location)
-            else:
-                continue
+            locations.add(location)
         if not locations:
             continue
         locations.sort(key=lambda x: x[0])
         if len(locations) < 2:
             remove(repeat_fasta)
             remove(blast_result)
-            return fasta, False
+            return False
         # remove extra hit, first two if enough
         locations = locations[:2]
         # ira_start, ira_end, irb_start, irb_end
@@ -378,17 +362,16 @@ def rotate(fasta, arg):
             region_IRa = a
             region_SSC = b
             region_IRb = c
-        old_seq = sorted(seqs, key=lambda x: len(x))[-1]
-        seq_LSC = old_seq[region_LSC]
-        seq_IRa = old_seq[region_IRa]
-        seq_SSC = old_seq[region_SSC]
-        seq_IRb = old_seq[region_IRb]
+        # self to self is the longest match
+        seq_LSC = seq[region_LSC]
+        seq_IRa = seq[region_IRa]
+        seq_SSC = seq[region_SSC]
+        seq_IRb = seq[region_IRb]
         log.info(f'{name}, LSC {region_LSC}, IRa {region_IRa}, '
                  f'SSC {region_SSC}, IRb {region_IRb}')
         new_seq = ''.join([seq_LSC, seq_IRa, seq_SSC, seq_IRb])
         # remove repeat
-        half_old_seq = old_seq[0:len(old_seq)//2]
-        log.info(f'old, {len(half_old_seq)}, new, {len(new_seq)}')
+        log.info(f'old, {len(seq)}, new, {len(new_seq)}')
         record = SeqRecord(Seq(new_seq, alphabet=IUPAC.ambiguous_dna))
         record.annotations['accession'] = 'Unknown'
         record.annotations['organism'] = name
@@ -400,7 +383,7 @@ def rotate(fasta, arg):
             record.features.append(SeqFeature(
                 FeatureLocation(offset+1, length+offset+1),
                 type='misc_feature',
-                qualifiers={'name': f_name, 'note': f_name}, strand=1))
+                qualifiers={'name': f_name}, strand=1))
             offset += length
         assert seq_SSC == str(record.features[2].extract(record).seq)
         with open(new_fasta, 'a') as out:
@@ -419,7 +402,9 @@ def rotate(fasta, arg):
 
     remove(repeat_fasta)
     remove(blast_result)
-    return new_fasta, True
+    log.info(f'Rotated {fasta} to uniform conformation {new_fasta}.')
+    log.info(f'Chloroplast region information were written into {new_gb}')
+    return True
 
 
 def neaten_out(source, dest):

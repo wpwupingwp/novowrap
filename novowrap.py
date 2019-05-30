@@ -442,7 +442,7 @@ def neaten_out(source, dest):
                 for i in options:
                     out.write(i[0])
                     out.write(i[1])
-            return Path(fasta), max([len(i) for i in options])
+            return Path(fasta), max([len(i[1]) for i in options])
         else:
             return None, 0
 
@@ -482,7 +482,7 @@ def main():
     log.info('Welcome to novowrap.')
     arg = parse_args()
     out = Path(Path(arg.f).stem+'-out').absolute()
-    log.info('Use {out} as output folder.')
+    log.info(f'Use {out} as output folder.')
     out.mkdir()
     success = False
     fail = 0
@@ -496,7 +496,7 @@ def main():
         run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         # novoplasty generates outputs in current folder
         # use rbcL to detect strand direction
-        log.info('Organize NOVOPlasty output of {seed}.')
+        log.info(f'Organize NOVOPlasty output of {seed}.')
         seq_len, assembled = neaten_out(Path().cwd(), folder)
         if len(seq_len) != 0:
             # f-string cannot use *

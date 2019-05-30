@@ -236,10 +236,11 @@ def repeat_and_reverse(fasta, taxon):
     new_fasta = fasta.with_suffix('.new')
     new = []
     for i in SeqIO.parse(fasta, 'fasta'):
-        if '*' in i.seq:
-            log.warning(f'Found illegal character in {i.name}.')
-            log.warning('Replace with "N".')
-        i.seq = Seq(str(i.seq).replace('*', 'N'))
+        n_star = str(i.seq).count('*')
+        if n_star != 0:
+            log.warning(f'Replace {n_star} illegal character in '
+                        f'{i.description} with "N".')
+            i.seq = Seq(str(i.seq).replace('*', 'N'))
         i.seq = i.seq + i.seq
         # negative strand or not found by blast
         if strand.get(i.id, '-') == '-':
@@ -328,6 +329,8 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
     for query, seq in zip(parse_blast_tab(blast_result),
                           SeqIO.parse(repeat_fasta, 'fasta')):
         locations = set()
+        # use name to get uniform sequence id with BLAST
+        # biopython 's seq.name and seq.description is complex
         name = ''
         original_seq_len = len(seq) // 2
         ambiguous_base_n = len(str(seq).strip('ATCGatcg')) // 2
@@ -398,7 +401,8 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         seq_IRa = seq[region_IRa]
         seq_SSC = seq[region_SSC]
         seq_IRb = seq[region_IRb]
-        log.info(f'{name}, LSC {region_LSC}, IRa {region_IRa}, '
+        log.info(f'Original region of {name}:')
+        log.info(f'LSC {region_LSC}, IRa {region_IRa}, '
                  f'SSC {region_SSC}, IRb {region_IRb}')
         new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
         new_seq.seq.alphabet = IUPAC.ambiguous_dna
@@ -418,7 +422,6 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         assert str(seq_SSC.seq) == str(
             new_seq.features[2].extract(new_seq).seq)
         with open(new_fasta, 'a') as out:
-            # out.write('>old\n{}\n'.formak(half_old_seq))
             out.write(f'>{name}\n{new_seq}\n')
         with open(new_regions, 'a') as out2:
             out2.write(f'>{name}-LSC\n{seq_LSC}\n')

@@ -209,6 +209,7 @@ def repeat_and_reverse(fasta, taxon):
     Duplicate sequence to get full length of IR which may locate in start or
     end of sequences that BLAST cannot get whole length.
     Detect direction of sequence by BLASTing rbcL, reverse if needed.
+    Replace illegal character in sequence with "N".
     Args:
         fasta(Path): fasta filename
         taxon(Path): taxonomy of given fasta
@@ -235,6 +236,10 @@ def repeat_and_reverse(fasta, taxon):
     new_fasta = fasta.with_suffix('.new')
     new = []
     for i in SeqIO.parse(fasta, 'fasta'):
+        if '*' in i.seq:
+            log.warning(f'Found illegal character in {i.name}.')
+            log.warning('Replace with "N".')
+        i.seq = Seq(str(i.seq).replace('*', 'N'))
         i.seq = i.seq + i.seq
         # negative strand or not found by blast
         if strand.get(i.id, '-') == '-':

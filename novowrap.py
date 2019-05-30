@@ -292,12 +292,16 @@ def parse_blast_tab(filename):
         yield query
 
 
-def rotate(fasta, arg):
+def rotate(fasta, taxon, min_len=40000, max_len=300000):
     """
     Rotate sequences, from LSC (trnH-psbA) to IRa, SSC, IRb.
+    Repeat length parameters for easily call rotate function instead of run
+    whole program.
     Arg:
         fasta(Path or str): fasta filename
-        arg(NameSpace): arguments of program
+        taxon(str): taxon of fasta
+        min_len: minimum length of sequence
+        max_len: maximum length of sequence
     Return:
         success(bool): success or not
     """
@@ -305,11 +309,11 @@ def rotate(fasta, arg):
     if not isinstance(fasta, Path):
         fasta = Path(fasta)
     seq_len = [len(i) for i in SeqIO.parse(fasta, 'fasta')]
-    if min(seq_len) < arg.min or max(seq_len) > arg.max:
+    if min(seq_len) < min_len or max(seq_len) > max_len:
         log.warning("The sequences' length of assembly {fasta}"
                     "failed to meet requirement. Skip.")
         return False
-    repeat_fasta = repeat_and_reverse(fasta, arg.taxon)
+    repeat_fasta = repeat_and_reverse(fasta, taxon)
     blast_result = blast(repeat_fasta, repeat_fasta)
     # analyze blast result
     new_fasta = fasta.with_suffix('.rotate')
@@ -331,6 +335,7 @@ def rotate(fasta, arg):
             location = tuple(sorted([qstart, qend, sstart, send]))
             # hit across origin and repeat
             if location[-1] - location[0] > original_seq_len:
+                print(location)
                 continue
             aln_len = abs(qstart-qend) + 1
             # self to self or self to repeat self
@@ -339,6 +344,10 @@ def rotate(fasta, arg):
             locations.add(location)
         if not locations:
             continue
+        locations = list(locations)
+        locations.sort(key=lambda x: x[1]-x[0], reverse=True)
+        print(locations)
+        exit(-1)
         locations.sort(key=lambda x: x[0])
         if len(locations) < 2:
             remove(repeat_fasta)
@@ -461,7 +470,7 @@ def main():
         if len(assembled) == 0:
             log.warn(f'Assembled with {seed} failed.')
             continue
-        rotate_result = [rotate(i, arg) for i in assembled]
+        rotate_result = [rotate(i, arg.taxon) for i in assembled]
         if any(rotate_result):
             success = True
             break

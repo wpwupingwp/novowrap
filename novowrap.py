@@ -302,20 +302,24 @@ def parse_blast_tab(filename):
         yield query
 
 
-def rotate(fasta, taxon):
+def rotate(fasta, arg):
     """
     Rotate sequences, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Arg:
         fasta(Path or str): fasta filename
-        taxon(str): fasta's taxon
+        arg(NameSpace): arguments of program
     Return:
         success(bool): success or not
-        new_fasta(Path): rotated file name
     """
     # FMT = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
     if not isinstance(fasta, Path):
         fasta = Path(fasta)
-    repeat_fasta = repeat_and_reverse(fasta, taxon)
+    seq_len = [len(i) for i in SeqIO.parse(fasta, 'fasta')]
+    if min(seq_len) < arg.min or max(seq_len) > arg.max:
+        log.warning("The sequences' length of assembly {fasta}"
+                    "failed to meet requirement. Skip.")
+        return False
+    repeat_fasta = repeat_and_reverse(fasta, arg.taxon)
     blast_result = blast(repeat_fasta, repeat_fasta)
     # analyze blast result
     new_fasta = fasta.with_suffix('.rotate')
@@ -427,55 +431,26 @@ def neaten_out(source, dest):
         source(Path): current directory
         dest(Path): directory to move
     Return:
-        seq_len(list): sequences length
-        fasta(list): assembled fasta
+        assembled(list): assembled fasta
     """
-    def merge_to_fasta(merge):
-        options = []
-        fasta = merge.with_suffix('.long.fasta')
-        with open(merge, 'r') as raw:
-            for line in raw:
-                if line.startswith('>'):
-                    options.append([line, next(raw)])
-        if options:
-            with open(fasta, 'w') as out:
-                for i in options:
-                    out.write(i[0])
-                    out.write(i[1])
-            return Path(fasta), max([len(i[1]) for i in options])
-        else:
-            return None, 0
-
     contigs = list(source.glob('Contigs_*'))
     options = list(source.glob('Option_*'))
     merged = list(source.glob('Merged_contigs_*'))
-    fasta = []
-    seq_len = []
-    for i in merged:
-        f, s = merge_to_fasta(i)
-        if f is not None:
-            fasta.append(f)
-            seq_len.append(s)
-    # circularized file use different file format with Merged file -_-
     circularized = list(source.glob('Circularized_assembly*'))
-    for i in circularized:
-        # assume each circularized file only have one fasta record
-        with open(i, 'r') as _:
-            raw = _.readlines()
-            raw = [i for i in raw if not i.startswith('>')]
-            n = sum([len(i) for i in raw])
-        seq_len.append(n)
-    fasta.extend(circularized)
     tmp = list(source.glob('contigs_tmp_*'))
     log = list(source.glob('log_*.txt'))
-    for i in (*contigs, *options, *merged, *tmp, *log):
-        i.replace(dest/i.name)
     assembled = []
-    for i in fasta:
+    # move to dest folder
+    for i in (*contigs, *tmp, *log):
+        i.replace(dest/i.name)
+    # move to dest folder, generate clean fasta
+    for i in (*options, *merged, *circularized):
         new_loc = dest / i.name
+        new_name = new_loc.with_suffix('.convert')
         i.replace(new_loc)
-        assembled.append(new_loc)
-    return seq_len, assembled
+        SeqIO.convert(new_loc, 'fasta', new_name, 'fasta')
+        assembled.append(new_name)
+    return assembled
 
 
 def main():
@@ -486,42 +461,34 @@ def main():
     out.mkdir()
     success = False
     fail = 0
-    rbcL_list = []
     for seed, folder in get_seq(arg.taxon, out):
-        # collect rbcL
-        if str(seed).endswith('rbcL.fasta'):
-            rbcL_list.append(seed)
         log.info(f'Use {seed} as seed file.')
         config_file = config(out, seed, arg)
-        run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
+        run_novo = run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
+        if run_novo.returncode != 0:
+            log.critical('Failed to run NOVOPlasty. Quit.')
+            exit(-1)
         # novoplasty generates outputs in current folder
         # use rbcL to detect strand direction
         log.info(f'Organize NOVOPlasty output of {seed}.')
-        seq_len, assembled = neaten_out(Path().cwd(), folder)
-        if len(seq_len) != 0:
-            # f-string cannot use *
-            log.info('Assembled length:\t{}.'.format(*seq_len))
-            if min(seq_len) < arg.min or max(seq_len) > arg.max:
-                log.warning('Length does not fulfill requirement.')
-            else:
-                rotate_result = [rotate(i, arg.taxon) for i in assembled]
-                # (filename, True/False)
-                rotated = [i for i in rotate_result if i[1] is True]
-                if rotated:
-                    success = True
-                    break
-                else:
-                    log.warning('Cannot find correct conformation.')
-        else:
+        # novoplasty use current folder as output folder
+        assembled = neaten_out(Path().cwd(), folder)
+        if len(assembled) == 0:
             log.warn(f'Assembled with {seed} failed.')
+            continue
+        rotate_result = [rotate(i, arg) for i in assembled]
+        if any(rotate_result):
+            success = True
+            break
+        else:
+            log.warning('Cannot find correct conformation for all assembly of'
+                        'f{seed}.')
         fail += 1
         if fail >= arg.try_n:
+            log.critical(f'Too much failure, quit.')
             break
     if not success:
         log.critical(f'Failed to assemble {arg.f} and {arg.r}.')
-    with open('Failed.csv', 'a') as out:
-        out.write(f'{arg.f} {arg.r}\n')
-    log.info(f'Clean temporary files.')
     TMP.cleanup()
     NULL.close()
     log.info('Bye.')

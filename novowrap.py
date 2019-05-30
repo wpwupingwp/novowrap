@@ -120,7 +120,6 @@ def get_seq(taxon, output, gene=None):
     else:
         genes = [gene, ]
         genes.extend(candidate_genes)
-    log.info(f'Candidate seed genes: {", ".join(genes)}.')
     if system() == 'Windows':
         python = 'python'
     else:
@@ -134,7 +133,6 @@ def get_seq(taxon, output, gene=None):
                 taxon = taxon.strip('"')
                 taxon = taxon.replace(' ', '_')
             out = output / f'{taxon}-{gene}'
-            log.info(f'Querying {gene} of {taxon}.')
             if last_taxon != '':
                 down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
                            f'{gene} -og cp -out {out} -stop 1 -expand 0 '
@@ -325,6 +323,7 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
     new_fasta = fasta.with_suffix('.rotate')
     new_regions = fasta.with_suffix('.regions')
     new_gb = fasta.with_suffix('.gb')
+    success = False
     # blast and fasta use same order
     for query, seq in zip(parse_blast_tab(blast_result),
                           SeqIO.parse(repeat_fasta, 'fasta')):
@@ -430,13 +429,13 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
             out2.write(f'>{name}-IRb\n{seq_IRb}\n')
         with open(new_gb, 'a') as out3:
             SeqIO.write(new_seq, out3, 'gb')
-        with open('validate.f', 'w') as out:
-            for i in new_seq.features:
-                SeqIO.write(i.extract(new_seq), out, 'fasta')
+        success = True
 
     remove(repeat_fasta)
     remove(blast_result)
-    log.info(f'Rotated {fasta} to uniform conformation {new_fasta}.')
+    if not success:
+        return False
+    log.info(f'Rotated {fasta.name} to uniform conformation {new_fasta.name}.')
     log.info(f'Chloroplast region information were written into {new_gb}')
     return True
 
@@ -489,7 +488,7 @@ def main():
             exit(-1)
         # novoplasty generates outputs in current folder
         # use rbcL to detect strand direction
-        log.info(f'Organize NOVOPlasty output of {seed}.')
+        log.info(f'Organize NOVOPlasty output of {seed.name}.')
         # novoplasty use current folder as output folder
         assembled = neaten_out(Path().cwd(), folder)
         if len(assembled) == 0:
@@ -500,8 +499,8 @@ def main():
             success = True
             break
         else:
-            log.warning('Cannot find correct conformation for all assembly of'
-                        'f{seed}.')
+            log.warning('Cannot find correct conformation for all assembly of '
+                        f'{seed}.')
         fail += 1
         if fail >= arg.try_n:
             log.critical(f'Too much failure, quit.')

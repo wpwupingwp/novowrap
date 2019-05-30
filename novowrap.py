@@ -263,7 +263,7 @@ def blast(query, target):
     blast_out = query.with_suffix('.blast')
     # use blastn -subject instead of makeblastdb
     blast = run(f'blastn -query {query} -subject {target} -outfmt "7 {FMT}" '
-                f'-out {blast_out}', shell=True)
+                f'-out {blast_out}', shell=True, stdout=NULL, stderr=NULL)
     # remove makeblastdb result
     if blast.returncode != 0:
         log.critical('Cannot run BLAST.')
@@ -326,33 +326,50 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
     new_gb = fasta.with_suffix('.gb')
     # blast and fasta use same order
     for query, seq in zip(parse_blast_tab(blast_result),
-                          SeqIO.parse(fasta, 'fasta')):
+                          SeqIO.parse(repeat_fasta, 'fasta')):
         locations = set()
         name = ''
-        original_seq_len = len(seq)
+        original_seq_len = len(seq) // 2
+        ambiguous_base_n = len(str(seq).strip('ATCGatcg')) // 2
+        # only use hit of IR to IR
+        max_aln_n = 0
+        # because of ambiguous base, percent of identity bases may not be 100%
+        if ambiguous_base_n != 0:
+            log.warning(f'Found {ambiguous_base_n} ambiguous bases.')
+            p_ident_min = int((1-(ambiguous_base_n/original_seq_len))*100)
+        else:
+            p_ident_min = 100
         for hit in query:
             (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
              qstart, qend, sstart, send) = hit
             name = qseqid
-            # mismatch
-            if pident != 100 or qseqid != sseqid or gapopen != 0:
+            # only self
+            if qseqid != sseqid or gapopen != 0:
                 continue
+            # mismatch
             location = tuple(sorted([qstart, qend, sstart, send]))
+            if pident < p_ident_min or qseqid != sseqid or gapopen != 0:
+                continue
             # hit across origin and repeat
             if location[-1] - location[0] > original_seq_len:
-                print(location)
                 continue
             aln_len = abs(qstart-qend) + 1
             # self to self or self to repeat self
-            if aln_len in (len(seq), len(seq)*2):
+            if len(set(location)) != 4:
                 continue
+            # origin to repeat
+            if aln_len == len(seq):
+                continue
+            # filter short hit
+            if aln_len < max_aln_n:
+                continue
+            else:
+                max_aln_n = aln_len
             locations.add(location)
         if not locations:
             continue
         locations = list(locations)
         locations.sort(key=lambda x: x[1]-x[0], reverse=True)
-        print(locations)
-        exit(-1)
         locations.sort(key=lambda x: x[0])
         if len(locations) < 2:
             remove(repeat_fasta)
@@ -383,23 +400,23 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         seq_IRb = seq[region_IRb]
         log.info(f'{name}, LSC {region_LSC}, IRa {region_IRa}, '
                  f'SSC {region_SSC}, IRb {region_IRb}')
-        new_seq = ''.join([seq_LSC, seq_IRa, seq_SSC, seq_IRb])
-        # remove repeat
-        log.info(f'old, {len(seq)}, new, {len(new_seq)}')
-        record = SeqRecord(Seq(new_seq, alphabet=IUPAC.ambiguous_dna))
-        record.annotations['accession'] = 'Unknown'
-        record.annotations['organism'] = name
+        new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
+        new_seq.seq.alphabet = IUPAC.ambiguous_dna
+        assert len(seq)//2 == len(new_seq)
+        new_seq.annotations['accession'] = 'Unknown'
+        new_seq.annotations['organism'] = name
         # output
         offset = -1
         for f_name, f in zip(('LSC', 'IRa', 'SSC', 'IRb'),
                              (region_LSC, region_IRa, region_SSC, region_IRb)):
             length = f.stop - f.start
-            record.features.append(SeqFeature(
+            new_seq.features.append(SeqFeature(
                 FeatureLocation(offset+1, length+offset+1),
                 type='misc_feature',
                 qualifiers={'name': f_name}, strand=1))
             offset += length
-        assert seq_SSC == str(record.features[2].extract(record).seq)
+        assert str(seq_SSC.seq) == str(
+            new_seq.features[2].extract(new_seq).seq)
         with open(new_fasta, 'a') as out:
             # out.write('>old\n{}\n'.formak(half_old_seq))
             out.write(f'>{name}\n{new_seq}\n')
@@ -409,10 +426,10 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
             out2.write(f'>{name}-SSC\n{seq_SSC}\n')
             out2.write(f'>{name}-IRb\n{seq_IRb}\n')
         with open(new_gb, 'a') as out3:
-            SeqIO.write(record, out3, 'gb')
+            SeqIO.write(new_seq, out3, 'gb')
         with open('validate.f', 'w') as out:
-            for i in record.features:
-                SeqIO.write(i.extract(record), out, 'fasta')
+            for i in new_seq.features:
+                SeqIO.write(i.extract(new_seq), out, 'fasta')
 
     remove(repeat_fasta)
     remove(blast_result)

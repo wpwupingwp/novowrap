@@ -314,7 +314,7 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         fasta = Path(fasta)
     seq_len = [len(i) for i in SeqIO.parse(fasta, 'fasta')]
     if not seq_len or min(seq_len) < min_len or max(seq_len) > max_len:
-        log.warning("The sequences' length of assembly {fasta}"
+        log.warning(f"The sequences' length of assembly {fasta}"
                     "failed to meet requirement. Skip.")
         return False
     repeat_fasta = repeat_and_reverse(fasta, taxon)
@@ -503,7 +503,7 @@ def main():
                         f'{seed}.')
         fail += 1
         if fail >= arg.try_n:
-            log.critical(f'Too much failure, quit.')
+            log.critical(f'Too much failure ({fail}), quit.')
             break
     if not success:
         log.critical(f'Failed to assemble {arg.f} and {arg.r}.')

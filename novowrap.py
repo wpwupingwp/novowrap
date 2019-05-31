@@ -405,7 +405,9 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
                  f'SSC {region_SSC}, IRb {region_IRb}')
         new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
         new_seq.seq.alphabet = IUPAC.ambiguous_dna
-        assert len(seq)//2 == len(new_seq)
+        if len(seq)//2 != len(new_seq):
+            log.critical(f'Old and new sequences do not have save length!')
+            log.info(f'Old: {len(seq)//2}\tNew: {len(new_seq)}')
         new_seq.annotations['accession'] = 'Unknown'
         new_seq.annotations['organism'] = name
         # output

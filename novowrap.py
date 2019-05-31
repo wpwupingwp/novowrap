@@ -313,7 +313,7 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
     if not isinstance(fasta, Path):
         fasta = Path(fasta)
     seq_len = [len(i) for i in SeqIO.parse(fasta, 'fasta')]
-    if min(seq_len) < min_len or max(seq_len) > max_len:
+    if not seq_len or min(seq_len) < min_len or max(seq_len) > max_len:
         log.warning("The sequences' length of assembly {fasta}"
                     "failed to meet requirement. Skip.")
         return False

@@ -423,12 +423,12 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         assert str(seq_SSC.seq) == str(
             new_seq.features[2].extract(new_seq).seq)
         with open(new_fasta, 'a') as out:
-            out.write(f'>{name}\n{new_seq}\n')
+            out.write(f'>{name}\n{new_seq.seq}\n')
         with open(new_regions, 'a') as out2:
-            out2.write(f'>{name}-LSC\n{seq_LSC}\n')
-            out2.write(f'>{name}-IRa\n{seq_IRa}\n')
-            out2.write(f'>{name}-SSC\n{seq_SSC}\n')
-            out2.write(f'>{name}-IRb\n{seq_IRb}\n')
+            out2.write(f'>{name}-LSC\n{seq_LSC.seq}\n')
+            out2.write(f'>{name}-IRa\n{seq_IRa.seq}\n')
+            out2.write(f'>{name}-SSC\n{seq_SSC.seq}\n')
+            out2.write(f'>{name}-IRb\n{seq_IRb.seq}\n')
         with open(new_gb, 'a') as out3:
             SeqIO.write(new_seq, out3, 'gb')
         success = True

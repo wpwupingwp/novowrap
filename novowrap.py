@@ -167,7 +167,7 @@ def config(out, seed, arg):
     """
     config = f"""Project:
 -----------------------
-Project name          = {out.description}
+Project name          = {out.name}
 Type                  = chloro
 Genome Range          = {arg.min}-{arg.max}
 K-mer                 = {arg.kmer}
@@ -487,7 +487,7 @@ def main():
     success = False
     fail = 0
     for seed, folder in get_seq(arg.taxon, out):
-        log.info(f'Use {seed.description} as seed file.')
+        log.info(f'Use {seed.name} as seed file.')
         config_file = config(out, seed, arg)
         run_novo = run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         if run_novo.returncode != 0:
@@ -495,11 +495,11 @@ def main():
             exit(-1)
         # novoplasty generates outputs in current folder
         # use rbcL to detect strand direction
-        log.info(f'Organize NOVOPlasty output of {seed.description}.')
+        log.info(f'Organize NOVOPlasty output of {seed.name}.')
         # novoplasty use current folder as output folder
         assembled = neaten_out(Path().cwd(), folder)
         if len(assembled) == 0:
-            log.warn(f'Assembled with {seed.description} failed.')
+            log.warn(f'Assembled with {seed.name} failed.')
             continue
         rotate_result = [rotate(i, arg.taxon) for i in assembled]
         if any(rotate_result):
@@ -507,7 +507,7 @@ def main():
             break
         else:
             log.warning('Cannot find correct conformation for all assembly of '
-                        f'{seed.description}.')
+                        f'{seed.name}.')
         fail += 1
         if fail >= arg.try_n:
             log.critical(f'Too much failure ({fail}), quit.')

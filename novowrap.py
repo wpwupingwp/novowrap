@@ -244,8 +244,10 @@ def repeat_and_reverse(fasta, taxon):
         i.seq = i.seq + i.seq
         # negative strand or not found by blast
         if strand.get(i.id, '-') == '-':
-            # i.seq = i.seq[::-1]
+            # reverse complement instead of reverse
+            old_name = i.description
             i = i.reverse_complement()
+            i.id = old_name
             log.warning(f'Detected reversed sequence {i.name}. Reverse back.')
         new.append(i)
     SeqIO.write(new, new_fasta, 'fasta')

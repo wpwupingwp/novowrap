@@ -167,7 +167,7 @@ def config(out, seed, arg):
     """
     config = f"""Project:
 -----------------------
-Project name          = {out.name}
+Project name          = {out.description}
 Type                  = chloro
 Genome Range          = {arg.min}-{arg.max}
 K-mer                 = {arg.kmer}
@@ -238,8 +238,8 @@ def repeat_and_reverse(fasta, taxon):
     for i in SeqIO.parse(fasta, 'fasta'):
         n_star = str(i.seq).count('*')
         if n_star != 0:
-            log.warning(f'Replace {n_star} illegal character in '
-                        f'{i.description} with "N".')
+            log.info(f'Replace {n_star} illegal character in '
+                     f'{i.description} with "N".')
             i.seq = Seq(str(i.seq).replace('*', 'N'))
         i.seq = i.seq + i.seq
         # negative strand or not found by blast
@@ -248,7 +248,8 @@ def repeat_and_reverse(fasta, taxon):
             old_name = i.description
             i = i.reverse_complement()
             i.id = old_name
-            log.warning(f'Detected reversed sequence {i.name}. Reverse back.')
+            i.description = ''
+            log.warning(f'Found reversed sequence in "{i.id}". Reverse back.')
         new.append(i)
     SeqIO.write(new, new_fasta, 'fasta')
     return new_fasta
@@ -333,8 +334,7 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
     for query, seq in zip(parse_blast_tab(blast_result),
                           SeqIO.parse(repeat_fasta, 'fasta')):
         locations = set()
-        # use name to get uniform sequence id with BLAST
-        # biopython 's seq.name and seq.description is complex
+        # use fasta's description
         name = ''
         original_seq_len = len(seq) // 2
         ambiguous_base_n = len(str(seq).strip('ATCGatcg')) // 2
@@ -349,7 +349,7 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         for hit in query:
             (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
              qstart, qend, sstart, send) = hit
-            name = qseqid
+            name = seq.description
             # only self
             if qseqid != sseqid or gapopen != 0:
                 continue
@@ -438,7 +438,7 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
             SeqIO.write(new_seq, out3, 'gb')
         success = True
 
-    # remove(repeat_fasta)
+    remove(repeat_fasta)
     remove(blast_result)
     if not success:
         return False
@@ -487,7 +487,7 @@ def main():
     success = False
     fail = 0
     for seed, folder in get_seq(arg.taxon, out):
-        log.info(f'Use {seed.name} as seed file.')
+        log.info(f'Use {seed.description} as seed file.')
         config_file = config(out, seed, arg)
         run_novo = run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
         if run_novo.returncode != 0:
@@ -495,11 +495,11 @@ def main():
             exit(-1)
         # novoplasty generates outputs in current folder
         # use rbcL to detect strand direction
-        log.info(f'Organize NOVOPlasty output of {seed.name}.')
+        log.info(f'Organize NOVOPlasty output of {seed.description}.')
         # novoplasty use current folder as output folder
         assembled = neaten_out(Path().cwd(), folder)
         if len(assembled) == 0:
-            log.warn(f'Assembled with {seed.name} failed.')
+            log.warn(f'Assembled with {seed.description} failed.')
             continue
         rotate_result = [rotate(i, arg.taxon) for i in assembled]
         if any(rotate_result):
@@ -507,7 +507,7 @@ def main():
             break
         else:
             log.warning('Cannot find correct conformation for all assembly of '
-                        f'{seed.name}.')
+                        f'{seed.description}.')
         fail += 1
         if fail >= arg.try_n:
             log.critical(f'Too much failure ({fail}), quit.')

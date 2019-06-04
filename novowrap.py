@@ -72,7 +72,9 @@ def get_full_taxon(taxon):
     if search['Count'] == '0':
         log.critical(f'Cannot find {name} in NCBI Taxonomy.')
     taxon_id = search['IdList'][0]
-    record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
+    with open('key', 'r') as _:
+        key = _.read().strip()
+    record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id, api_key=key))[0]
     names = [i['ScientificName'] for i in record['LineageEx']]
     full_lineage = {i['Rank']: i['ScientificName'] for i in
                     record['LineageEx']}
@@ -242,7 +244,8 @@ def repeat_and_reverse(fasta, taxon):
         i.seq = i.seq + i.seq
         # negative strand or not found by blast
         if strand.get(i.id, '-') == '-':
-            i.seq = i.seq[::-1]
+            # i.seq = i.seq[::-1]
+            i = i.reverse_complement()
             log.warning(f'Detected reversed sequence {i.name}. Reverse back.')
         new.append(i)
     SeqIO.write(new, new_fasta, 'fasta')
@@ -312,10 +315,10 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
     # FMT = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
     if not isinstance(fasta, Path):
         fasta = Path(fasta)
+    log.info(f'Try to rotate {fasta.name}.')
     seq_len = [len(i) for i in SeqIO.parse(fasta, 'fasta')]
     if not seq_len or min(seq_len) < min_len or max(seq_len) > max_len:
-        log.warning(f"The sequences' length of assembly {fasta.name}"
-                    "failed to meet requirement. Skip.")
+        log.warning(f'Sequences of {fasta.name} are too short, skip.')
         return False
     repeat_fasta = repeat_and_reverse(fasta, taxon)
     blast_result = blast(repeat_fasta, repeat_fasta)
@@ -433,7 +436,7 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
             SeqIO.write(new_seq, out3, 'gb')
         success = True
 
-    remove(repeat_fasta)
+    # remove(repeat_fasta)
     remove(blast_result)
     if not success:
         return False

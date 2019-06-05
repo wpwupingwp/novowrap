@@ -14,19 +14,6 @@ import argparse
 import logging
 
 
-# define logger
-FMT = '%(asctime)s %(levelname)-8s %(message)s'
-DATEFMT = '%I:%M:%S'
-TEMP_LOG = 'novowrap.log'
-logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO,
-                    handlers=[logging.StreamHandler(),
-                              logging.FileHandler(TEMP_LOG)])
-try:
-    import coloredlogs
-    coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
-except ImportError:
-    pass
-log = logging.getLogger(__name__)
 # temporary directory
 TMP = TemporaryDirectory()
 NULL = open(devnull, 'w')
@@ -479,11 +466,36 @@ def neaten_out(source, dest):
 
 
 def main():
-    log.info('Welcome to novowrap.')
     arg = parse_args()
     out = Path(Path(arg.f).stem+'-out').absolute()
+    # define logger
+    FMT = '%(asctime)s %(levelname)-8s %(message)s'
+    DATEFMT = '%I:%M:%S'
+    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
+                        datefmt=DATEFMT, level=logging.INFO,
+                        handlers=[logging.StreamHandler(),
+                                  logging.FileHandler(out/'log.txt')])
+    try:
+        import coloredlogs
+        coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
+    except ImportError:
+        pass
+    log = logging.getLogger(__name__)
+    log.info('Welcome to novowrap.')
+    log.info(f'Forward file:\t{arg.f}')
+    log.info(f'Reverse file:\t{arg.r}')
+    log.info(f'K-mer:\t{arg.kmer}')
+    log.info(f'Minimum genome size:\t{arg.min}')
+    log.info(f'Maximum genome size:\t{arg.max}')
+    log.info(f'Reads length:\t{arg.reads_len}')
+    log.info(f'Taxonomy:\t{arg.taxon}')
+    log.info(f'Maximum tried times:\t{arg.try_n}')
     log.info(f'Use {out} as output folder.')
-    out.mkdir()
+    try:
+        out.mkdir()
+    except FileExistsError:
+        log.critical(f'Folder {out.name} exists.')
+        exit(-1)
     success = False
     fail = 0
     for seed, folder in get_seq(arg.taxon, out):

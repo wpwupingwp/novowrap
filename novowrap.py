@@ -408,14 +408,14 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         seq_IRa = seq[region_IRa]
         seq_SSC = seq[region_SSC]
         seq_IRb = seq[region_IRb]
-        log.info(f'Original region of {name}:')
-        log.info(f'LSC {region_LSC}, IRa {region_IRa}, '
-                 f'SSC {region_SSC}, IRb {region_IRb}')
         new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
         new_seq.seq.alphabet = IUPAC.ambiguous_dna
         if len(seq)//2 != len(new_seq):
             log.critical(f'Old and new sequences do not have save length!')
             log.info(f'Old: {len(seq)//2}\tNew: {len(new_seq)}')
+        if len(seq_IRa) != len(seq_IRb):
+            log.critical(f'IRa ({len(seq_IRa)}) and IRb ({len(seq_IRb)}) do'
+                         'not have same length! May due to ambiguous bases.')
         new_seq.annotations['accession'] = 'Unknown'
         new_seq.annotations['organism'] = name
         # output
@@ -430,6 +430,11 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
             offset += length
         assert str(seq_SSC.seq) == str(
             new_seq.features[2].extract(new_seq).seq)
+        log.info(f'Rotated regions of {name}:')
+        log.info(f'\tLSC {new_seq.features[0].location}')
+        log.info(f'\tIRa {new_seq.features[1].location}')
+        log.info(f'\tSSC {new_seq.features[2].location}')
+        log.info(f'\tIRb {new_seq.features[3].location}')
         with open(new_fasta, 'a') as out:
             out.write(f'>{name}\n{new_seq.seq}\n')
         with open(new_regions, 'a') as out2:

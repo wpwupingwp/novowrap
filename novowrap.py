@@ -17,6 +17,16 @@ import logging
 # temporary directory
 TMP = TemporaryDirectory()
 NULL = open(devnull, 'w')
+# define logger
+FMT = '%(asctime)s %(levelname)-8s %(message)s'
+DATEFMT = '%H:%M:%S'
+logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
+log = logging.getLogger(__name__)
+try:
+    import coloredlogs
+    coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
+except ImportError:
+    pass
 
 
 def parse_args():
@@ -59,9 +69,15 @@ def get_full_taxon(taxon):
     if search['Count'] == '0':
         log.critical(f'Cannot find {name} in NCBI Taxonomy.')
     taxon_id = search['IdList'][0]
-    with open('key', 'r') as _:
-        key = _.read().strip()
-    record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id, api_key=key))[0]
+    key_file = Path('key')
+    if key_file.exists():
+        key = key_file.read_text().strip()
+        record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id,
+                                           api_key=key))[0]
+    else:
+        log.warning('Cannot find NCBI Entrez API key, request could be '
+                    'refused by server!')
+        record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
     names = [i['ScientificName'] for i in record['LineageEx']]
     full_lineage = {i['Rank']: i['ScientificName'] for i in
                     record['LineageEx']}
@@ -468,19 +484,13 @@ def neaten_out(source, dest):
 def main():
     arg = parse_args()
     out = Path(Path(arg.f).stem+'-out').absolute()
-    # define logger
-    FMT = '%(asctime)s %(levelname)-8s %(message)s'
-    DATEFMT = '%I:%M:%S'
-    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
-                        datefmt=DATEFMT, level=logging.INFO,
-                        handlers=[logging.StreamHandler(),
-                                  logging.FileHandler(out/'log.txt')])
     try:
-        import coloredlogs
-        coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
-    except ImportError:
-        pass
-    log = logging.getLogger(__name__)
+        out.mkdir()
+    except FileExistsError:
+        log.critical(f'Folder {out.name} exists.')
+        exit(-1)
+    log_file = out / 'log.txt'
+    log.addHandler(logging.FileHandler(str(log_file)))
     log.info('Welcome to novowrap.')
     log.info(f'Forward file:\t{arg.f}')
     log.info(f'Reverse file:\t{arg.r}')
@@ -491,11 +501,7 @@ def main():
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Maximum tried times:\t{arg.try_n}')
     log.info(f'Use {out} as output folder.')
-    try:
-        out.mkdir()
-    except FileExistsError:
-        log.critical(f'Folder {out.name} exists.')
-        exit(-1)
+
     success = False
     fail = 0
     for seed, folder in get_seq(arg.taxon, out):

@@ -131,6 +131,9 @@ def get_seq(taxon, output, gene=None):
                 taxon = taxon.strip('"')
                 taxon = taxon.replace(' ', '_')
             out = output / f'{taxon}-{gene}'
+            # Entrez has limitation on query frenquency (3 times per second)
+            # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
+            sleep(0.5)
             if last_taxon != '':
                 down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
                            f'{gene} -og cp -out {out} -stop 1 -expand 0 '
@@ -148,10 +151,6 @@ def get_seq(taxon, output, gene=None):
                     yield fasta, out
             else:
                 log.warning('Failed to run BarcodeFinder. Retry...')
-                # Entrez has limitation on query frenquency (3 times per
-                # second)
-                # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
-                sleep(0.5)
         last_taxon = taxon
 
 
@@ -505,6 +504,9 @@ def main():
     success = False
     fail = 0
     for seed, folder in get_seq(arg.taxon, out):
+        if fail >= arg.try_n:
+            log.critical(f'Too much failure. Quit.')
+            break
         log.info(f'No. {fail+1} try, use {seed.name} as seed file.')
         config_file = config(out, seed, arg)
         log.info('NOVOPlasty version:\t3.2')
@@ -529,9 +531,6 @@ def main():
             log.warning('Cannot find correct conformation for all assembly of '
                         f'{seed.name}.')
             fail += 1
-        if fail >= arg.try_n:
-            log.critical(f'Too much failure. Quit.')
-            break
     if not success:
         log.critical(f'Failed to assemble {arg.f} and {arg.r}.')
     TMP.cleanup()

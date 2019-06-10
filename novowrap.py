@@ -236,9 +236,8 @@ def repeat_and_reverse(fasta, taxon):
     for i in SeqIO.parse(fasta, 'fasta'):
         n_star = str(i.seq).count('*')
         if n_star != 0:
-            log.info(f'Replace {n_star} illegal character in '
-                     f'{i.description} with "N".')
-            i.seq = Seq(str(i.seq).replace('*', 'N'))
+            log.info(f'Remove {n_star} "*" in {i.description}.')
+            i.seq = Seq(str(i.seq).replace('*', ''))
         i.seq = i.seq + i.seq
         # negative strand or not found by blast
         if strand.get(i.id, '-') == '-':
@@ -270,6 +269,7 @@ def blast(query, target):
     # remove makeblastdb result
     if blast.returncode != 0:
         log.critical('Cannot run BLAST.')
+        exit(-1)
     return blast_out
 
 

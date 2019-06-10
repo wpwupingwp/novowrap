@@ -172,13 +172,11 @@ Type                  = chloro
 Genome Range          = {arg.min}-{arg.max}
 K-mer                 = {arg.kmer}
 Max memory            =
-Extended log          = 0
+Extended log          = 1
 Save assembled reads  = no
 Seed Input            = {seed}
 Reference sequence    =
 Variance detection    = no
-Heteroplasmy          =
-HP exclude list       =
 Chloroplast sequence  =
 
 Dataset 1:

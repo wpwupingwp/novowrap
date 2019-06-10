@@ -518,7 +518,7 @@ def main():
         # novoplasty use current folder as output folder
         assembled = neaten_out(Path().cwd(), folder)
         if len(assembled) == 0:
-            log.warn(f'Assembled with {seed.name} failed.')
+            log.warning(f'Assembled with {seed.name} failed.')
             fail += 1
             continue
         rotate_result = [rotate(i, arg.taxon) for i in assembled]

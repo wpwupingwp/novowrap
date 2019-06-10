@@ -9,6 +9,7 @@ from os import devnull, remove
 from pathlib import Path
 from platform import system
 from subprocess import run
+from time import sleep
 from tempfile import TemporaryDirectory
 import argparse
 import logging
@@ -69,15 +70,7 @@ def get_full_taxon(taxon):
     if search['Count'] == '0':
         log.critical(f'Cannot find {name} in NCBI Taxonomy.')
     taxon_id = search['IdList'][0]
-    key_file = Path('key')
-    if key_file.exists():
-        key = key_file.read_text().strip()
-        record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id,
-                                           api_key=key))[0]
-    else:
-        log.warning('Cannot find NCBI Entrez API key, request could be '
-                    'refused by server!')
-        record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
+    record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
     names = [i['ScientificName'] for i in record['LineageEx']]
     full_lineage = {i['Rank']: i['ScientificName'] for i in
                     record['LineageEx']}
@@ -154,7 +147,10 @@ def get_seq(taxon, output, gene=None):
                 if fasta.exists:
                     yield fasta, out
             else:
-                log.critical('Failed to run BarcodeFinder. Retry...')
+                log.warning('Failed to run BarcodeFinder. Retry...')
+                # Entrez has limitation on query frenquency (3 times per
+                # second)
+                sleep(0.5)
         last_taxon = taxon
 
 

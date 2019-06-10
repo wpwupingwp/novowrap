@@ -150,6 +150,7 @@ def get_seq(taxon, output, gene=None):
                 log.warning('Failed to run BarcodeFinder. Retry...')
                 # Entrez has limitation on query frenquency (3 times per
                 # second)
+                # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
                 sleep(0.5)
         last_taxon = taxon
 
@@ -508,7 +509,8 @@ def main():
     for seed, folder in get_seq(arg.taxon, out):
         log.info(f'Use {seed.name} as seed file.')
         config_file = config(out, seed, arg)
-        run_novo = run(f'perl NOVOPlasty2.7.2.pl -c {config_file}', shell=True)
+        log.info('NOVOPlasty version:\t3.2')
+        run_novo = run(f'perl NOVOPlasty3.2.pl -c {config_file}', shell=True)
         if run_novo.returncode != 0:
             log.critical('Failed to run NOVOPlasty. Quit.')
             exit(-1)

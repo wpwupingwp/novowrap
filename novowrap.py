@@ -471,10 +471,10 @@ def neaten_out(source, dest):
     log = list(source.glob('log_*.txt'))
     assembled = []
     # move to dest folder
-    for i in (*contigs, *tmp, *log):
+    for i in (*options, *contigs, *tmp, *log):
         i.replace(dest/i.name)
     # move to dest folder, generate clean fasta
-    for i in (*options, *merged, *circularized):
+    for i in (*merged, *circularized):
         new_loc = dest / i.name
         new_name = new_loc.with_suffix('.convert')
         i.replace(new_loc)

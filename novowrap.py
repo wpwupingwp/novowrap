@@ -505,7 +505,7 @@ def main():
     success = False
     fail = 0
     for seed, folder in get_seq(arg.taxon, out):
-        log.info(f'Use {seed.name} as seed file.')
+        log.info(f'No. {fail+1} try, use {seed.name} as seed file.')
         config_file = config(out, seed, arg)
         log.info('NOVOPlasty version:\t3.2')
         run_novo = run(f'perl NOVOPlasty3.2.pl -c {config_file}', shell=True)
@@ -529,7 +529,7 @@ def main():
                         f'{seed.name}.')
         fail += 1
         if fail >= arg.try_n:
-            log.critical(f'Too much failure ({fail}), quit.')
+            log.critical(f'Too much failure. Quit.')
             break
     if not success:
         log.critical(f'Failed to assemble {arg.f} and {arg.r}.')

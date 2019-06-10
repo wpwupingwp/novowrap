@@ -519,6 +519,7 @@ def main():
         assembled = neaten_out(Path().cwd(), folder)
         if len(assembled) == 0:
             log.warn(f'Assembled with {seed.name} failed.')
+            fail += 1
             continue
         rotate_result = [rotate(i, arg.taxon) for i in assembled]
         if any(rotate_result):
@@ -527,7 +528,7 @@ def main():
         else:
             log.warning('Cannot find correct conformation for all assembly of '
                         f'{seed.name}.')
-        fail += 1
+            fail += 1
         if fail >= arg.try_n:
             log.critical(f'Too much failure. Quit.')
             break

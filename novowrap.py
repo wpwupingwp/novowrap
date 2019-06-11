@@ -313,6 +313,9 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         success(bool): success or not
     """
     # FMT = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
+    # maximum difference of rotated length and raw length
+    MAX_LEN_DIFF = 1000
+    MIN_IR_LEN = 1000
     if not isinstance(fasta, Path):
         fasta = Path(fasta)
     log.info(f'Try to rotate {fasta.name}.')
@@ -330,6 +333,7 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
     # blast and fasta use same order
     for query, seq in zip(parse_blast_tab(blast_result),
                           SeqIO.parse(repeat_fasta, 'fasta')):
+        log.info(f'Analyze {seq.description}.')
         locations = set()
         # use fasta's description
         name = ''
@@ -349,6 +353,9 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
             name = seq.description
             # only self
             if qseqid != sseqid or gapopen != 0:
+                continue
+            # skip too short match
+            if len(qseq) < MIN_IR_LEN:
                 continue
             # mismatch
             location = tuple(sorted([qstart, qend, sstart, send]))
@@ -376,9 +383,7 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         locations.sort(key=lambda x: x[1]-x[0], reverse=True)
         locations.sort(key=lambda x: x[0])
         if len(locations) < 2:
-            remove(repeat_fasta)
-            remove(blast_result)
-            return False
+            continue
         # remove extra hit, first two if enough
         locations = locations[:2]
         # ira_start, ira_end, irb_start, irb_end
@@ -405,8 +410,11 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
         new_seq.seq.alphabet = IUPAC.ambiguous_dna
         if len(seq)//2 != len(new_seq):
-            log.critical(f'Old and new sequences do not have save length!')
+            log.warning(f'Old and new sequences do not have save length!')
             log.info(f'Old: {len(seq)//2}\tNew: {len(new_seq)}')
+            if abs(len(seq)//2 - len(new_seq)) >= MAX_LEN_DIFF:
+                log.critical(f'Too much difference (>{MAX_LEN_DIFF}). Reject.')
+                continue
         if len(seq_IRa) != len(seq_IRb):
             log.critical(f'IRa ({len(seq_IRa)}) and IRb ({len(seq_IRb)}) do'
                          'not have same length! May due to ambiguous bases.')

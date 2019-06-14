@@ -107,7 +107,7 @@ def get_seq(taxon, output, gene=None):
         taxon(str): given taxon name
         output(Path): output folder
         gene(tuple): gene name
-    Return:
+    Yield:
         fasta(Path): fasta file
         out(Path): fasta file's folder
     """

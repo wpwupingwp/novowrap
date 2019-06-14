@@ -352,30 +352,35 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
              qstart, qend, sstart, send) = hit
             name = seq.description
             # only self
-            if qseqid != sseqid or gapopen != 0:
+            if qseqid != sseqid:
                 continue
             # skip too short match
             if len(qseq) < MIN_IR_LEN:
                 continue
+            # origin to repeat
+            if len(qseq) == len(seq):
+                continue
+            # allow few gaps
+            if gapopen != 0:
+                log.warning(f'Found {gapopen} gaps.')
+                if gapopen > ambiguous_base_n:
+                    log.critical('Too much gaps. Reject.')
+                    continue
             # mismatch
             location = tuple(sorted([qstart, qend, sstart, send]))
-            if pident < p_ident_min or qseqid != sseqid or gapopen != 0:
+            if pident < p_ident_min:
                 continue
             # hit across origin and repeat
             if location[-1] - location[0] > original_seq_len:
                 continue
-            aln_len = abs(qstart-qend) + 1
             # self to self or self to repeat self
             if len(set(location)) != 4:
                 continue
-            # origin to repeat
-            if aln_len == len(seq):
-                continue
             # filter short hit
-            if aln_len < max_aln_n:
+            if len(qseq) < max_aln_n:
                 continue
             else:
-                max_aln_n = aln_len
+                max_aln_n = len(qseq)
             locations.add(location)
         if not locations:
             continue

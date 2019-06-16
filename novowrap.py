@@ -69,6 +69,7 @@ def get_full_taxon(taxon):
     search = Entrez.read(Entrez.esearch(db='taxonomy', term=f'"{name}"'))
     if search['Count'] == '0':
         log.critical(f'Cannot find {name} in NCBI Taxonomy.')
+        return ''
     taxon_id = search['IdList'][0]
     record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
     names = [i['ScientificName'] for i in record['LineageEx']]

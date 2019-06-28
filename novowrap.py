@@ -37,8 +37,9 @@ def parse_args():
     arg.add_argument('-r', required=True, help='reverse fastq file')
     arg.add_argument('-kmer', choices=range(23, 40, 2), default=39, type=int,
                      help='kmer size')
-    arg.add_argument('-min', default=40000, help='minimum genome size (kb)')
-    arg.add_argument('-max', default=300000, help='maximum genome size (kb)')
+    arg.add_argument('-min', default=40000, help='minimum genome size (KB)')
+    arg.add_argument('-max', default=300000, help='maximum genome size (KB)')
+    arg.add_argument('-mem', default=30, type=int, help='maximum memory (GB)')
     arg.add_argument('-reads_len', default=150, help='reads length')
     arg.add_argument('-taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
@@ -171,7 +172,7 @@ Project name          = {out.name}
 Type                  = chloro
 Genome Range          = {arg.min}-{arg.max}
 K-mer                 = {arg.kmer}
-Max memory            =
+Max memory            = {arg.mem}
 Extended log          = 1
 Save assembled reads  = no
 Seed Input            = {seed}

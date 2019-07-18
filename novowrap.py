@@ -43,7 +43,7 @@ def parse_args():
     arg.add_argument('-reads_len', default=150, help='reads length')
     arg.add_argument('-taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
-    arg.add_argument('-try', dest='try_n', type=int, default=3,
+    arg.add_argument('-try', dest='try_n', type=int, default=5,
                      help='maximum tried times')
     # arg.add_argument('-split', default=1_000_000,
     #                  help='reads to use (million), set to 0 to skip split')
@@ -115,6 +115,7 @@ def get_seq(taxon, output, gene=None):
     """
     # strand: +, -, -, -, +
     candidate_genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
+    lineage = list(reversed(get_full_taxon(taxon)))
     if gene is None:
         genes = candidate_genes
     else:
@@ -124,15 +125,15 @@ def get_seq(taxon, output, gene=None):
         python = 'python'
     else:
         python = 'python3'
-    last_taxon = ''
-    for taxon in reversed(get_full_taxon(taxon)):
-        if taxon == '':
-            continue
-        for gene in genes:
+    for gene in genes:
+        last_taxon = ''
+        for taxon in lineage:
+            if taxon == '':
+                continue
             if ' ' in taxon:
                 taxon = taxon.strip('"')
                 taxon = taxon.replace(' ', '_')
-            out = output / f'{taxon}-{gene}'
+            out = output / f'{gene}-{taxon}'
             # Entrez has limitation on query frenquency (3 times per second)
             # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
             sleep(0.5)
@@ -151,9 +152,11 @@ def get_seq(taxon, output, gene=None):
                 fasta = out / 'by-gene' / f'{gene}.fasta'
                 if fasta.exists:
                     yield fasta, out
+                    # if nearest seed fail, higher rank may be useless, too
+                    break
             else:
-                log.warning('Failed to run BarcodeFinder. Retry...')
-        last_taxon = taxon
+                log.warning(f'Cannot get {gene} of {taxon}. Retry...')
+            last_taxon = taxon
 
 
 def config(out, seed, arg):

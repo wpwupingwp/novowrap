@@ -37,13 +37,13 @@ def parse_args():
     arg.add_argument('-r', required=True, help='reverse fastq file')
     arg.add_argument('-kmer', choices=range(23, 40, 2), default=39, type=int,
                      help='kmer size')
-    arg.add_argument('-min', default=40000, help='minimum genome size (KB)')
-    arg.add_argument('-max', default=300000, help='maximum genome size (KB)')
+    arg.add_argument('-min', default=100000, help='minimum genome size (KB)')
+    arg.add_argument('-max', default=200000, help='maximum genome size (KB)')
     arg.add_argument('-mem', default=30, type=int, help='maximum memory (GB)')
     arg.add_argument('-reads_len', default=150, help='reads length')
     arg.add_argument('-taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
-    arg.add_argument('-try', dest='try_n', type=int, default=5,
+    arg.add_argument('-try', dest='try_n', type=int, default=3,
                      help='maximum tried times')
     # arg.add_argument('-split', default=1_000_000,
     #                  help='reads to use (million), set to 0 to skip split')

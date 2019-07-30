@@ -69,8 +69,17 @@ def get_full_taxon(taxon):
     Entrez.email = 'guest@example.org'
     search = Entrez.read(Entrez.esearch(db='taxonomy', term=f'"{name}"'))
     if search['Count'] == '0':
-        log.critical(f'Cannot find {name} in NCBI Taxonomy.')
-        return ''
+        if ' ' not in name:
+            log.critical(f'Cannot find {name} in NCBI Taxonomy.')
+            return None
+        if ' ' in name:
+            name = split[0]
+            sleep(0.5)
+            search = Entrez.read(Entrez.esearch(db='taxonomy',
+                                                term=f'"{name}"'))
+            if search['Count'] == '0':
+                log.critical(f'Cannot find {name} in NCBI Taxonomy.')
+                return None
     taxon_id = search['IdList'][0]
     record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
     names = [i['ScientificName'] for i in record['LineageEx']]
@@ -116,6 +125,9 @@ def get_seq(taxon, output, gene=None):
     # strand: +, -, -, -, +
     candidate_genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
     lineage = list(reversed(get_full_taxon(taxon)))
+    if lineage is None:
+        log.critical('Failed to get taxon. Quit.')
+        exit(-2)
     if gene is None:
         genes = candidate_genes
     else:

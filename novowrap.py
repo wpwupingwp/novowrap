@@ -124,8 +124,10 @@ def get_seq(taxon, output, gene=None):
     """
     # strand: +, -, -, -, +
     candidate_genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
-    lineage = list(reversed(get_full_taxon(taxon)))
-    if lineage is None:
+    lineage = get_full_taxon(taxon)
+    if lineage is not None:
+        lineage = list(reversed(lineage))
+    else:
         log.warning(f'Cannot find {taxon}, use Nicotiana tabacum instead.')
         lineage = list(reversed(get_full_taxon('Nicotiana tabacum')))
     if lineage is None:

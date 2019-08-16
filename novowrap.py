@@ -297,7 +297,7 @@ def blast(query, target):
 def parse_blast_tab(filename):
     """
     Parse BLAST result (tab format).
-    Return [qseqid, sseqid, qseq, sseq, pident, gapopen, qstart, qend, sstart,
+    Return [qseqid, sseqid, qseq, sseq, qlen, pident, gapopen, qstart, qend, sstart,
     send]
     Arg:
         filename(Path): blast result file

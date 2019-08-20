@@ -450,9 +450,9 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         # output
         offset = -1
         for f_name, f in zip(('large single copy (LSC)',
-                              'inverted repeat A (IRA)',
+                              'inverted repeat A (IRa)',
                               'small single copy (SSC)',
-                              'inverted repeat B (IRB)'),
+                              'inverted repeat B (IRb)'),
                              (region_LSC, region_IRa, region_SSC, region_IRb)):
             length = f.stop - f.start
             new_seq.features.append(SeqFeature(

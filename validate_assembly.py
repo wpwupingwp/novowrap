@@ -155,12 +155,12 @@ def blast(query, target):
     Return:
         blast_out(Path): blast result filename
     """
-    FMT = ('qseqid sseqid qseq sseq length pident gapopen qstart qend '
-           'sstart send')
+    FMT = ('qseqid sseqid qseq sseq sstrand length pident gapopen qstart qend '
+           'sstart send sstrand')
     blast_out = query.with_suffix('.blast')
     # use blastn -subject instead of makeblastdb
     blast = run(f'blastn -query {query} -subject {target} -outfmt "7 {FMT}" '
-                f'-out {blast_out} -strand plus',
+                f'-out {blast_out} -strand both',
                 shell=True, stdout=NULL, stderr=NULL)
     # remove makeblastdb result
     if blast.returncode != 0:
@@ -172,8 +172,8 @@ def blast(query, target):
 def parse_blast_tab(filename):
     """
     Parse BLAST result (tab format).
-    Return [qseqid, sseqid, qseq, sseq, length, pident, gapopen, qstart, qend,
-    sstart, send]
+    Return [qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
+    qstart, qend, sstart, send, sstrand]
     Arg:
         filename(Path): blast result file
     Return:
@@ -190,8 +190,9 @@ def parse_blast_tab(filename):
                 pass
             else:
                 line = line.strip().split('\t')
-                line[4:] = list(map(float, line[4:]))
-                line[4:] = list(map(int, line[4:]))
+                # last is str
+                line[5:] = list(map(float, line[5:]))
+                line[5:] = list(map(int, line[5:]))
                 query.append(line)
         yield query
 
@@ -215,7 +216,53 @@ def get_ref_region(ref_gb, output):
     return ref_region
 
 
+def get_alpha(old):
+    """
+    Given 0-100, return 0, 0.5, 0.75, 0.95, 1
+    """
+    if old < 50:
+        return 0
+    elif old < 80:
+        return 0.5
+    elif old < 95:
+        return 0.75
+    elif old < 100:
+        return 0.95
+    else:
+        return 1
+
+
+def draw(query, subject, ref_region, data):
+    """
+    Draw figure.
+    """
+    plt.figure(1, figsize=(30, 15))
+    plt.title(f'BLAST validation of {query} to {subject}')
+    plt.xlabel('Base')
+    for key, value in ref_region.items():
+        plt.plot(value, [1, 1], marker='+', label=key)
+    plt.plot(0.5, 0.5, 'r-+', label='plus')
+    plt.plot(0.5, 0.5, 'g-|', label='minus')
+    plt.ylim([0.5, 1.1])
+    plt.xlim(left=0)
+    plt.yticks([0.7, 0.8, 1.0], label=['minus', 'plus', 'ref'])
+    plt.legend(loc='upper right')
+    for i in data:
+        sstart, send, sstrand, pident = i
+        if sstrand == 'plus':
+            plt.plot([sstart, send], [0.8, 0.8], 'r-+',
+                     alpha=get_alpha(pident))
+        else:
+            plt.plot([sstart, send], [0.7, 0.7], 'g-|')
+    plt.savefig(Path(query+'-'+subject).with_suffix('.png'))
+    plt.close()
+
+
 def main():
+    """
+    Use BLAST to validate assembly result.
+    Only handle first record in file.
+    """
     arg = parse_args()
     output = Path(Path(arg.contig).stem)
     mkdir(output)
@@ -235,26 +282,20 @@ def main():
 
     new_ref_gb, ref_fasta, ref_lsc, ref_ssc, ref_ira, ref_irb = rotate_seq(
         ref_gb)
-    print(new_ref_gb)
     ref_region_info = get_ref_region(new_ref_gb, output)
 
-    fig = plt.gcf()
-    fig.set_size_inches(15, 30)
-    plt.title(f'BLAST validation of {arg.contig}')
-    plt.xlabel('Base')
-    for key, value in ref_region_info.items():
-        plt.plot(value, [10, 10], label=key)
-    plt.legend(loc='upper right')
-    plt.show()
-    # new gb with region info
     blast_result = blast(Path(arg.contig), ref_fasta)
-    print('qseqid, sseqid, pident, gapopen, qstart, qend, sstart, send')
     for query in parse_blast_tab(blast_result):
+        record = []
         for i in query:
-            (qseqid, sseqid, qseq, sseq, length, pident, gapopen, qstart,
-             qend, sstart, send) = i
+            (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
+             qstart, qend, sstart, send) = i
+            record.append([sstart, send, sstrand, pident])
             print(qseqid, sseqid, length, pident, gapopen, qstart, qend,
                   sstart, send)
+        query_id = qseqid
+        draw(query_id, ref_gb.name, ref_region_info, record)
+
     TMP.cleanup()
     NULL.close()
     log.info('Bye.')

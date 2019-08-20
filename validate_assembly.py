@@ -14,6 +14,8 @@ from matplotlib import pyplot as plt
 import argparse
 import logging
 
+from rotate import rotate_seq
+
 
 # temporary directory
 TMP = TemporaryDirectory()
@@ -34,6 +36,7 @@ def parse_args():
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     arg.add_argument('contig', help='contig file')
+    arg.add_argument('-r', '-ref_gb', dest='ref_gb', help='reference gb')
     arg.add_argument('-t', '-taxon', dest='taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
     return arg.parse_args()
@@ -209,7 +212,6 @@ def get_ref_region(ref_gb, output):
             ref_region[key] = value
 #     _ = SeqIO.read(ref_gb, 'gb')
 #     ref_region['All'] = [1, len(_)]
-
     return ref_region
 
 
@@ -221,19 +223,30 @@ def main():
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
 
-    ref_gb = down_ref(arg.taxon, output)
-    run_rotate = run(f'python3 rotate_gb.py {ref_gb}', shell=True)
-    if run_rotate.returncode != 0:
-        exit(-2)
-    new_ref_gb = list(output.glob('*.new.gb'))[0]
+    if arg.ref_gb is None:
+        ref_gb = down_ref(arg.taxon, output)
+    else:
+        ref_gb = arg.ref_gb
+
+    # make folder clean
+    with open(output / 'ref.gb', 'w') as d, open(ref_gb, 'r') as s:
+        d.write(s.read())
+    ref_gb = output / 'ref.gb'
+
+    new_ref_gb, ref_fasta, ref_lsc, ref_ssc, ref_ira, ref_irb = rotate_seq(
+        ref_gb)
+    print(new_ref_gb)
     ref_region_info = get_ref_region(new_ref_gb, output)
-    print(ref_region_info)
+
+    fig = plt.gcf()
+    fig.set_size_inches(15, 30)
+    plt.title(f'BLAST validation of {arg.contig}')
+    plt.xlabel('Base')
     for key, value in ref_region_info.items():
         plt.plot(value, [10, 10], label=key)
+    plt.legend(loc='upper right')
     plt.show()
-    ref_fasta = list(output.glob('*.rotate'))[0]
     # new gb with region info
-    new_ref_gb = list(output.glob('*.new.gb'))[0]
     blast_result = blast(Path(arg.contig), ref_fasta)
     print('qseqid, sseqid, pident, gapopen, qstart, qend, sstart, send')
     for query in parse_blast_tab(blast_result):

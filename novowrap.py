@@ -449,13 +449,17 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
         new_seq.annotations['organism'] = name
         # output
         offset = -1
-        for f_name, f in zip(('LSC', 'IRa', 'SSC', 'IRb'),
+        for f_name, f in zip(('large single copy (LSC)',
+                              'inverted repeat A (IRA)',
+                              'small single copy (SSC)',
+                              'inverted repeat B (IRB)'),
                              (region_LSC, region_IRa, region_SSC, region_IRb)):
             length = f.stop - f.start
             new_seq.features.append(SeqFeature(
                 FeatureLocation(offset+1, length+offset+1),
                 type='misc_feature',
-                qualifiers={'name': f_name}, strand=1))
+                qualifiers={'note': f_name, 'software': 'rotate_gb'},
+                strand=1))
             offset += length
         assert str(seq_SSC.seq) == str(
             new_seq.features[2].extract(new_seq).seq)

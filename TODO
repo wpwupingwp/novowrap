@@ -3,4 +3,6 @@
 3. which is correct conformation/structure
 4. output regions to different files
 5. BLAST strand
+6. matplotlib
+7. integrate validate into novowrap
 

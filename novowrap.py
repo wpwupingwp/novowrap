@@ -443,8 +443,11 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
                 log.critical(f'Too much difference (>{MAX_LEN_DIFF}). Reject.')
                 continue
         if len(seq_IRa) != len(seq_IRb):
-            log.critical(f'IRa ({len(seq_IRa)}) and IRb ({len(seq_IRb)}) do'
-                         'not have same length! May due to ambiguous bases.')
+            log.warning(f'IRa ({len(seq_IRa)}) and IRb ({len(seq_IRb)}) do '
+                        'not have same length! Reject.')
+            if abs(len(seq_IRa) - len(seq_IRb)) > ambiguous_base_n:
+                log.critical(f'Too much difference. Reject.')
+                continue
         new_seq.annotations['accession'] = 'Unknown'
         new_seq.annotations['organism'] = name
         # output

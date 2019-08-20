@@ -318,7 +318,6 @@ def parse_blast_tab(filename):
                 line[4:] = list(map(float, line[4:]))
                 line[4:] = list(map(int, line[4:]))
                 query.append(line)
-        yield query
 
 
 def rotate(fasta, taxon, min_len=40000, max_len=300000):

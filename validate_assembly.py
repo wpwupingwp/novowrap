@@ -194,7 +194,7 @@ def parse_blast_tab(filename):
                 line[5:] = list(map(float, line[5:]))
                 line[5:] = list(map(int, line[5:]))
                 query.append(line)
-        yield query
+        # yield query
 
 
 def get_ref_region(ref_gb, output):

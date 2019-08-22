@@ -550,8 +550,8 @@ def main():
             break
         log.info(f'No. {fail+1} try, use {seed.name} as seed file.')
         config_file = config(out, seed, arg)
-        log.info('NOVOPlasty version:\t3.4')
-        run_novo = run(f'perl NOVOPlasty3.4.pl -c {config_file}', shell=True)
+        log.info('NOVOPlasty version:\t3.6')
+        run_novo = run(f'perl NOVOPlasty3.6.pl -c {config_file}', shell=True)
         if run_novo.returncode != 0:
             log.critical('Failed to run NOVOPlasty. Quit.')
             exit(-1)

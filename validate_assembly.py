@@ -220,40 +220,50 @@ def get_alpha(old):
     """
     Given 0-100, return 0, 0.5, 0.75, 0.95, 1
     """
+    alpha = 0
     if old < 50:
-        return 0
+        alpha = 0
     elif old < 80:
-        return 0.5
+        alpha = 0.05
     elif old < 95:
-        return 0.75
+        alpha = 0.1
     elif old < 100:
-        return 0.95
+        alpha = 0.15
     else:
-        return 1
+        alpha = 0.2
+    return alpha
 
 
 def draw(query, subject, ref_region, data):
     """
     Draw figure.
     """
+    plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
     plt.title(f'BLAST validation of {query} to {subject}')
     plt.xlabel('Base')
     for key, value in ref_region.items():
-        plt.plot(value, [1, 1], marker='+', label=key)
+        plt.plot(value, [0.8, 0.8], marker='+', label=key, linewidth=10)
     plt.plot(0.5, 0.5, 'r-+', label='plus')
     plt.plot(0.5, 0.5, 'g-|', label='minus')
     plt.ylim([0.5, 1.1])
     plt.xlim(left=0)
-    plt.yticks([0.7, 0.8, 1.0], label=['minus', 'plus', 'ref'])
+    plt.yticks([0.7, 0.8, 0.9], label=['minus', 'ref', 'plus'])
     plt.legend(loc='upper right')
     for i in data:
-        sstart, send, sstrand, pident = i
+        qstart, qend, sstart, send, sstrand, pident = i
         if sstrand == 'plus':
-            plt.plot([sstart, send], [0.8, 0.8], 'r-+',
-                     alpha=get_alpha(pident))
+            plt.plot([qstart, qend], [0.9, 0.9], 'r-+', linewidth=5)
+            plt.fill_between([min(qstart, sstart), max(qend, send)],
+                             [0.8, 0.8], [0.9, 0.9],
+                             alpha=get_alpha(pident),
+                             color=plt.cm.Reds(qstart))
         else:
-            plt.plot([sstart, send], [0.7, 0.7], 'g-|')
+            plt.plot([qstart, qend], [0.7, 0.7], 'g-|', linewidth=5)
+            plt.fill_between([min(qstart, sstart), max(qend, send)],
+                             [0.7, 0.7], [0.8, 0.8],
+                             alpha=get_alpha(pident),
+                             color=plt.cm.Greens(qstart))
     plt.savefig(Path(query+'-'+subject).with_suffix('.png'))
     plt.close()
 
@@ -290,7 +300,7 @@ def main():
         for i in query:
             (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
              qstart, qend, sstart, send) = i
-            record.append([sstart, send, sstrand, pident])
+            record.append([qstart, qend, sstart, send, sstrand, pident])
             print(qseqid, sseqid, length, pident, gapopen, qstart, qend,
                   sstart, send)
         query_id = qseqid

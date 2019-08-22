@@ -529,8 +529,11 @@ def main():
     except FileExistsError:
         log.critical(f'Folder {out.name} exists.')
         exit(-1)
-    log_file = out / 'log.txt'
-    log.addHandler(logging.FileHandler(str(log_file)))
+    log_file_handler = logging.FileHandler(str(out/'log.txt'))
+    log_file_handler.setLevel(logging.INFO)
+    Formatter = logging.Formatter(FMT, DATEFMT)
+    log_file_handler.setFormatter(Formatter)
+    log.addHandler(log_file_handler)
     log.info('Welcome to novowrap.')
     log.info(f'Forward file:\t{arg.f}')
     log.info(f'Reverse file:\t{arg.r}')

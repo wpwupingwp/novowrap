@@ -1,10 +1,6 @@
 #!/usr/bin/python3
 
 from Bio import Entrez, SeqIO
-from Bio.Alphabet import IUPAC
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio.SeqFeature import SeqFeature, FeatureLocation
 from os import devnull, mkdir
 from pathlib import Path
 from subprocess import run
@@ -146,18 +142,19 @@ def down_ref(taxon, output):
         return output_file
 
 
-def blast(query, target):
+def blast(query, target, output):
     """
     Use simple BLAST with special output format.
     Args:
         query(Path): query filename
         target(Path): target filename
+        output(Path): output path
     Return:
         blast_out(Path): blast result filename
     """
     FMT = ('qseqid sseqid qseq sseq sstrand length pident gapopen qstart qend '
            'sstart send sstrand')
-    blast_out = query.with_suffix('.blast')
+    blast_out = output / query.with_suffix('.blast')
     # use blastn -subject instead of makeblastdb
     blast = run(f'blastn -query {query} -subject {target} -outfmt "7 {FMT}" '
                 f'-out {blast_out} -strand both',
@@ -234,7 +231,7 @@ def get_alpha(old):
     return alpha
 
 
-def draw(query, subject, ref_region, data):
+def draw(contig, query, subject, ref_region, data):
     """
     Draw figure.
     """
@@ -264,7 +261,7 @@ def draw(query, subject, ref_region, data):
                              [0.7, 0.7], [0.8, 0.8],
                              alpha=get_alpha(pident),
                              color=plt.cm.Greens(qstart))
-    plt.savefig(Path(query+'-'+subject).with_suffix('.png'))
+    plt.savefig(f"{contig.stem}-{Path(query+'-'+subject).with_suffix('.pdf')}")
     plt.close()
 
 
@@ -274,7 +271,8 @@ def main():
     Only handle first record in file.
     """
     arg = parse_args()
-    output = Path(Path(arg.contig).stem)
+    arg.contig = Path(arg.contig)
+    output = Path(arg.contig.stem)
     mkdir(output)
     log.info(f'Contig:\t{arg.contig}')
     log.info(f'Taxonomy:\t{arg.taxon}')
@@ -294,7 +292,7 @@ def main():
         ref_gb)
     ref_region_info = get_ref_region(new_ref_gb, output)
 
-    blast_result = blast(Path(arg.contig), ref_fasta)
+    blast_result = blast(Path(arg.contig), ref_fasta, output)
     for query in parse_blast_tab(blast_result):
         record = []
         for i in query:
@@ -304,7 +302,7 @@ def main():
             print(qseqid, sseqid, length, pident, gapopen, qstart, qend,
                   sstart, send)
         query_id = qseqid
-        draw(query_id, ref_gb.name, ref_region_info, record)
+        draw(arg.contig, query_id, ref_gb.name, ref_region_info, record)
 
     TMP.cleanup()
     NULL.close()

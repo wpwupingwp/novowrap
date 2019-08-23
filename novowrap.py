@@ -490,6 +490,30 @@ def rotate(fasta, taxon, min_len=40000, max_len=300000):
     return True
 
 
+def txt_to_fasta(old):
+    clean = []
+    record = []
+    begin = False
+    with open(old, 'r') as raw:
+        for line in raw:
+            if line.startswith('>'):
+                clean.extend(record)
+                record = []
+                begin = True
+            if line.startswith(' ') or len(line.strip()) == 0:
+                begin = False
+                clean.extend(record)
+                record = []
+            if begin:
+                record.append(line)
+    clean.extend(record)
+    new = Path(old).with_suffix('.fasta')
+    with open(new, 'w') as out:
+        for line in clean:
+            out.write(line)
+    return new
+
+
 def neaten_out(source, dest):
     """
     Organize NOVOPlasty output.
@@ -514,10 +538,8 @@ def neaten_out(source, dest):
     # move to dest folder, generate clean fasta
     for i in (*merged, *circularized):
         new_loc = dest / i.name
-        new_name = new_loc.with_suffix('.convert')
-        i.replace(new_loc)
-        SeqIO.convert(new_loc, 'fasta', new_name, 'fasta')
-        assembled.append(new_name)
+        fasta = txt_to_fasta(new_loc)
+        assembled.append(fasta)
     return assembled
 
 

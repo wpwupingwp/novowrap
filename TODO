@@ -5,4 +5,4 @@
 5. BLAST strand
 6. matplotlib
 7. integrate validate into novowrap
-
+8. novowrap do not use BarcodeFinder

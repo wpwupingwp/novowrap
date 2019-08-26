@@ -278,13 +278,13 @@ def draw(contig, query, subject, ref_region, data):
             plt.fill_between([min(qstart, sstart), max(qend, send)],
                              [0.8, 0.8], [0.9, 0.9],
                              alpha=get_alpha(pident),
-                             color=plt.cm.Reds(qstart))
+                             color='#ff8888')
         else:
             plt.plot([qstart, qend], [0.7, 0.7], 'g-|', linewidth=5)
             plt.fill_between([min(qstart, sstart), max(qend, send)],
                              [0.7, 0.7], [0.8, 0.8],
                              alpha=get_alpha(pident),
-                             color=plt.cm.Greens(qstart))
+                             color='#88cc88')
     plt.savefig(f"{contig.stem}-{Path(query+'-'+subject).with_suffix('.pdf')}")
     plt.close()
 

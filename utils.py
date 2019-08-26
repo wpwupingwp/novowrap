@@ -104,7 +104,7 @@ def blast(query, target, perc_identity=70):
     Return:
         blast_out(Path): blast result filename
     """
-    FMT = ('qseqid sseqid qseq sseq sstrand, qlen pident gapopen qstart qend'
+    FMT = ('qseqid sseqid qseq sseq sstrand qlen pident gapopen qstart qend '
            'sstart send')
     blast_out = query.with_suffix('.blast')
     # use blastn -subject instead of makeblastdb

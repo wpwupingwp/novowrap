@@ -253,7 +253,7 @@ def draw(contig, query, subject, ref_region, data):
     """
     plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
-    plt.title(f'BLAST validation of {query} to {subject}')
+    plt.title(f'BLAST validation of {contig}-{query} to {subject}')
     plt.xlabel('Base')
     for key, value in ref_region.items():
         plt.plot(value, [0.8, 0.8], marker='+', label=key, linewidth=10)
@@ -277,7 +277,7 @@ def draw(contig, query, subject, ref_region, data):
                              [0.7, 0.7], [0.8, 0.8],
                              alpha=get_alpha(pident),
                              color=plt.cm.Greens(qstart))
-    plt.savefig(f"{contig.stem}-{Path(query+'-'+subject).with_suffix('.pdf')}")
+    plt.savefig(f"{contig}-{Path(query+'-'+subject).with_suffix('.pdf')}")
     plt.close()
 
 
@@ -294,13 +294,14 @@ def main():
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
 
-    contigs = list(SeqIO.parse(arg.contig))
+    contigs = list(SeqIO.parse(arg.contig, 'fasta'))
     contig_files = []
     if len(contigs) > 1:
         log.warning(f'Find {len(contigs)} records in {arg.contig}.')
         log.info('Divide them into different files.')
         for idx, record in enumerate(contigs):
-            filename = f'{arg.contig}.{idx}'
+            filename = arg.contig.with_suffix(f'.{idx}')
+            log.info(f'\t{filename}')
             SeqIO.write(record, filename, 'fasta')
             contig_files.append(filename)
     else:
@@ -324,7 +325,7 @@ def main():
 
     for i in contig_files:
         result = compare(i, ref_fasta, output)
-        draw(arg.contig, result[0], ref_gb_name, ref_region_info, result[1])
+        draw(i, result[0][0], ref_gb_name, ref_region_info, result[0][1])
 
     TMP.cleanup()
     NULL.close()

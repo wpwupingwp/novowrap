@@ -213,6 +213,22 @@ def get_ref_region(ref_gb, output):
     return ref_region
 
 
+def compare(query, reference, output):
+    results = []
+    blast_result = blast(Path(query), reference, output)
+    # only one record in file, loop only for unpack
+    for query in parse_blast_tab(blast_result):
+        record = []
+        for i in query:
+            (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
+             qstart, qend, sstart, send) = i
+            record.append([qstart, qend, sstart, send, sstrand, pident])
+            # print(qseqid, sseqid, length, pident, gapopen, qstart, qend,
+            #       sstart, send)
+        results.append([qseqid, record])
+    return results
+
+
 def get_alpha(old):
     """
     Given 0-100, return 0, 0.5, 0.75, 0.95, 1
@@ -278,6 +294,18 @@ def main():
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
 
+    contigs = list(SeqIO.parse(arg.contig))
+    contig_files = []
+    if len(contigs) > 1:
+        log.warning(f'Find {len(contigs)} records in {arg.contig}.')
+        log.info('Divide them into different files.')
+        for idx, record in enumerate(contigs):
+            filename = f'{arg.contig}.{idx}'
+            SeqIO.write(record, filename, 'fasta')
+            contig_files.append(filename)
+    else:
+        contig_files.append(arg.contig)
+
     if arg.ref_gb is None:
         ref_gb = down_ref(arg.taxon, output)
     else:
@@ -294,17 +322,9 @@ def main():
         ref_gb)
     ref_region_info = get_ref_region(new_ref_gb, output)
 
-    blast_result = blast(Path(arg.contig), ref_fasta, output)
-    for query in parse_blast_tab(blast_result):
-        record = []
-        for i in query:
-            (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
-             qstart, qend, sstart, send) = i
-            record.append([qstart, qend, sstart, send, sstrand, pident])
-            # print(qseqid, sseqid, length, pident, gapopen, qstart, qend,
-            #       sstart, send)
-        query_id = qseqid
-        draw(arg.contig, query_id, ref_gb_name, ref_region_info, record)
+    for i in contig_files:
+        result = compare(i, ref_fasta, output)
+        draw(arg.contig, result[0], ref_gb_name, ref_region_info, result[1])
 
     TMP.cleanup()
     NULL.close()

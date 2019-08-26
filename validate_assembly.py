@@ -3,7 +3,6 @@
 from Bio import SeqIO
 from os import devnull
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from matplotlib import pyplot as plt
 import argparse
 import logging
@@ -11,8 +10,6 @@ import logging
 from utils import down_ref, blast, parse_blast_tab, rotate_seq
 
 
-# temporary directory
-TMP = TemporaryDirectory()
 NULL = open(devnull, 'w')
 # define logger
 FMT = '%(asctime)s %(levelname)-8s %(message)s'
@@ -110,7 +107,7 @@ def draw(contig, query, subject, ref_region, data):
     plt.plot(0.5, 0.5, 'g-|', label='minus')
     plt.ylim([0.5, 1.1])
     plt.xlim(left=0)
-    plt.yticks([0.7, 0.8, 0.9], label=['minus', 'ref', 'plus'])
+    plt.yticks([0.7, 0.8, 0.9], labels=['minus', 'ref', 'plus'])
     plt.legend(loc='upper right')
     for i in data:
         qstart, qend, sstart, send, sstrand, pident = i
@@ -185,10 +182,10 @@ def main():
     ref_region_info = get_ref_region(new_ref_gb, output)
 
     for i in contig_files:
+        log.info(f'Analyze {i}.')
         result = compare(i, ref_fasta, output, arg)
         draw(i, result[0][0], ref_gb_name, ref_region_info, result[0][1])
 
-    TMP.cleanup()
     NULL.close()
     log.info('Bye.')
     return

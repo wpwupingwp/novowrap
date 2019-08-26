@@ -1,10 +1,5 @@
 #!/usr/bin/python3
 
-from Bio import Entrez, SeqIO
-from Bio.Alphabet import IUPAC
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio.SeqFeature import SeqFeature, FeatureLocation
 from os import devnull
 from pathlib import Path
 from platform import system

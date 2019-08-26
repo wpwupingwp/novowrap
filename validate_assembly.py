@@ -1,15 +1,14 @@
 #!/usr/bin/python3
 
-from Bio import Entrez, SeqIO
-from os import devnull, mkdir
+from Bio import SeqIO
+from os import devnull
 from pathlib import Path
-from time import sleep
 from tempfile import TemporaryDirectory
 from matplotlib import pyplot as plt
 import argparse
 import logging
 
-from utils import rotate_seq, blast, parse_blast_tab, get_full_taxon
+from utils import down_ref, blast, parse_blast_tab, rotate_seq
 
 
 # temporary directory
@@ -42,49 +41,6 @@ def parse_args():
                      help='maximum percentage of length differnce of query to'
                      'reference, 0-100')
     return arg.parse_args()
-
-
-def down_ref(taxon, output):
-    """
-    Arg:
-        taxon(str): given taxon name
-        output(Path): output folder
-    Yield:
-        fasta(Path): fasta file
-        out(Path): fasta file's folder
-    """
-    lineage = get_full_taxon(taxon)
-    if lineage is not None:
-        lineage = list(reversed(lineage))
-    else:
-        log.warning(f'Cannot find {taxon}, use Nicotiana tabacum instead.')
-        lineage = list(reversed(get_full_taxon('Nicotiana tabacum')))
-    if lineage is None:
-        log.critical('Failed to get taxon. Quit.')
-        exit(-2)
-    for taxon in lineage:
-        if taxon == '':
-            continue
-        if ' ' in taxon:
-            taxon = taxon.strip('"')
-            taxon = taxon.replace(' ', '_')
-        # Entrez has limitation on query frenquency (3 times per second)
-        # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
-        sleep(0.5)
-        query = (f'''{taxon}[Organism] AND refseq[filter] '''
-                 f'''AND (chloroplast[filter] OR plastid[filter])''')
-        log.info(f'Query:\t{query}')
-        handle = Entrez.read(Entrez.esearch(db='nuccore', term=query,
-                                            usehistory='y'))
-        count = int(handle['Count'])
-        if count == 0:
-            continue
-        output_file = output / f'{taxon.replace(" ", "_")}.gb'
-        content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
-                                query_key=handle['QueryKey'], rettype='gb',
-                                retmode='text', retmax=1)
-        output_file.write_text(content.read())
-        return output_file
 
 
 def get_ref_region(ref_gb, output):
@@ -182,13 +138,14 @@ def main():
     arg = parse_args()
     arg.contig = Path(arg.contig)
     output = Path(arg.contig.stem)
-    mkdir(output)
+    output.mkdir()
     log.info(f'Contig:\t{arg.contig}')
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
 
     if arg.ref_gb is None:
-        ref_gb = down_ref(arg.taxon, output)
+        ref_gb = down_ref(arg.taxon)
+        ref_gb.rename(output/ref_gb)
     else:
         ref_gb = arg.ref_gb
     _ = SeqIO.read(ref_gb, 'gb')

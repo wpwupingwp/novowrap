@@ -10,7 +10,6 @@ from time import sleep
 
 from Bio import Entrez, SeqIO
 from Bio.Alphabet import IUPAC
-from Bio.Seq import Seq
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.SeqRecord import SeqRecord
 
@@ -31,6 +30,48 @@ try:
 except ImportError:
     pass
 log = logging.getLogger(__name__)
+
+
+def down_ref(taxon):
+    """
+    Arg:
+        taxon(str): given taxon name
+    Return:
+        output_file(Path): fasta file
+    """
+    lineage = get_full_taxon(taxon)
+    if lineage is not None:
+        lineage = list(reversed(lineage))
+    else:
+        log.warning(f'Cannot find {taxon}, use Nicotiana tabacum instead.')
+        lineage = list(reversed(get_full_taxon('Nicotiana tabacum')))
+    if lineage is None:
+        log.critical('Failed to get taxon. Quit.')
+        exit(-2)
+    for taxon in lineage:
+        if taxon == '':
+            continue
+        if ' ' in taxon:
+            taxon = taxon.strip('"')
+            taxon = taxon.replace(' ', '_')
+        # Entrez has limitation on query frenquency (3 times per second)
+        # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
+        sleep(0.5)
+        query = (f'''{taxon}[Organism] AND refseq[filter] '''
+                 f'''AND (chloroplast[filter] OR plastid[filter])''')
+        log.info(f'Query:\t{query}')
+        handle = Entrez.read(Entrez.esearch(db='nuccore', term=query,
+                                            usehistory='y'))
+        count = int(handle['Count'])
+        if count == 0:
+            continue
+        output_file = f'{taxon.replace(" ", "_")}.gb'
+        content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
+                                query_key=handle['QueryKey'], rettype='gb',
+                                retmode='text', retmax=1)
+        output_file.write_text(content.read())
+        return output_file
+
 
 
 def get_full_taxon(taxon):

@@ -283,12 +283,12 @@ def main():
     else:
         ref_gb = arg.ref_gb
     _ = SeqIO.read(ref_gb, 'gb')
-    ref_gb_name = _.id
+    ref_gb_name = _.name
 
     # make folder clean
-    with open(output / 'ref.gb', 'w') as d, open(ref_gb, 'r') as s:
+    with open(output / (ref_gb_name+'.gb'), 'w') as d, open(ref_gb, 'r') as s:
         d.write(s.read())
-    ref_gb = output / 'ref.gb'
+    ref_gb = output / (ref_gb_name + '.gb')
 
     new_ref_gb, ref_fasta, ref_lsc, ref_ssc, ref_ira, ref_irb = rotate_seq(
         ref_gb)

@@ -5,7 +5,7 @@ from Bio.Alphabet import IUPAC
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature, FeatureLocation
-from os import devnull, remove
+from os import devnull
 from pathlib import Path
 from platform import system
 from subprocess import run
@@ -13,6 +13,8 @@ from time import sleep
 from tempfile import TemporaryDirectory
 import argparse
 import logging
+
+from rotate import rotate_seq
 
 
 # temporary directory
@@ -320,176 +322,6 @@ def parse_blast_tab(filename):
                 query.append(line)
 
 
-def rotate(fasta, taxon, min_len=40000, max_len=300000):
-    """
-    Rotate sequences, from LSC (trnH-psbA) to IRa, SSC, IRb.
-    Repeat length parameters for easily call rotate function instead of run
-    whole program.
-    Arg:
-        fasta(Path or str): fasta filename
-        taxon(str): taxon of fasta
-        min_len: minimum length of sequence
-        max_len: maximum length of sequence
-    Return:
-        success(bool): success or not
-    """
-    # FMT = 'qseqid sseqid qseq sseq pident gapopen qstart qend sstart send'
-    # maximum difference of rotated length and raw length
-    MAX_LEN_DIFF = 1000
-    MIN_IR_LEN = 1000
-    if not isinstance(fasta, Path):
-        fasta = Path(fasta)
-    log.info(f'Try to rotate {fasta.name}.')
-    seq_len = [len(i) for i in SeqIO.parse(fasta, 'fasta')]
-    if not seq_len or min(seq_len) < min_len or max(seq_len) > max_len:
-        log.warning(f'Sequences of {fasta.name} are too short, skip.')
-        return False
-    repeat_fasta = repeat_and_reverse(fasta, taxon)
-    blast_result = blast(repeat_fasta, repeat_fasta)
-    # analyze blast result
-    new_fasta = fasta.with_suffix('.rotate')
-    new_regions = fasta.with_suffix('.regions')
-    new_gb = fasta.with_suffix('.gb')
-    success = False
-    # blast and fasta use same order
-    for query, seq in zip(parse_blast_tab(blast_result),
-                          SeqIO.parse(repeat_fasta, 'fasta')):
-        log.info(f'Analyze {seq.description}.')
-        locations = set()
-        # use fasta's description
-        name = ''
-        original_seq_len = len(seq) // 2
-        ambiguous_base_n = len(str(seq).strip('ATCGatcg')) // 2
-        # only use hit of IR to IR
-        max_aln_n = 0
-        # because of ambiguous base, percent of identity bases may not be 100%
-        if ambiguous_base_n != 0:
-            log.warning(f'Found {ambiguous_base_n} ambiguous bases.')
-            p_ident_min = int((1-(ambiguous_base_n/original_seq_len))*100)
-        else:
-            p_ident_min = 100
-        for hit in query:
-            (qseqid, sseqid, qseq, sseq, qlen, pident, gapopen,
-             qstart, qend, sstart, send) = hit
-            name = seq.description
-            # only self
-            if qseqid != sseqid:
-                continue
-            # skip too short match
-            if len(qseq) < MIN_IR_LEN:
-                continue
-            # origin to repeat
-            if len(qseq) == len(seq):
-                continue
-            # allow few gaps
-            if gapopen != 0:
-                log.warning(f'Found {gapopen} gaps.')
-                if gapopen > ambiguous_base_n:
-                    log.critical('Too much gaps. Reject.')
-                    continue
-            # mismatch
-            location = tuple(sorted([qstart, qend, sstart, send]))
-            if pident < p_ident_min:
-                continue
-            # hit across origin and repeat
-            if location[-1] - location[0] > original_seq_len:
-                continue
-            # self to self or self to repeat self
-            if len(set(location)) != 4:
-                continue
-            # filter short hit
-            if len(qseq) < max_aln_n:
-                continue
-            else:
-                max_aln_n = len(qseq)
-            locations.add(location)
-        if not locations:
-            continue
-        locations = list(locations)
-        locations.sort(key=lambda x: x[1]-x[0], reverse=True)
-        locations.sort(key=lambda x: x[0])
-        if len(locations) < 2:
-            continue
-        # remove extra hit, first two if enough
-        locations = locations[:2]
-        # ira_start, ira_end, irb_start, irb_end
-        a = slice(locations[0][0]-1, locations[0][1])
-        b = slice(locations[0][1], locations[0][2]-1)
-        c = slice(locations[0][2]-1, locations[0][3])
-        d = slice(locations[1][1], locations[1][2]-1)
-        if (locations[0][2]-locations[0][1]) > (
-                locations[1][2]-locations[1][1]):
-            region_LSC = b
-            region_IRa = c
-            region_SSC = d
-            region_IRb = a
-        else:
-            region_LSC = d
-            region_IRa = a
-            region_SSC = b
-            region_IRb = c
-        # self to self is the longest match
-        seq_LSC = seq[region_LSC]
-        seq_IRa = seq[region_IRa]
-        seq_SSC = seq[region_SSC]
-        seq_IRb = seq[region_IRb]
-        new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
-        new_seq.seq.alphabet = IUPAC.ambiguous_dna
-        if len(seq)//2 != len(new_seq):
-            log.warning(f'Old and new sequences do not have save length!')
-            log.info(f'Old: {len(seq)//2}\tNew: {len(new_seq)}')
-            if abs(len(seq)//2 - len(new_seq)) >= MAX_LEN_DIFF:
-                log.critical(f'Too much difference (>{MAX_LEN_DIFF}). Reject.')
-                continue
-        if len(seq_IRa) != len(seq_IRb):
-            log.warning(f'IRa ({len(seq_IRa)}) and IRb ({len(seq_IRb)}) do '
-                        'not have same length! Reject.')
-            if abs(len(seq_IRa) - len(seq_IRb)) > ambiguous_base_n:
-                log.critical(f'Too much difference. Reject.')
-                continue
-        new_seq.annotations['accession'] = 'Unknown'
-        new_seq.annotations['organism'] = name
-        # output
-        offset = -1
-        for f_name, f in zip(('large single copy (LSC)',
-                              'inverted repeat A (IRa)',
-                              'small single copy (SSC)',
-                              'inverted repeat B (IRb)'),
-                             (region_LSC, region_IRa, region_SSC, region_IRb)):
-            length = f.stop - f.start
-            new_seq.features.append(SeqFeature(
-                FeatureLocation(offset+1, length+offset+1),
-                type='misc_feature',
-                qualifiers={'note': f_name, 'software': 'rotate_gb'},
-                strand=1))
-            offset += length
-        assert str(seq_SSC.seq) == str(
-            new_seq.features[2].extract(new_seq).seq)
-        log.info(f'Rotated regions of {name}:')
-        log.info(f'\tLSC {new_seq.features[0].location}')
-        log.info(f'\tIRa {new_seq.features[1].location}')
-        log.info(f'\tSSC {new_seq.features[2].location}')
-        log.info(f'\tIRb {new_seq.features[3].location}')
-        with open(new_fasta, 'a') as out:
-            out.write(f'>{name}\n{new_seq.seq}\n')
-        with open(new_regions, 'a') as out2:
-            out2.write(f'>{name}-LSC\n{seq_LSC.seq}\n')
-            out2.write(f'>{name}-IRa\n{seq_IRa.seq}\n')
-            out2.write(f'>{name}-SSC\n{seq_SSC.seq}\n')
-            out2.write(f'>{name}-IRb\n{seq_IRb.seq}\n')
-        with open(new_gb, 'a') as out3:
-            SeqIO.write(new_seq, out3, 'gb')
-        success = True
-
-    remove(repeat_fasta)
-    remove(blast_result)
-    if not success:
-        return False
-    log.info(f'Rotated {fasta.name} to uniform conformation {new_fasta.name}.')
-    log.info(f'Chloroplast region information were written into {new_gb}')
-    return True
-
-
 def txt_to_fasta(old):
     clean = []
     record = []
@@ -537,6 +369,7 @@ def neaten_out(source, dest):
         i.replace(dest/i.name)
     # move to dest folder, generate clean fasta
     for i in (*merged, *circularized):
+        i.replace(dest/i.name)
         new_loc = dest / i.name
         fasta = txt_to_fasta(new_loc)
         assembled.append(fasta)
@@ -589,7 +422,7 @@ def main():
             log.warning(f'Assembled with {seed.name} failed.')
             fail += 1
             continue
-        rotate_result = [rotate(i, arg.taxon) for i in assembled]
+        rotate_result = [rotate_seq(i) for i in assembled]
         if any(rotate_result):
             success = True
             break

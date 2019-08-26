@@ -422,6 +422,8 @@ def main():
             log.warning(f'Assembled with {seed.name} failed.')
             fail += 1
             continue
+        # although rotate only handle the first record, if the first is
+        # success, it is enough to say the assembly is OK
         rotate_result = [rotate_seq(i) for i in assembled]
         if any(rotate_result):
             success = True

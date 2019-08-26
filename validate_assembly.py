@@ -285,7 +285,7 @@ def draw(contig, query, subject, ref_region, data):
                              [0.7, 0.7], [0.8, 0.8],
                              alpha=get_alpha(pident),
                              color=plt.cm.Greens(qstart))
-    plt.savefig(f"{contig}-{Path(query+'-'+subject).with_suffix('.pdf')}")
+    plt.savefig(f"{contig.stem}-{Path(query+'-'+subject).with_suffix('.pdf')}")
     plt.close()
 
 
@@ -320,24 +320,26 @@ def main():
         log.warning(f'Find {len(contigs)} records in {arg.contig}.')
         log.info('Divide them into different files.')
         for idx, record in enumerate(contigs):
-            filename = arg.contig.with_suffix(f'.{idx}')
+            filename = arg.contig.with_suffix(f'.{idx}.fasta')
             record_len = len(record)
             if abs(1-(record_len/ref_len))*100 > arg.len_diff:
                 log.warning(f'The length difference of record with reference'
                             f'({abs(record_len-ref_len)}) is out of limit'
                             f'({arg.len_diff}%).')
                 new_filename = str(filename) + '.bad_length'
-                filename.rename(new_filename)
+                SeqIO.write(record, new_filename, 'fasta')
                 log.warning(f'Skip {new_filename}.')
                 continue
             log.info(f'\t{filename}')
             SeqIO.write(record, filename, 'fasta')
-            contig_files.append(filename)
+            r_gb, r_contig, r_regions = rotate_seq(filename)
+            r_gb.rename(output/r_gb)
+            r_regions.rename(output/r_regions)
+            contig_files.append(r_contig)
     else:
         contig_files.append(arg.contig)
 
-    new_ref_gb, ref_fasta, ref_lsc, ref_ssc, ref_ira, ref_irb = rotate_seq(
-        ref_gb)
+    new_ref_gb, ref_fasta, ref_regions = rotate_seq(ref_gb)
     ref_region_info = get_ref_region(new_ref_gb, output)
 
     for i in contig_files:

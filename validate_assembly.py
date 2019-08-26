@@ -209,7 +209,7 @@ def main():
             record_len = len(record)
             if abs(1-(record_len/ref_len))*100 > arg.len_diff:
                 log.warning(f'The length difference of record with reference'
-                            f'({abs(record_len-ref_len)}) is out of limit'
+                            f'({abs(record_len-ref_len)} bp) is out of limit'
                             f'({arg.len_diff}%).')
                 new_filename = str(filename) + '.bad_length'
                 SeqIO.write(record, new_filename, 'fasta')

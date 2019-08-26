@@ -146,7 +146,7 @@ def parse_blast_tab(filename):
                 query.append(line)
 
 
-def repeat_and_reverse(fasta):
+def repeat(fasta):
     """
     Duplicate sequence to get full length of IR which may locate in start or
     end of sequences that BLAST cannot get whole length.
@@ -256,7 +256,7 @@ def rotate_seq(filename, min_IR=1000):
     new_regions = fasta.with_suffix('.regions')
     new_gb = fasta.with_suffix('.new.gb')
     success = False
-    repeat_fasta = repeat_and_reverse(fasta)
+    repeat_fasta = repeat(fasta)
     blast_result = blast(repeat_fasta, repeat_fasta)
     # blast and fasta use same order
     for query, seq, raw_gb in zip(parse_blast_tab(blast_result),

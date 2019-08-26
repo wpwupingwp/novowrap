@@ -35,6 +35,13 @@ def parse_args():
     arg.add_argument('-r', '-ref_gb', dest='ref_gb', help='reference gb')
     arg.add_argument('-t', '-taxon', dest='taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
+    arg.add_argument('-i', '-perc_identity', dest='perc_identity', type=float,
+                     default=70.0,
+                     help='minimum percentage of identity of BLAST, 0-100')
+    arg.add_argument('-l', '-len_diff', dest='len_diff', type=float,
+                     default=10,
+                     help='maximum percentage of length differnce of query to'
+                     'reference, 0-100')
     return arg.parse_args()
 
 
@@ -142,7 +149,7 @@ def down_ref(taxon, output):
         return output_file
 
 
-def blast(query, target, output):
+def blast(query, target, output, arg):
     """
     Use simple BLAST with special output format.
     Args:
@@ -157,7 +164,8 @@ def blast(query, target, output):
     blast_out = output / query.with_suffix('.blast')
     # use blastn -subject instead of makeblastdb
     blast = run(f'blastn -query {query} -subject {target} -outfmt "7 {FMT}" '
-                f'-out {blast_out} -strand both',
+                f'-out {blast_out} -strand both -perc_identity '
+                f'{arg.perc_identity}',
                 shell=True, stdout=NULL, stderr=NULL)
     # remove makeblastdb result
     if blast.returncode != 0:
@@ -213,9 +221,9 @@ def get_ref_region(ref_gb, output):
     return ref_region
 
 
-def compare(query, reference, output):
+def compare(query, reference, output, arg):
     results = []
-    blast_result = blast(Path(query), reference, output)
+    blast_result = blast(Path(query), reference, output, arg)
     # only one record in file, loop only for unpack
     for query in parse_blast_tab(blast_result):
         record = []
@@ -294,6 +302,18 @@ def main():
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
 
+    if arg.ref_gb is None:
+        ref_gb = down_ref(arg.taxon, output)
+    else:
+        ref_gb = arg.ref_gb
+    _ = SeqIO.read(ref_gb, 'gb')
+    ref_gb_name = _.name
+    # make folder clean
+    with open(output / (ref_gb_name+'.gb'), 'w') as d, open(ref_gb, 'r') as s:
+        d.write(s.read())
+    ref_gb = output / (ref_gb_name + '.gb')
+    ref_len = len(SeqIO.read(ref_gb, 'gb'))
+
     contigs = list(SeqIO.parse(arg.contig, 'fasta'))
     contig_files = []
     if len(contigs) > 1:
@@ -301,30 +321,27 @@ def main():
         log.info('Divide them into different files.')
         for idx, record in enumerate(contigs):
             filename = arg.contig.with_suffix(f'.{idx}')
+            record_len = len(record)
+            if abs(1-(record_len/ref_len))*100 > arg.len_diff:
+                log.warning(f'The length difference of record with reference'
+                            f'({abs(record_len-ref_len)}) is out of limit'
+                            f'({arg.len_diff}%).')
+                new_filename = str(filename) + '.bad_length'
+                filename.rename(new_filename)
+                log.warning(f'Skip {new_filename}.')
+                continue
             log.info(f'\t{filename}')
             SeqIO.write(record, filename, 'fasta')
             contig_files.append(filename)
     else:
         contig_files.append(arg.contig)
 
-    if arg.ref_gb is None:
-        ref_gb = down_ref(arg.taxon, output)
-    else:
-        ref_gb = arg.ref_gb
-    _ = SeqIO.read(ref_gb, 'gb')
-    ref_gb_name = _.name
-
-    # make folder clean
-    with open(output / (ref_gb_name+'.gb'), 'w') as d, open(ref_gb, 'r') as s:
-        d.write(s.read())
-    ref_gb = output / (ref_gb_name + '.gb')
-
     new_ref_gb, ref_fasta, ref_lsc, ref_ssc, ref_ira, ref_irb = rotate_seq(
         ref_gb)
     ref_region_info = get_ref_region(new_ref_gb, output)
 
     for i in contig_files:
-        result = compare(i, ref_fasta, output)
+        result = compare(i, ref_fasta, output, arg)
         draw(i, result[0][0], ref_gb_name, ref_region_info, result[0][1])
 
     TMP.cleanup()

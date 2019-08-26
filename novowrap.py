@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 import argparse
 import logging
 
-from rotate import rotate_seq
+from utils import rotate_seq
 
 
 # temporary directory

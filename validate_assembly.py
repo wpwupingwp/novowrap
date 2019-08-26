@@ -37,6 +37,8 @@ def parse_args():
                      default=10,
                      help='maximum percentage of length differnce of query to'
                      'reference, 0-100')
+    arg.add_argument('-n', type=int, default=5,
+                     help='top n of records to keep, 0 for all')
     return arg.parse_args()
 
 
@@ -177,6 +179,9 @@ def main():
             contig_files.append(r_contig)
     else:
         contig_files.append(arg.contig)
+    if arg.n != 0:
+        log.critical(f'Skip {len(contig_files)-arg.n} records.')
+        contig_files = contig_files[:arg.n]
 
     new_ref_gb, ref_fasta, ref_regions = rotate_seq(ref_gb)
     ref_region_info = get_ref_region(new_ref_gb, output)

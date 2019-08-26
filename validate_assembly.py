@@ -282,6 +282,8 @@ def main():
         ref_gb = down_ref(arg.taxon, output)
     else:
         ref_gb = arg.ref_gb
+    _ = SeqIO.read(ref_gb, 'gb')
+    ref_gb_name = _.id
 
     # make folder clean
     with open(output / 'ref.gb', 'w') as d, open(ref_gb, 'r') as s:
@@ -299,10 +301,10 @@ def main():
             (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
              qstart, qend, sstart, send) = i
             record.append([qstart, qend, sstart, send, sstrand, pident])
-            print(qseqid, sseqid, length, pident, gapopen, qstart, qend,
-                  sstart, send)
+            # print(qseqid, sseqid, length, pident, gapopen, qstart, qend,
+            #       sstart, send)
         query_id = qseqid
-        draw(arg.contig, query_id, ref_gb.name, ref_region_info, record)
+        draw(arg.contig, query_id, ref_gb_name, ref_region_info, record)
 
     TMP.cleanup()
     NULL.close()

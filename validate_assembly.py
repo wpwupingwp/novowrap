@@ -4,7 +4,6 @@ from Bio import SeqIO
 from os import devnull
 from pathlib import Path
 from matplotlib import pyplot as plt
-from matplotlib import patches as patches
 import argparse
 import logging
 
@@ -178,7 +177,8 @@ def main():
             r_regions.rename(output/r_regions)
             contig_files.append(r_contig)
     else:
-        contig_files.append(arg.contig)
+        r_gb, r_contig, r_regions = rotate_seq(arg.contig)
+        contig_files.append(r_contig)
     if arg.n != 0:
         log.critical(f'Skip {len(contig_files)-arg.n} records.')
         contig_files = contig_files[:arg.n]

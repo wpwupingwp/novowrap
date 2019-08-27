@@ -441,6 +441,43 @@ def rotate_seq(filename, min_IR=1000):
     return new_gb, new_fasta, new_regions
 
 
+def rc(fasta, region=None, choice='whole'):
+    """
+    Reverse and complement given region of sequence.
+    Args:
+        fasta(Path or str): fasta file
+        region(Path or str): fasta file contains regions
+        choice(str): region to be processed, must be in 'LSC', 'IRa', 'SSC',
+        'IRb', 'whole'.
+    Return:
+        rc(str): processed file
+    """
+    choices = ('LSC', 'IRa', 'SSC', 'IRb', 'whole')
+    if choice not in choices:
+        raise ValueError(f'Region must be in {choices}.')
+    if region is None:
+        # unrotated
+        (r_gb, r_fasta, r_regions) = rotate_seq(fasta)
+        region = r_regions
+    raw = SeqIO.read(fasta, 'fasta')
+    new_name = raw.name + '_rc'
+    new_file = fasta + '.rc'
+    data = {}
+    for i in SeqIO.parse(r_regions, 'fasta'):
+        name = i.id.split('-')[-1]
+        data[name] = i
+    if choice != 'whole':
+        data[choice] = data[choice].reverse_complement(
+            id=new_name+'_rc')
+        new = data['LSC']
+        for i in ['IRa', 'SSC', 'IRb']:
+            new += data[i]
+        SeqIO.write(new, new_file, 'fasta')
+    else:
+        SeqIO.write(raw.reverse_complement(id=new_name),
+                    new_file, 'fasta')
+
+
 def parse_args():
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -455,6 +492,7 @@ def main():
     """
     Rotate genbank or fasta file.
     Only handle the first record in file.
+    Also contains other utilities.
     """
     arg = parse_args()
     (new_gb, new_fasta, new_regions) = rotate_seq(arg.filename, arg.min_ir)

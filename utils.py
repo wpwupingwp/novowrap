@@ -282,7 +282,7 @@ def rotate_seq(filename, min_IR=1000):
         log.warning(f'Found {len(records)} records')
         log.warning(f'Only handle the first as representative.')
         log.warning(f'Divide them if you want to rotate all.')
-        filename = filename + '.1'
+        filename = str(filename) + '.1'
         SeqIO.write(records[0], filename, fmt)
     if fmt == 'fasta':
         fasta = Path(filename)

@@ -1,16 +1,15 @@
 #!/usr/bin/python3
 
-from Bio import SeqIO
-from os import devnull
 from pathlib import Path
-from matplotlib import pyplot as plt
 import argparse
 import logging
+
+from Bio import SeqIO
+from matplotlib import pyplot as plt
 
 from utils import down_ref, blast, parse_blast_tab, rotate_seq
 
 
-NULL = open(devnull, 'w')
 # define logger
 FMT = '%(asctime)s %(levelname)-8s %(message)s'
 DATEFMT = '%H:%M:%S'
@@ -56,8 +55,6 @@ def get_ref_region(ref_gb, output):
             key = feature.qualifiers['note'][0][-4:-1]
             value = [feature.location.start, feature.location.end]
             ref_region[key] = value
-#     _ = SeqIO.read(ref_gb, 'gb')
-#     ref_region['All'] = [1, len(_)]
     return ref_region
 
 
@@ -95,13 +92,21 @@ def get_alpha(old):
     return alpha
 
 
-def draw(contig, query, subject, ref_region, data):
+def draw(fasta, query, subject, ref_region, data):
     """
     Draw figure.
+    Args:
+        fasta(Path): fasta filename
+        query(Path): query record name
+        subject(Path): subject record name
+        ref_region(list): reference region information
+        data(list): BLAST result
+    Return:
+        pdf(Path): figure file
     """
     plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
-    plt.title(f'BLAST validation of {contig}-{query} to {subject}')
+    plt.title(f'BLAST validation of {fasta}-{query} to {subject}')
     plt.xlabel('Base')
     for key, value in ref_region.items():
         plt.plot(value, [0.8, 0.8], marker='+', label=key, linewidth=10)
@@ -124,8 +129,10 @@ def draw(contig, query, subject, ref_region, data):
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
             plt.fill([qstart, sstart, send, qend], [0.65, 0.8, 0.8, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
-    plt.savefig(f"{contig.stem}-{Path(query+'-'+subject).with_suffix('.pdf')}")
+    pdf = Path(f"{fasta.stem}-{Path(query+'-'+subject).with_suffix('.pdf')}")
+    plt.savefig(pdf)
     plt.close()
+    return pdf
 
 
 def main():
@@ -191,9 +198,10 @@ def main():
     for i in contig_files:
         log.info(f'Analyze {i}.')
         result = compare(i, ref_fasta, output, arg)
-        draw(i, result[0][0], ref_gb_name, ref_region_info, result[0][1])
+        pdf = draw(i, result[0][0], ref_gb_name, ref_region_info, result[0][1])
+        log.info(f'Write figure {pdf}.')
+        # to be continued
 
-    NULL.close()
     log.info('Bye.')
     return
 

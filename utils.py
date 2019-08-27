@@ -276,7 +276,6 @@ def rotate_seq(filename, min_IR=1000):
             fmt = 'fasta'
         else:
             fmt = 'gb'
-    log.info(f'File format is {fmt}')
     records = list(SeqIO.parse(filename, fmt))
     if len(records) > 1:
         log.warning(f'Found {len(records)} records')

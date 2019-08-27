@@ -4,6 +4,7 @@ from Bio import SeqIO
 from os import devnull
 from pathlib import Path
 from matplotlib import pyplot as plt
+from matplotlib import patches as patches
 import argparse
 import logging
 
@@ -85,13 +86,13 @@ def get_alpha(old):
     if old < 50:
         alpha = 0
     elif old < 80:
-        alpha = 0.05
-    elif old < 95:
         alpha = 0.1
-    elif old < 100:
+    elif old < 95:
         alpha = 0.15
-    else:
+    elif old < 100:
         alpha = 0.2
+    else:
+        alpha = 0.3
     return alpha
 
 
@@ -109,22 +110,21 @@ def draw(contig, query, subject, ref_region, data):
     plt.plot(0.5, 0.5, 'g-|', label='minus')
     plt.ylim([0.5, 1.1])
     plt.xlim(left=0)
-    plt.yticks([0.7, 0.8, 0.9], labels=['minus', 'ref', 'plus'])
+    plt.yticks([0.65, 0.8, 0.95], labels=['minus', 'ref', 'plus'])
     plt.legend(loc='upper right')
     for i in data:
         qstart, qend, sstart, send, sstrand, pident = i
         if sstrand == 'plus':
-            plt.plot([qstart, qend], [0.9, 0.9], 'r-+', linewidth=5)
-            plt.fill_between([min(qstart, sstart), max(qend, send)],
-                             [0.8, 0.8], [0.9, 0.9],
-                             alpha=get_alpha(pident),
-                             color='#ff8888')
+            plt.plot([qstart, qend], [0.95, 0.95], 'r-+', linewidth=5)
+            # ignore these line
+            if send-sstart < 100:
+                continue
+            plt.fill([qstart, sstart, send, qend], [0.8, 0.95, 0.95, 0.8],
+                     color='r', alpha=get_alpha(pident))
         else:
-            plt.plot([qstart, qend], [0.7, 0.7], 'g-|', linewidth=5)
-            plt.fill_between([min(qstart, sstart), max(qend, send)],
-                             [0.7, 0.7], [0.8, 0.8],
-                             alpha=get_alpha(pident),
-                             color='#88cc88')
+            plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
+            plt.fill([qstart, sstart, send, qend], [0.65, 0.8, 0.8, 0.65],
+                     color='#88cc88', alpha=get_alpha(pident))
     plt.savefig(f"{contig.stem}-{Path(query+'-'+subject).with_suffix('.pdf')}")
     plt.close()
 

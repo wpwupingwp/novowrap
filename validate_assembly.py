@@ -180,8 +180,10 @@ def main():
         r_gb, r_contig, r_regions = rotate_seq(arg.contig)
         contig_files.append(r_contig)
     if arg.n != 0:
-        log.critical(f'Skip {len(contig_files)-arg.n} records.')
-        contig_files = contig_files[:arg.n]
+        skip = len(contigs) - arg.n
+        if skip > 0:
+            log.critical(f'Skip {skip} records.')
+            contig_files = contig_files[:arg.n]
 
     new_ref_gb, ref_fasta, ref_regions = rotate_seq(ref_gb)
     ref_region_info = get_ref_region(new_ref_gb, output)

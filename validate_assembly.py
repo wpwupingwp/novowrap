@@ -52,7 +52,7 @@ def get_region(gb):
     ref_region = {}
     for feature in SeqIO.read(gb, 'gb').features:
         if (feature.type == 'misc_feature' and
-                feature.qualifiers.get('software', ['', ])[0] == 'rotate_gb'):
+                feature.qualifiers.get('software', ['', ])[0] == 'rotate_seq'):
             key = feature.qualifiers['note'][0][-4:-1]
             value = [feature.location.start, feature.location.end,
                      len(feature)]
@@ -217,13 +217,16 @@ def main():
             log.critical(f'Skip {skip} records.')
             option_files = option_files[:arg.n]
 
-    new_ref_gb, ref_fasta, ref_regions = clean_rotate(ref_gb)
+    # ref already in output
+    new_ref_gb, ref_fasta, ref_regions = rotate_seq(ref_gb)
     ref_region_info = get_region(new_ref_gb)
 
     for i in option_files:
+        i_gb, i_fasta, i_regions = i
         log.info(f'Analyze {i}.')
-        qseqid, compare_result = compare(i, ref_fasta, arg.perc_identity)
-        fig_title = f'{i.stem}_{qseqid}-{ref_gb_name}'
+        qseqid, compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
+        fig_title = f'{i_fasta.stem}_{qseqid}-{ref_gb_name}'
+        print(fig_title)
         pdf = draw(fig_title, ref_region_info, compare_result)
         log.info(f'Write figure {pdf}.')
         # to be continued

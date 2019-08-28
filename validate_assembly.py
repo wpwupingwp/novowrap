@@ -145,7 +145,8 @@ def draw(title, ref_region, data):
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
             plt.fill([qstart, send, sstart, qend], [0.65, 0.8, 0.8, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
-    pdf = Path(title).with_suffix('.pdf')
+    title = Path(title)
+    pdf = title.with_suffix('.pdf')
     plt.savefig(pdf)
     plt.close()
     return pdf
@@ -196,7 +197,7 @@ def main():
         log.warning(f'Find {len(options)} records in {arg.contig}.')
         log.info('Divide them into different files.')
         for idx, record in enumerate(options):
-            filename = output / f'{arg.contig}_{idx}'
+            filename = output / f'{idx}-{arg.contig}'
             record_len = len(record)
             if abs(1-(record_len/ref_len))*100 > arg.len_diff:
                 log.warning(f'The length difference of record with reference'

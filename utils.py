@@ -293,7 +293,7 @@ def rotate_seq(filename, min_IR=1000):
 
     new_fasta = fasta.with_suffix('.rotate')
     new_regions = fasta.with_suffix('.regions')
-    new_gb = fasta.with_suffix('.new.gb')
+    new_gb = fasta.with_suffix('.new_gb')
     success = False
     repeat_fasta = repeat(fasta)
     blast_result = blast(repeat_fasta, repeat_fasta)
@@ -466,13 +466,14 @@ def rc(fasta, region=None, choice='whole'):
         data[name] = i
     if choice != 'whole':
         data[choice] = data[choice].reverse_complement(
-            id=new_name+'_rc')
+            id=new_name+'_rc', name='', description='')
         new = data['LSC']
         for i in ['IRa', 'SSC', 'IRb']:
             new += data[i]
         SeqIO.write(new, new_file, 'fasta')
     else:
-        SeqIO.write(raw.reverse_complement(id=new_name),
+        SeqIO.write(raw.reverse_complement(id=new_name,
+                                           name='', description=''),
                     new_file, 'fasta')
 
 

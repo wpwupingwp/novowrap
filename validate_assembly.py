@@ -179,7 +179,7 @@ def main():
         ref_gb = down_ref(arg.taxon)
         dest = output / ref_gb
         ref_gb.rename(dest)
-        ref_gb = Path(str(dest))
+        ref_gb = dest
     else:
         ref_gb = arg.ref_gb
     _ = SeqIO.read(ref_gb, 'gb')
@@ -196,7 +196,7 @@ def main():
         log.warning(f'Find {len(options)} records in {arg.contig}.')
         log.info('Divide them into different files.')
         for idx, record in enumerate(options):
-            filename = arg.contig.with_suffix(f'.{idx}.fasta')
+            filename = output / f'{arg.contig}_{idx}'
             record_len = len(record)
             if abs(1-(record_len/ref_len))*100 > arg.len_diff:
                 log.warning(f'The length difference of record with reference'
@@ -208,7 +208,7 @@ def main():
                 continue
             log.info(f'\t{filename}')
             SeqIO.write(record, filename, 'fasta')
-            option_files.append(clean_rotate(filename, output))
+            option_files.append(rotate_seq(filename))
     else:
         option_files.append(clean_rotate(arg.contig, output))
     if arg.n != 0:
@@ -223,10 +223,9 @@ def main():
 
     for i in option_files:
         i_gb, i_fasta, i_regions = i
-        log.info(f'Analyze {i}.')
+        log.info(f'Analyze {i_fasta}.')
         qseqid, compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
-        fig_title = f'{i_fasta.stem}_{qseqid}-{ref_gb_name}'
-        print(fig_title)
+        fig_title = output / f'{i_fasta.stem}_{qseqid}-{ref_gb_name}'
         pdf = draw(fig_title, ref_region_info, compare_result)
         log.info(f'Write figure {pdf}.')
         # to be continued
@@ -236,7 +235,6 @@ def main():
         for region in ref_region_info:
             plus[region] = np.zeros(ref_region_info[region][2], dtype=bool)
             minus[region] = np.zeros(ref_region_info[region][2], dtype=bool)
-        print(plus)
         for hsp in compare_result:
             qstart, qend, sstart, send, sstrand, pident = hsp
 

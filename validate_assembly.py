@@ -61,7 +61,7 @@ def get_ref_region(ref_gb, output):
 def compare(query, reference, output, arg):
     results = []
     blast_result = blast(Path(query), reference, arg.perc_identity)
-    # only one record in file, loop only for unpack
+    # only one record in file, loop is for unpack
     for query in parse_blast_tab(blast_result):
         record = []
         for i in query:
@@ -77,6 +77,10 @@ def compare(query, reference, output, arg):
 def get_alpha(old):
     """
     Given 0-100, return 0, 0.5, 0.75, 0.95, 1
+    Args:
+        old(float): percent of identity
+    Return:
+        alpha(float): alpha value
     """
     alpha = 0
     if old < 50:

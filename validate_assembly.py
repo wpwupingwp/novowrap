@@ -6,6 +6,7 @@ import logging
 
 from Bio import SeqIO
 from matplotlib import pyplot as plt
+import numpy as np
 
 from utils import down_ref, blast, parse_blast_tab, rotate_seq
 
@@ -46,14 +47,15 @@ def get_ref_region(ref_gb, output):
     Arg:
         ref_gb(Path): reference gb file, only contain one record
     Return:
-        ref_region({name: [start, end]}): region location info
+        ref_region({name: [start, end, length]}): region location info
     """
     ref_region = {}
     for feature in SeqIO.read(ref_gb, 'gb').features:
         if (feature.type == 'misc_feature' and
                 feature.qualifiers.get('software', ['', ])[0] == 'rotate_gb'):
             key = feature.qualifiers['note'][0][-4:-1]
-            value = [feature.location.start, feature.location.end]
+            value = [feature.location.start, feature.location.end,
+                     len(feature)]
             ref_region[key] = value
     return ref_region
 
@@ -122,7 +124,7 @@ def draw(title, ref_region, data):
     plt.title(f'BLAST validation of {title}')
     plt.xlabel('Base')
     for key, value in ref_region.items():
-        plt.plot(value, [0.8, 0.8], marker='+', label=key, linewidth=10)
+        plt.plot(value[:2], [0.8, 0.8], marker='+', label=key, linewidth=10)
     # no repeat legend
     plt.plot(0.5, 0.5, 'r-+', linewidth=5, label='Plus')
     plt.plot(0.5, 0.5, 'g-|', linewidth=5, label='Minus')
@@ -141,7 +143,7 @@ def draw(title, ref_region, data):
                      color='r', alpha=get_alpha(pident))
         else:
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
-            plt.fill([qstart, sstart, send, qend], [0.65, 0.8, 0.8, 0.65],
+            plt.fill([qstart, send, sstart, qend], [0.65, 0.8, 0.8, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
     pdf = Path(title).with_suffix('.pdf')
     plt.savefig(pdf)
@@ -226,6 +228,17 @@ def main():
         pdf = draw(fig_title, ref_region_info, compare_result)
         log.info(f'Write figure {pdf}.')
         # to be continued
+        plus = {}
+        minus = {}
+        log.info('Detecting reverse complement region.')
+        for region in ref_region_info:
+            plus[region] = np.zeros(ref_region_info[region][2], dtype=bool)
+            minus[region] = np.zeros(ref_region_info[region][2], dtype=bool)
+        print(plus)
+        for hsp in compare_result:
+            qstart, qend, sstart, send, sstrand, pident = hsp
+
+        #np.count_nonzero(lsc_plus[20:30])
 
     log.info('Bye.')
     return

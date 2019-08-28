@@ -139,11 +139,11 @@ def draw(title, ref_region, data):
             if abs(qstart-sstart) > ignore_offset:
                 continue
             # ignore these line
-            plt.fill([qstart, sstart, send, qend], [0.8, 0.95, 0.95, 0.8],
+            plt.fill([sstart, qstart, qend, send], [0.8, 0.95, 0.95, 0.8],
                      color='r', alpha=get_alpha(pident))
         else:
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
-            plt.fill([qstart, send, sstart, qend], [0.65, 0.8, 0.8, 0.65],
+            plt.fill([send, sstart, qend, qstart], [0.8, 0.8, 0.65, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
     title = Path(title)
     pdf = title.with_suffix('.pdf')

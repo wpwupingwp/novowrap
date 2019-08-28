@@ -58,9 +58,19 @@ def get_ref_region(ref_gb, output):
     return ref_region
 
 
-def compare(query, reference, output, arg):
+def compare(query, reference, perc_identity):
+    """
+    Use BLAST to compare two records.
+    Args:
+        query(Path or str): query file
+        reference(Path or str): reference file
+        arg(Path): BLAST parameters
+    Return:
+        results[0][0]: qseqid
+        results[0][1]: BLAST data
+    """
     results = []
-    blast_result = blast(Path(query), reference, arg.perc_identity)
+    blast_result = blast(Path(query), reference, perc_identity)
     # only one record in file, loop is for unpack
     for query in parse_blast_tab(blast_result):
         record = []
@@ -71,7 +81,8 @@ def compare(query, reference, output, arg):
             # print(qseqid, sseqid, length, pident, gapopen, qstart, qend,
             #       sstart, send)
         results.append([qseqid, record])
-    return results
+    assert len(results) == 1
+    return results[0][0], results[0][1]
 
 
 def get_alpha(old):
@@ -96,13 +107,11 @@ def get_alpha(old):
     return alpha
 
 
-def draw(fasta, query, subject, ref_region, data):
+def draw(title, ref_region, data):
     """
     Draw figure.
     Args:
-        fasta(Path): fasta filename
-        query(Path): query record name
-        subject(Path): subject record name
+        title(str): figure title
         ref_region(list): reference region information
         data(list): BLAST result
     Return:
@@ -110,15 +119,16 @@ def draw(fasta, query, subject, ref_region, data):
     """
     plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
-    plt.title(f'BLAST validation of {fasta}-{query} to {subject}')
+    plt.title(f'BLAST validation of {title}')
     plt.xlabel('Base')
     for key, value in ref_region.items():
         plt.plot(value, [0.8, 0.8], marker='+', label=key, linewidth=10)
-    plt.plot(0.5, 0.5, 'r-+', label='plus')
-    plt.plot(0.5, 0.5, 'g-|', label='minus')
+    # no repeat legend
+    plt.plot(0.5, 0.5, 'r-+', label='Plus')
+    plt.plot(0.5, 0.5, 'g-|', label='Minus')
     plt.ylim([0.5, 1.1])
     plt.xlim(left=0)
-    plt.yticks([0.65, 0.8, 0.95], labels=['minus', 'ref', 'plus'])
+    plt.yticks([0.65, 0.8, 0.95], labels=['Minus', 'Reference', 'Plus'])
     plt.legend(loc='upper right')
     for i in data:
         qstart, qend, sstart, send, sstrand, pident = i
@@ -133,10 +143,21 @@ def draw(fasta, query, subject, ref_region, data):
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
             plt.fill([qstart, sstart, send, qend], [0.65, 0.8, 0.8, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
-    pdf = Path(f"{fasta.stem}-{Path(query+'-'+subject).with_suffix('.pdf')}")
+    pdf = Path(title).with_suffix('.pdf')
     plt.savefig(pdf)
     plt.close()
     return pdf
+
+
+def clean_rotate(filename, output):
+    """
+    Make the folder clean.
+    """
+    r_gb, r_contig, r_regions = rotate_seq(filename)
+    for i in r_gb, r_contig, r_regions:
+        # rename does not return new name
+        i.rename(output/i)
+    return output/r_gb, output/r_contig, output/r_regions
 
 
 def main():
@@ -183,12 +204,12 @@ def main():
                 continue
             log.info(f'\t{filename}')
             SeqIO.write(record, filename, 'fasta')
-            r_gb, r_contig, r_regions = rotate_seq(filename)
-            r_gb.rename(output/r_gb)
-            r_regions.rename(output/r_regions)
+            r_gb, r_contig, r_regions = clean_rotate(filename, output)
             contig_files.append(r_contig)
+
     else:
-        r_gb, r_contig, r_regions = rotate_seq(arg.contig)
+        r_gb, r_contig, r_regions = clean_rotate(arg.contig, output)
+        print(r_contig)
         contig_files.append(r_contig)
     if arg.n != 0:
         skip = len(contigs) - arg.n
@@ -201,8 +222,10 @@ def main():
 
     for i in contig_files:
         log.info(f'Analyze {i}.')
-        result = compare(i, ref_fasta, output, arg)
-        pdf = draw(i, result[0][0], ref_gb_name, ref_region_info, result[0][1])
+        qseqid, compare_result = compare(i, ref_fasta, arg.perc_identity)
+        print(compare_result)
+        fig_title = f'{i.stem}_{qseqid}-{ref_gb_name}'
+        pdf = draw(fig_title, ref_region_info, compare_result)
         log.info(f'Write figure {pdf}.')
         # to be continued
 

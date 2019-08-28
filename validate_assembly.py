@@ -177,7 +177,9 @@ def main():
 
     if arg.ref_gb is None:
         ref_gb = down_ref(arg.taxon)
-        ref_gb.rename(output/ref_gb)
+        dest = output / ref_gb
+        ref_gb.rename(dest)
+        ref_gb = Path(str(dest))
     else:
         ref_gb = arg.ref_gb
     _ = SeqIO.read(ref_gb, 'gb')
@@ -188,12 +190,12 @@ def main():
     ref_gb = output / (ref_gb_name + '.gb')
     ref_len = len(SeqIO.read(ref_gb, 'gb'))
 
-    contigs = list(SeqIO.parse(arg.contig, 'fasta'))
-    contig_files = []
-    if len(contigs) > 1:
-        log.warning(f'Find {len(contigs)} records in {arg.contig}.')
+    options = list(SeqIO.parse(arg.contig, 'fasta'))
+    option_files = []
+    if len(options) > 1:
+        log.warning(f'Find {len(options)} records in {arg.contig}.')
         log.info('Divide them into different files.')
-        for idx, record in enumerate(contigs):
+        for idx, record in enumerate(options):
             filename = arg.contig.with_suffix(f'.{idx}.fasta')
             record_len = len(record)
             if abs(1-(record_len/ref_len))*100 > arg.len_diff:
@@ -206,22 +208,19 @@ def main():
                 continue
             log.info(f'\t{filename}')
             SeqIO.write(record, filename, 'fasta')
-            r_gb, r_contig, r_regions = clean_rotate(filename, output)
-            contig_files.append(r_contig)
-
+            option_files.append(clean_rotate(filename, output))
     else:
-        r_gb, r_contig, r_regions = clean_rotate(arg.contig, output)
-        contig_files.append(r_contig)
+        option_files.append(clean_rotate(arg.contig, output))
     if arg.n != 0:
-        skip = len(contigs) - arg.n
+        skip = len(option_files) - arg.n
         if skip > 0:
             log.critical(f'Skip {skip} records.')
-            contig_files = contig_files[:arg.n]
+            option_files = option_files[:arg.n]
 
-    new_ref_gb, ref_fasta, ref_regions = rotate_seq(ref_gb)
+    new_ref_gb, ref_fasta, ref_regions = clean_rotate(ref_gb)
     ref_region_info = get_region(new_ref_gb)
 
-    for i in contig_files:
+    for i in option_files:
         log.info(f'Analyze {i}.')
         qseqid, compare_result = compare(i, ref_fasta, arg.perc_identity)
         fig_title = f'{i.stem}_{qseqid}-{ref_gb_name}'
@@ -238,8 +237,7 @@ def main():
         for hsp in compare_result:
             qstart, qend, sstart, send, sstrand, pident = hsp
 
-
-        #np.count_nonzero(lsc_plus[20:30])
+        # np.count_nonzero(lsc_plus[20:30])
 
     log.info('Bye.')
     return

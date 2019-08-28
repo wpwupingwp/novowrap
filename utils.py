@@ -65,7 +65,7 @@ def down_ref(taxon):
         count = int(handle['Count'])
         if count == 0:
             continue
-        output_file = f'{taxon.replace(" ", "_")}.gb'
+        output_file = Path(f'{taxon.replace(" ", "_")}.gb')
         content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
                                 query_key=handle['QueryKey'], rettype='gb',
                                 retmode='text', retmax=1)

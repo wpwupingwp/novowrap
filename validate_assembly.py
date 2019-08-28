@@ -78,8 +78,6 @@ def compare(query, reference, perc_identity):
             (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
              qstart, qend, sstart, send) = i
             record.append([qstart, qend, sstart, send, sstrand, pident])
-            # print(qseqid, sseqid, length, pident, gapopen, qstart, qend,
-            #       sstart, send)
         results.append([qseqid, record])
     assert len(results) == 1
     return results[0][0], results[0][1]
@@ -117,6 +115,8 @@ def draw(title, ref_region, data):
     Return:
         pdf(Path): figure file
     """
+    ignore_offset = (ref_region['IRa'][1] - ref_region['IRa'][0])*2 + (
+        ref_region['SSC'][1]-ref_region['SSC'][0])
     plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
     plt.title(f'BLAST validation of {title}')
@@ -124,8 +124,8 @@ def draw(title, ref_region, data):
     for key, value in ref_region.items():
         plt.plot(value, [0.8, 0.8], marker='+', label=key, linewidth=10)
     # no repeat legend
-    plt.plot(0.5, 0.5, 'r-+', label='Plus')
-    plt.plot(0.5, 0.5, 'g-|', label='Minus')
+    plt.plot(0.5, 0.5, 'r-+', linewidth=5, label='Plus')
+    plt.plot(0.5, 0.5, 'g-|', linewidth=5, label='Minus')
     plt.ylim([0.5, 1.1])
     plt.xlim(left=0)
     plt.yticks([0.65, 0.8, 0.95], labels=['Minus', 'Reference', 'Plus'])
@@ -134,9 +134,9 @@ def draw(title, ref_region, data):
         qstart, qend, sstart, send, sstrand, pident = i
         if sstrand == 'plus':
             plt.plot([qstart, qend], [0.95, 0.95], 'r-+', linewidth=5)
-            # ignore these line
-            if send-sstart < 100:
+            if abs(qstart-sstart) > ignore_offset:
                 continue
+            # ignore these line
             plt.fill([qstart, sstart, send, qend], [0.8, 0.95, 0.95, 0.8],
                      color='r', alpha=get_alpha(pident))
         else:
@@ -209,7 +209,6 @@ def main():
 
     else:
         r_gb, r_contig, r_regions = clean_rotate(arg.contig, output)
-        print(r_contig)
         contig_files.append(r_contig)
     if arg.n != 0:
         skip = len(contigs) - arg.n
@@ -223,7 +222,6 @@ def main():
     for i in contig_files:
         log.info(f'Analyze {i}.')
         qseqid, compare_result = compare(i, ref_fasta, arg.perc_identity)
-        print(compare_result)
         fig_title = f'{i.stem}_{qseqid}-{ref_gb_name}'
         pdf = draw(fig_title, ref_region_info, compare_result)
         log.info(f'Write figure {pdf}.')

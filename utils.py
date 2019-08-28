@@ -73,7 +73,6 @@ def down_ref(taxon):
         return output_file
 
 
-
 def get_full_taxon(taxon):
     """
     Get full lineage of given taxon
@@ -408,7 +407,7 @@ def rotate_seq(filename, min_IR=1000):
             features.append(SeqFeature(
                 FeatureLocation(offset+1, length+offset+1),
                 type='misc_feature',
-                qualifiers={'note': f_name, 'software': 'rotate_gb'},
+                qualifiers={'note': f_name, 'software': 'rotate_seq'},
                 strand=1))
             offset += length
         # output

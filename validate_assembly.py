@@ -42,15 +42,15 @@ def parse_args():
     return arg.parse_args()
 
 
-def get_ref_region(ref_gb, output):
+def get_region(gb):
     """
     Arg:
-        ref_gb(Path): reference gb file, only contain one record
+        gb(Path): rotate_seq generated gb file, only contains one record
     Return:
-        ref_region({name: [start, end, length]}): region location info
+        region({name: [start, end, length]}): region location info
     """
     ref_region = {}
-    for feature in SeqIO.read(ref_gb, 'gb').features:
+    for feature in SeqIO.read(gb, 'gb').features:
         if (feature.type == 'misc_feature' and
                 feature.qualifiers.get('software', ['', ])[0] == 'rotate_gb'):
             key = feature.qualifiers['note'][0][-4:-1]
@@ -219,7 +219,7 @@ def main():
             contig_files = contig_files[:arg.n]
 
     new_ref_gb, ref_fasta, ref_regions = rotate_seq(ref_gb)
-    ref_region_info = get_ref_region(new_ref_gb, output)
+    ref_region_info = get_region(new_ref_gb)
 
     for i in contig_files:
         log.info(f'Analyze {i}.')
@@ -237,6 +237,7 @@ def main():
         print(plus)
         for hsp in compare_result:
             qstart, qend, sstart, send, sstrand, pident = hsp
+
 
         #np.count_nonzero(lsc_plus[20:30])
 

@@ -107,7 +107,7 @@ def get_alpha(old):
     return alpha
 
 
-def draw(title, ref_region, data):
+def draw(title, ref_region, option_region, data):
     """
     Draw figure.
     Args:
@@ -125,6 +125,11 @@ def draw(title, ref_region, data):
     plt.xlabel('Base')
     for key, value in ref_region.items():
         plt.plot(value[:2], [0.8, 0.8], marker='+', label=key, linewidth=10)
+    for key, value in option_region.items():
+        plt.plot([value[1], value[1]], [0.93, 0.97],
+                 'k--', linewidth=2, alpha=0.3)
+        plt.plot([value[1], value[1]], [0.63, 0.67],
+                 'k--', linewidth=2, alpha=0.3)
     # no repeat legend
     plt.plot(0.5, 0.5, 'r-+', linewidth=5, label='Plus')
     plt.plot(0.5, 0.5, 'g-|', linewidth=5, label='Minus')
@@ -141,6 +146,7 @@ def draw(title, ref_region, data):
             # ignore these line
             plt.fill([sstart, qstart, qend, send], [0.8, 0.95, 0.95, 0.8],
                      color='r', alpha=get_alpha(pident))
+        # minus strand
         else:
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
             plt.fill([send, sstart, qend, qstart], [0.8, 0.8, 0.65, 0.65],
@@ -225,19 +231,33 @@ def main():
     for i in option_files:
         i_gb, i_fasta, i_regions = i
         log.info(f'Analyze {i_fasta}.')
+        option_region_info = get_region(i_gb)
+        option_len = len(SeqIO.read(i_fasta, 'fasta'))
         qseqid, compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
         fig_title = output / f'{i_fasta.stem}_{qseqid}-{ref_gb_name}'
-        pdf = draw(fig_title, ref_region_info, compare_result)
+        pdf = draw(fig_title, ref_region_info, option_region_info,
+                   compare_result)
         log.info(f'Write figure {pdf}.')
         # to be continued
-        plus = {}
-        minus = {}
         log.info('Detecting reverse complement region.')
-        for region in ref_region_info:
-            plus[region] = np.zeros(ref_region_info[region][2], dtype=bool)
-            minus[region] = np.zeros(ref_region_info[region][2], dtype=bool)
+
+        plus = np.zeros(option_len, dtype=bool)
+        minus = np.zeros(option_len, dtype=bool)
+        count = {}
+        for region in option_region_info:
+            count[region] = {'loc': slice(*option_region_info[region][:2]),
+                             'plus': 0, 'minus': 0}
+
         for hsp in compare_result:
             qstart, qend, sstart, send, sstrand, pident = hsp
+            if sstrand == 'plus':
+                plus[qstart-1:qend] = True
+            else:
+                minus[qstart-1:qend] = True
+        for rgn in count:
+            count[rgn]['plus'] = np.count_nonzero(plus[count[rgn]['loc']])
+            count[rgn]['minus'] = np.count_nonzero(minus[count[rgn]['loc']])
+        print(*count.items())
 
         # np.count_nonzero(lsc_plus[20:30])
 

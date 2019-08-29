@@ -193,7 +193,7 @@ def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
             if abs(1-(record_len/ref_len)) > len_diff:
                 log.critical(f'The length difference of record with reference '
                              f'({abs(record_len-ref_len)} bp) is out of limit '
-                             f'({len_diff:.0%}, {len_diff*ref_len:d}).')
+                             f'({len_diff:.0%}, {len_diff*ref_len:.0f}).')
                 new_filename = str(filename) + '.bad_length'
                 SeqIO.write(record, new_filename, 'fasta')
                 log.warning(f'Skip {new_filename}.')
@@ -220,23 +220,15 @@ def main():
     output = Path(arg.contig.stem)
     output.mkdir()
     validated = []
+    result_info = []
     log.info(f'Contig:\t{arg.contig}')
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
 
     if arg.ref_gb is None:
         ref_gb = down_ref(arg.taxon)
-        dest = output / ref_gb
-        ref_gb.rename(dest)
-        ref_gb = dest
     else:
-        ref_gb = arg.ref_gb
-    _ = SeqIO.read(ref_gb, 'gb')
-    ref_gb_name = _.name
-    # make folder clean
-    with open(output / (ref_gb_name+'.gb'), 'w') as d, open(ref_gb, 'r') as s:
-        d.write(s.read())
-    ref_gb = output / (ref_gb_name + '.gb')
+        ref_gb = Path(arg.ref_gb)
     ref_len = len(SeqIO.read(ref_gb, 'gb'))
 
     option_files = divide_records(arg.contig, output, ref_len, arg.len_diff,
@@ -311,6 +303,11 @@ def main():
             edited = rc_region(i_fasta, i_regions, 'SSC')
         else:
             edited = i_fasta
+        qseqid, compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
+        fig_title = output / f'{i_fasta.stem}_{qseqid}-{ref_gb_name}'
+        pdf = draw(fig_title, ref_region_info, option_region_info,
+                   compare_result)
+        log.info(f'Write figure {pdf}.')
         validated.append(edited)
 
     log.info('Validated sequences:')

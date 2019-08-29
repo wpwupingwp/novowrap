@@ -32,12 +32,13 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
-def down_ref(taxon):
+def down_ref(taxon, output):
     """
     Arg:
         taxon(str): given taxon name
+        output(Path): output folder
     Return:
-        output_file(Path): fasta file
+        ref(Path): gb file
     """
     lineage = get_full_taxon(taxon)
     if lineage is not None:
@@ -62,15 +63,20 @@ def down_ref(taxon):
         log.info(f'Query:\t{query}')
         handle = Entrez.read(Entrez.esearch(db='nuccore', term=query,
                                             usehistory='y'))
+        info = Entrez.read(Entrez.esummary(db='nuccore',
+                                           webenv=handle['WebEnv'],
+                                           query_key=handle['QueryKey']))
+        accession = info[0]['Caption']
         count = int(handle['Count'])
         if count == 0:
             continue
-        output_file = Path(f'{taxon.replace(" ", "_")}.gb')
+        ref = output / f'{taxon}-{accession}.gb'
         content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
                                 query_key=handle['QueryKey'], rettype='gb',
                                 retmode='text', retmax=1)
-        output_file.write_text(content.read())
-        return output_file
+        with open(ref, 'w') as out:
+            out.write(content.read())
+        return ref
 
 
 def get_full_taxon(taxon):
@@ -438,12 +444,12 @@ def rotate_seq(filename, min_IR=1000):
     return new_gb, new_fasta, new_regions
 
 
-def rc_region(fasta, region=None, choice='whole'):
+def rc_region(fasta, regions=None, choice='whole'):
     """
     Reverse and complement given region of sequence.
     Args:
         fasta(Path or str): fasta file
-        region(Path or str): fasta file contains regions
+        regions(Path or str): fasta file contains regions
         choice(str): region to be processed, must be in 'LSC', 'IRa', 'SSC',
         'IRb', 'whole'.
     Return:
@@ -452,15 +458,15 @@ def rc_region(fasta, region=None, choice='whole'):
     choices = ('LSC', 'IRa', 'SSC', 'IRb', 'whole')
     if choice not in choices:
         raise ValueError(f'Region must be in {choices}.')
-    if region is None:
+    if regions is None:
         # unrotated
         (r_gb, r_fasta, r_regions) = rotate_seq(fasta)
-        region = r_regions
+        regions = r_regions
     raw = SeqIO.read(fasta, 'fasta')
     new_name = raw.name + '_rc'
     new_file = Path(str(fasta) + '.rc')
     data = {}
-    for i in SeqIO.parse(r_regions, 'fasta'):
+    for i in SeqIO.parse(regions, 'fasta'):
         name = i.id.split('-')[-1]
         data[name] = i
     if choice != 'whole':

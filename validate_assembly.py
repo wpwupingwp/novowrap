@@ -105,8 +105,8 @@ def draw(title, ref_regions, option_regions, data):
               pad=10)
     plt.xlabel('Base')
     for key, value in ref_regions.items():
-        plt.plot(value.location, [0.8, 0.8], marker='+', label=key,
-                 linewidth=10)
+        plt.plot([value.location.start, value.location.end], [0.8, 0.8],
+                 marker='+', label=key, linewidth=10)
     for key, value in option_regions.items():
         plt.plot([value.location.end, value.location.end], [0.93, 0.97],
                  'k--', linewidth=2, alpha=0.3)

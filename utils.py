@@ -308,7 +308,6 @@ def rotate_seq(filename, min_IR=1000):
     for query, seq, raw_gb in zip(parse_blast_tab(blast_result),
                                   SeqIO.parse(repeat_fasta, 'fasta'),
                                   SeqIO.parse(gb, 'gb')):
-        log.info(f'\tAnalyze {seq.name}.')
         locations = set()
         # use fasta's description
         name = ''

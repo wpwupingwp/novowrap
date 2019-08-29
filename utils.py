@@ -188,8 +188,7 @@ def parse_blast_tab(filename):
             else:
                 line = line.strip().split('\t')
                 # last is str
-                line[5:] = list(map(float, line[5:]))
-                line[5:] = list(map(int, line[5:]))
+                line[3:] = [int(float(i)) for i in line[3:]]
                 query.append(line)
 
 
@@ -274,7 +273,7 @@ def rotate_seq(filename, min_IR=1000):
     Return:
         success(bool): success or not
     """
-    # FMT = 'qseqid sseqid qseq sseq length pident gapopen qstart qend sstart
+    # FMT = 'qseqid sseqid length pident gapopen qstart qend sstart
     # send'
     with open(filename, 'r') as _:
         start = _.readline()
@@ -323,17 +322,17 @@ def rotate_seq(filename, min_IR=1000):
         else:
             p_ident_min = 100
         for hit in query:
-            (qseqid, sseqid, qseq, sseq, sstrand, qlen, pident, gapopen,
-             qstart, qend, sstart, send) = hit
+            (qseqid, sseqid, sstrand, qlen, pident, gapopen, qstart, qend,
+             sstart, send) = hit
             name = seq.name
             # only self
             if qseqid != sseqid:
                 continue
             # skip too short match
-            if len(qseq) < min_IR:
+            if qlen < min_IR:
                 continue
             # origin to repeat
-            if len(qseq) == len(seq):
+            if qlen == len(seq):
                 continue
             # allow few gaps
             if gapopen != 0:
@@ -351,10 +350,10 @@ def rotate_seq(filename, min_IR=1000):
             if len(set(location)) != 4:
                 continue
             # filter short hit
-            if len(qseq) < max_aln_n:
+            if qlen < max_aln_n:
                 continue
             else:
-                max_aln_n = len(qseq)
+                max_aln_n = qlen
             locations.add(location)
         if not locations:
             continue

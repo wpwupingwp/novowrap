@@ -273,24 +273,29 @@ def main():
         # do not rc IR
         if count['LSC']['strand'] == count['SSC']['strand'] == 'minus':
             log.info(f'Reverse complement the whole sequence of {i_fasta}.')
-            edited = rc_regions(i_gb, 'whole')
-            pass
+            rc_gb, rc_fasta = rc_regions(i_gb, 'whole')
         elif count['LSC']['strand'] == 'minus':
             log.warning(f'Reverse complement the LSC of {i_fasta}.')
-            edited = rc_regions(i_gb, 'LSC')
-            pass
+            ir = get_regions(i_gb)['IRa']
+            before = ir.extract(SeqIO.read(i_gb, 'gb'))
+            rc_gb, rc_fasta = rc_regions(i_gb, 'LSC')
+            after = ir.extract(SeqIO.read(rc_gb, 'gb'))
+            assert before.seq == after.seq
         elif count['SSC']['strand'] == 'minus':
             log.warning(f'Reverse complement the SSC of {i_fasta}.')
-            edited = rc_regions(i_gb, 'SSC')
+            rc_gb, rc_fasta = rc_regions(i_gb, 'SSC')
         else:
-            edited = i_fasta
-        if edited != i_fasta:
-            new_compare_result = compare(edited, ref_fasta, arg.perc_identity)
-            fig_title = str(output / f'{edited.stem}-{ref_gb.stem}')
-            pdf = draw(fig_title, ref_regions, option_regions,
+            rc_fasta = i_fasta
+        print(rc_fasta, i_fasta)
+        if rc_fasta != i_fasta:
+            new_compare_result = compare(rc_fasta, ref_fasta,
+                                         arg.perc_identity)
+            fig_title = str(output / f'{rc_fasta.stem}-{ref_gb.stem}')
+            new_regions = get_regions(rc_gb)
+            pdf = draw(fig_title, ref_regions, new_regions,
                        new_compare_result)
             log.info(f'Write figure {pdf}.')
-        validated.append(edited)
+        validated.append(rc_fasta)
 
     log.info('Validated sequences:')
     for i in validated:

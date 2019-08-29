@@ -465,7 +465,8 @@ def rc_regions(gb, choice='whole'):
         choice(str): region to be processed, must be in 'LSC', 'IRa', 'SSC',
         'IRb', 'whole'.
     Return:
-        new_file(Path): fasta file after reverse complement
+        n_gb(Path): gb file after reverse-complement and rotate
+        n_fasta(Path): fasta file after reverse-complement and rotate
     """
     choices = ('LSC', 'IRa', 'SSC', 'IRb', 'whole')
     if choice not in choices:
@@ -475,7 +476,7 @@ def rc_regions(gb, choice='whole'):
     new_seq = ''
     regions = get_regions(gb)
     for r in regions:
-        data[r] = regions[r].extract(raw)
+        data[r] = regions[r].extract(raw).seq
     if choice != 'whole':
         data[choice] = rc(regions[choice].extract(raw.seq))
         new_seq = data['LSC']
@@ -483,15 +484,13 @@ def rc_regions(gb, choice='whole'):
             new_seq += data[i]
     else:
         new_seq = rc(raw.seq)
-
     new_name = '_r_' + raw.name
-    new_file = Path(gb.parent, '_r_' + gb.with_suffix('.fasta'))
+    new_file = Path(gb.parent, '_r_' + gb.stem + '.fasta')
     with open(new_file, 'w') as out:
         out.write(f'>{new_name}\n')
-        out.write(new_seq)
-        out.write('\n')
-    n_gb, new_file = rotate_seq(new_file)
-    return new_file
+        out.write(f'{new_seq}\n')
+    n_gb, n_fasta = rotate_seq(new_file)
+    return n_gb, n_fasta
 
 
 def parse_args():
@@ -511,7 +510,7 @@ def main():
     Also contains other utilities.
     """
     arg = parse_args()
-    (new_gb, new_fasta, new_regions) = rotate_seq(arg.filename, arg.min_ir)
+    new_gb, new_fasta = rotate_seq(arg.filename, arg.min_ir)
     return
 
 

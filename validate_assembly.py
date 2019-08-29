@@ -226,7 +226,7 @@ def main():
     log.info(f'Use {output} as output folder.')
 
     if arg.ref_gb is None:
-        ref_gb = down_ref(arg.taxon)
+        ref_gb = down_ref(arg.taxon, output)
     else:
         ref_gb = Path(arg.ref_gb)
     ref_len = len(SeqIO.read(ref_gb, 'gb'))
@@ -244,7 +244,7 @@ def main():
         option_region_info = get_region(i_gb)
         option_len = len(SeqIO.read(i_fasta, 'fasta'))
         qseqid, compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
-        fig_title = output / f'{i_fasta.stem}_{qseqid}-{ref_gb_name}'
+        fig_title = output / f'{i_fasta.stem}_{qseqid}-{ref_gb.stem}'
         pdf = draw(fig_title, ref_region_info, option_region_info,
                    compare_result)
         log.info(f'Write figure {pdf}.')
@@ -295,19 +295,21 @@ def main():
             edited = rc_region(i_fasta, i_regions, 'whole')
             pass
         elif count['LSC']['strand'] == 'minus':
-            log.info(f'Reverse complement the LSC of {i_fasta}.')
+            log.warning(f'Reverse complement the LSC of {i_fasta}.')
             edited = rc_region(i_fasta, i_regions, 'LSC')
             pass
         elif count['SSC']['strand'] == 'minus':
-            log.info(f'Reverse complement the SSC of {i_fasta}.')
+            log.warning(f'Reverse complement the SSC of {i_fasta}.')
             edited = rc_region(i_fasta, i_regions, 'SSC')
         else:
             edited = i_fasta
-        qseqid, compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
-        fig_title = output / f'{i_fasta.stem}_{qseqid}-{ref_gb_name}'
-        pdf = draw(fig_title, ref_region_info, option_region_info,
-                   compare_result)
-        log.info(f'Write figure {pdf}.')
+        if edited != i_fasta:
+            qseqid, new_compare_result = compare(edited, ref_fasta,
+                                                 arg.perc_identity)
+            fig_title = output / f'{i_fasta.stem}.rc_{qseqid}-{ref_gb.stem}'
+            pdf = draw(fig_title, ref_region_info, option_region_info,
+                       new_compare_result)
+            log.info(f'Write figure {pdf}.')
         validated.append(edited)
 
     log.info('Validated sequences:')

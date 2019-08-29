@@ -70,7 +70,7 @@ def down_ref(taxon, output):
         count = int(handle['Count'])
         if count == 0:
             continue
-        ref = output / f'{taxon}-{accession}.gb'
+        ref = output / f'{taxon}_{accession}.gb'
         content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
                                 query_key=handle['QueryKey'], rettype='gb',
                                 retmode='text', retmax=1)

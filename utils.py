@@ -151,7 +151,7 @@ def blast(query, target, perc_identity=70):
     Return:
         blast_out(Path): blast result filename
     """
-    FMT = ('qseqid sseqid sstrand qlen pident gapopen qstart qend '
+    FMT = ('qseqid sseqid sstrand length pident gapopen qstart qend '
            'sstart send')
     blast_out = query.with_suffix('.blast')
     # use blastn -subject instead of makeblastdb
@@ -177,7 +177,7 @@ def parse_blast_tab(filename):
         line(list): parsed result
     """
     query = []
-    with open(filename, 'r', encoding='utf-8') as raw:
+    with open(filename, 'r') as raw:
         for line in raw:
             if line.startswith('# BLAST'):
                 if query:
@@ -275,6 +275,7 @@ def rotate_seq(filename, min_IR=1000):
     """
     # FMT = 'qseqid sseqid length pident gapopen qstart qend sstart
     # send'
+    log.info(f'Rotate {filename}...')
     with open(filename, 'r') as _:
         start = _.readline()
         if start.startswith('>'):
@@ -283,9 +284,9 @@ def rotate_seq(filename, min_IR=1000):
             fmt = 'gb'
     records = list(SeqIO.parse(filename, fmt))
     if len(records) > 1:
-        log.warning(f'Found {len(records)} records')
-        log.warning(f'Only handle the first as representative.')
-        log.warning(f'Divide them if you want to rotate all.')
+        log.warning(f'\tFound {len(records)} records')
+        log.warning(f'\tOnly handle the first as representative.')
+        log.warning(f'\tDivide them if you want to rotate all.')
         filename = str(filename) + '.1'
         SeqIO.write(records[0], filename, fmt)
     if fmt == 'fasta':
@@ -307,7 +308,7 @@ def rotate_seq(filename, min_IR=1000):
     for query, seq, raw_gb in zip(parse_blast_tab(blast_result),
                                   SeqIO.parse(repeat_fasta, 'fasta'),
                                   SeqIO.parse(gb, 'gb')):
-        log.info(f'Analyze {seq.name}.')
+        log.info(f'\tAnalyze {seq.name}.')
         locations = set()
         # use fasta's description
         name = ''
@@ -317,27 +318,26 @@ def rotate_seq(filename, min_IR=1000):
         max_aln_n = 0
         # because of ambiguous base, percent of identity bases may not be 100%
         if ambiguous_base_n != 0:
-            log.warning(f'Found {ambiguous_base_n} ambiguous bases.')
+            log.warning(f'\tFound {ambiguous_base_n} ambiguous bases.')
             p_ident_min = int((1-(ambiguous_base_n/original_seq_len))*100)
         else:
             p_ident_min = 100
         for hit in query:
-            (qseqid, sseqid, sstrand, qlen, pident, gapopen, qstart, qend,
+            (qseqid, sseqid, sstrand, length, pident, gapopen, qstart, qend,
              sstart, send) = hit
             name = seq.name
             # only self
             if qseqid != sseqid:
                 continue
             # skip too short match
-            if qlen < min_IR:
+            if length < min_IR:
                 continue
             # origin to repeat
-            if qlen == len(seq):
+            if length == len(seq):
                 continue
             # allow few gaps
             if gapopen != 0:
                 if gapopen > ambiguous_base_n:
-                    log.critical('Too much gaps ({gapopen}). Reject.')
                     continue
             # mismatch
             location = tuple(sorted([qstart, qend, sstart, send]))
@@ -350,10 +350,10 @@ def rotate_seq(filename, min_IR=1000):
             if len(set(location)) != 4:
                 continue
             # filter short hit
-            if qlen < max_aln_n:
+            if length < max_aln_n:
                 continue
             else:
-                max_aln_n = qlen
+                max_aln_n = length
             locations.add(location)
         if not locations:
             continue
@@ -388,16 +388,16 @@ def rotate_seq(filename, min_IR=1000):
         new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
         new_seq.seq.alphabet = IUPAC.ambiguous_dna
         if len(seq)//2 != len(new_seq):
-            log.warning(f'Old and new sequences do not have save length.')
+            log.warning(f'\tOld and new sequences do not have save length.')
             log.info(f'Old: {len(seq)//2}\tNew: {len(new_seq)}')
             if abs(len(seq)//2 - len(new_seq)) > ambiguous_base_n:
-                log.critical(f'Too much difference. Reject.')
+                log.critical(f'\tToo much difference. Reject.')
                 continue
         if len(seq_IRa) != len(seq_IRb):
-            log.warning(f'IRa ({len(seq_IRa)}) and IRb ({len(seq_IRb)}) do '
+            log.warning(f'\tIRa ({len(seq_IRa)}) and IRb ({len(seq_IRb)}) do '
                         'not have same length.')
             if abs(len(seq_IRa) - len(seq_IRb)) > ambiguous_base_n:
-                log.critical(f'Too much difference. Reject.')
+                log.critical(f'\tToo much difference. Reject.')
                 continue
         # output
         offset = -1
@@ -419,18 +419,13 @@ def rotate_seq(filename, min_IR=1000):
         new_seq.features.extend(features)
         assert str(seq_SSC.seq) == str(
             new_seq.features[2].extract(new_seq).seq)
-        log.info(f'Rotated regions of {name}:')
-        log.info(f'\tLSC {new_seq.features[0].location}')
-        log.info(f'\tIRa {new_seq.features[1].location}')
-        log.info(f'\tSSC {new_seq.features[2].location}')
-        log.info(f'\tIRb {new_seq.features[3].location}')
+        log.info(f'\tRegions of {name}:')
+        log.info(f'\t\tLSC {new_seq.features[0].location}')
+        log.info(f'\t\tIRa {new_seq.features[1].location}')
+        log.info(f'\t\tSSC {new_seq.features[2].location}')
+        log.info(f'\t\tIRb {new_seq.features[3].location}')
         with open(new_fasta, 'w') as out:
             out.write(f'>{name}\n{new_seq.seq}\n')
-        # with open(new_regions, 'w') as o:
-        #     o.write(f'>{name}-LSC\n{seq_LSC.seq}\n')
-        #     o.write(f'>{name}-IRa\n{seq_IRa.seq}\n')
-        #     o.write(f'>{name}-SSC\n{seq_SSC.seq}\n')
-        #     o.write(f'>{name}-IRb\n{seq_IRb.seq}\n')
         with open(new_gb, 'w') as out3:
             raw_gb.features.extend(features)
             SeqIO.write(raw_gb, out3, 'gb')
@@ -439,12 +434,14 @@ def rotate_seq(filename, min_IR=1000):
     remove(blast_result)
     remove(repeat_fasta)
     if not success:
-        return None, None, None
+        log.critical(f'Failed to rotate {filename}.')
+        raise SystemExit
+        return None, None
     # return new_gb, new_fasta, new_regions
     return new_gb, new_fasta
 
 
-def get_region(gb):
+def get_regions(gb):
     """
     Arg:
         gb(Path): rotate_seq generated gb file, only contains one record
@@ -461,7 +458,7 @@ def get_region(gb):
     return ref_region
 
 
-def rc_region(gb, choice='whole'):
+def rc_regions(gb, choice='whole'):
     """
     Reverse and complement given region of sequence.
     Args:

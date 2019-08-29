@@ -8,8 +8,8 @@ from Bio import SeqIO
 from matplotlib import pyplot as plt
 import numpy as np
 
-from utils import down_ref, blast, parse_blast_tab, rotate_seq, rc_region
-
+from utils import down_ref, blast, parse_blast_tab
+from utils import rotate_seq, get_regions, rc_regions
 
 # define logger
 FMT = '%(asctime)s %(levelname)-8s %(message)s'
@@ -61,9 +61,9 @@ def compare(query, reference, perc_identity):
             (qseqid, sseqid, sstrand, length, pident, gapopen, qstart, qend,
              sstart, send) = i
             record.append([qstart, qend, sstart, send, sstrand, pident])
-        results.append([qseqid, record])
+        results.append(record)
     assert len(results) == 1
-    return results[0][1]
+    return results[0]
 
 
 def get_alpha(old):
@@ -88,7 +88,7 @@ def get_alpha(old):
     return alpha
 
 
-def draw(title, ref_region, option_region, data):
+def draw(title, ref_regions, option_regions, data):
     """
     Draw figure.
     Args:
@@ -98,18 +98,19 @@ def draw(title, ref_region, option_region, data):
     Return:
         pdf(Path): figure file
     """
-    ignore_offset = (ref_region['IRa'][1] - ref_region['IRa'][0])*2 + (
-        ref_region['SSC'][1]-ref_region['SSC'][0])
+    ignore_offset = len(ref_regions['IRa'])*2 + len(ref_regions['SSC'])
     plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
-    plt.title(f"The validation result of {title.replace('-', ' and ')}")
+    plt.title(f"The validation result of {title.replace('-', ' and ')}",
+              pad=10)
     plt.xlabel('Base')
-    for key, value in ref_region.items():
-        plt.plot(value[:2], [0.8, 0.8], marker='+', label=key, linewidth=10)
-    for key, value in option_region.items():
-        plt.plot([value[1], value[1]], [0.93, 0.97],
+    for key, value in ref_regions.items():
+        plt.plot(value.location, [0.8, 0.8], marker='+', label=key,
+                 linewidth=10)
+    for key, value in option_regions.items():
+        plt.plot([value.location.end, value.location.end], [0.93, 0.97],
                  'k--', linewidth=2, alpha=0.3)
-        plt.plot([value[1], value[1]], [0.63, 0.67],
+        plt.plot([value.location.end, value.location.end], [0.63, 0.67],
                  'k--', linewidth=2, alpha=0.3)
     # no repeat legend
     plt.plot(0.5, 0.5, 'r-+', linewidth=5, label='Plus')
@@ -208,40 +209,34 @@ def main():
     if arg.ref_gb is None:
         ref_gb = down_ref(arg.taxon, output)
     else:
-        ref_gb = output / Path(arg.ref_gb)
+        ref_gb = output / arg.ref_gb
         # Path.rename is problematic
         with open(arg.ref_gb, 'r') as i, open(ref_gb, 'w') as o:
             o.write(i.read())
     ref_len = len(SeqIO.read(ref_gb, 'gb'))
+    # ref already in output
+    new_ref_gb, ref_fasta = rotate_seq(ref_gb)
+    ref_regions = get_regions(new_ref_gb)
 
     option_files = divide_records(arg.contig, output, ref_len, arg.len_diff,
                                   arg.top)
-
-    # ref already in output
-    new_ref_gb, ref_fasta = rotate_seq(ref_gb)
-    ref_region_info = get_region(new_ref_gb)
-
     for i in option_files:
         i_gb, i_fasta = i
         log.info(f'Analyze {i_fasta}.')
-        option_region_info = get_region(i_gb)
+        option_regions = get_regions(i_gb)
         option_len = len(SeqIO.read(i_fasta, 'fasta'))
         compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
         fig_title = str(output / f'{i_fasta.stem}-{ref_gb.stem}')
-        pdf = draw(fig_title, ref_region_info, option_region_info,
+        pdf = draw(fig_title, ref_regions, option_regions,
                    compare_result)
         log.info(f'Write figure {pdf}.')
-        # to be continued
         log.info('Detecting reverse complement region.')
 
         plus = np.zeros(option_len, dtype=bool)
         minus = np.zeros(option_len, dtype=bool)
         count = {}
-        for region in option_region_info:
-            count[region] = {'loc': slice(*option_region_info[region][:2]),
-                             'len': option_region_info[region][2],
-                             'plus': 0, 'minus': 0}
-
+        for region in option_regions:
+            count[region] = {'plus': 0, 'minus': 0}
         for hsp in compare_result:
             qstart, qend, sstart, send, sstrand, pident = hsp
             if sstrand == 'plus':
@@ -250,8 +245,11 @@ def main():
                 minus[qstart-1:qend] = True
         # count bases
         for rgn in count:
-            p_slice = plus[count[rgn]['loc']]
-            m_slice = minus[count[rgn]['loc']]
+            # numpy slice vs FeatureLocation
+            p_slice = plus[int(option_regions[rgn].location.start):int(
+                option_regions[rgn].location.end)]
+            m_slice = plus[int(option_regions[rgn].location.start):int(
+                option_regions[rgn].location.end)]
             count[rgn]['plus'] = np.count_nonzero(p_slice)
             count[rgn]['minus'] = np.count_nonzero(m_slice)
             count[rgn]['union'] = np.count_nonzero(p_slice | m_slice)
@@ -275,21 +273,21 @@ def main():
         # do not rc IR
         if count['LSC']['strand'] == count['SSC']['strand'] == 'minus':
             log.info(f'Reverse complement the whole sequence of {i_fasta}.')
-            edited = rc_region(i_fasta, i_regions, 'whole')
+            edited = rc_regions(i_gb, 'whole')
             pass
         elif count['LSC']['strand'] == 'minus':
             log.warning(f'Reverse complement the LSC of {i_fasta}.')
-            edited = rc_region(i_fasta, i_regions, 'LSC')
+            edited = rc_regions(i_gb, 'LSC')
             pass
         elif count['SSC']['strand'] == 'minus':
             log.warning(f'Reverse complement the SSC of {i_fasta}.')
-            edited = rc_region(i_fasta, i_regions, 'SSC')
+            edited = rc_regions(i_gb, 'SSC')
         else:
             edited = i_fasta
         if edited != i_fasta:
             new_compare_result = compare(edited, ref_fasta, arg.perc_identity)
             fig_title = str(output / f'{edited.stem}-{ref_gb.stem}')
-            pdf = draw(fig_title, ref_region_info, option_region_info,
+            pdf = draw(fig_title, ref_regions, option_regions,
                        new_compare_result)
             log.info(f'Write figure {pdf}.')
         validated.append(edited)

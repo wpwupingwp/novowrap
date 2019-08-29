@@ -68,7 +68,6 @@ def compare(query, reference, perc_identity):
         reference(Path or str): reference file
         perc_identity(float): percent identity for BLAST, need multiply 100
     Return:
-        results[0][0]: qseqid
         results[0][1]: BLAST data
     """
     results = []
@@ -82,7 +81,7 @@ def compare(query, reference, perc_identity):
             record.append([qstart, qend, sstart, send, sstrand, pident])
         results.append([qseqid, record])
     assert len(results) == 1
-    return results[0][0], results[0][1]
+    return results[0][1]
 
 
 def get_alpha(old):
@@ -121,7 +120,7 @@ def draw(title, ref_region, option_region, data):
         ref_region['SSC'][1]-ref_region['SSC'][0])
     plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
-    plt.title(f'BLAST validation of {title}')
+    plt.title(f"The validation result of {title.replace('-', ' and ')}")
     plt.xlabel('Base')
     for key, value in ref_region.items():
         plt.plot(value[:2], [0.8, 0.8], marker='+', label=key, linewidth=10)
@@ -151,8 +150,7 @@ def draw(title, ref_region, option_region, data):
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
             plt.fill([send, sstart, qend, qstart], [0.8, 0.8, 0.65, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
-    title = Path(title)
-    pdf = title.with_suffix('.pdf')
+    pdf = Path(title).with_suffix('.pdf')
     plt.savefig(pdf)
     plt.close()
     return pdf
@@ -188,7 +186,7 @@ def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
         log.warning(f'Found {len(options)} records in {fasta}.')
         log.info('Divide them into different files.')
         for idx, record in enumerate(options):
-            filename = output / f'{idx}-{fasta}'
+            filename = output / f'{idx}_{fasta}'
             record_len = len(record)
             if abs(1-(record_len/ref_len)) > len_diff:
                 log.critical(f'The length difference of record with reference '
@@ -228,7 +226,10 @@ def main():
     if arg.ref_gb is None:
         ref_gb = down_ref(arg.taxon, output)
     else:
-        ref_gb = Path(arg.ref_gb)
+        ref_gb = output / Path(arg.ref_gb)
+        # Path.rename is problematic
+        with open(arg.ref_gb, 'r') as i, open(ref_gb, 'w') as o:
+            o.write(i.read())
     ref_len = len(SeqIO.read(ref_gb, 'gb'))
 
     option_files = divide_records(arg.contig, output, ref_len, arg.len_diff,
@@ -243,8 +244,8 @@ def main():
         log.info(f'Analyze {i_fasta}.')
         option_region_info = get_region(i_gb)
         option_len = len(SeqIO.read(i_fasta, 'fasta'))
-        qseqid, compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
-        fig_title = output / f'{i_fasta.stem}_{qseqid}-{ref_gb.stem}'
+        compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
+        fig_title = str(output / f'{i_fasta.stem}-{ref_gb.stem}')
         pdf = draw(fig_title, ref_region_info, option_region_info,
                    compare_result)
         log.info(f'Write figure {pdf}.')
@@ -304,9 +305,8 @@ def main():
         else:
             edited = i_fasta
         if edited != i_fasta:
-            qseqid, new_compare_result = compare(edited, ref_fasta,
-                                                 arg.perc_identity)
-            fig_title = output / f'{i_fasta.stem}.rc_{qseqid}-{ref_gb.stem}'
+            new_compare_result = compare(edited, ref_fasta, arg.perc_identity)
+            fig_title = str(output / f'{edited.stem}-{ref_gb.stem}')
             pdf = draw(fig_title, ref_region_info, option_region_info,
                        new_compare_result)
             log.info(f'Write figure {pdf}.')

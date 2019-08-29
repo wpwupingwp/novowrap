@@ -440,7 +440,6 @@ def rotate_seq(filename, min_IR=1000):
     remove(repeat_fasta)
     if not success:
         return None, None, None
-    log.info(f'Rotated {gb.name} to uniform conformation {new_gb.name}.')
     return new_gb, new_fasta, new_regions
 
 
@@ -463,15 +462,15 @@ def rc_region(fasta, regions=None, choice='whole'):
         (r_gb, r_fasta, r_regions) = rotate_seq(fasta)
         regions = r_regions
     raw = SeqIO.read(fasta, 'fasta')
-    new_name = raw.name + '_rc'
-    new_file = Path(str(fasta) + '.rc')
+    new_name = '_r_' + raw.name
+    new_file = Path(fasta.parent, '_r_' + fasta.name)
     data = {}
     for i in SeqIO.parse(regions, 'fasta'):
         name = i.id.split('-')[-1]
         data[name] = i
     if choice != 'whole':
         data[choice] = data[choice].reverse_complement(
-            id=new_name+'_rc', name='', description='')
+            id=new_name, name='', description='')
         new = data['LSC']
         for i in ['IRa', 'SSC', 'IRb']:
             new += data[i]

@@ -6,5 +6,6 @@
 #6. matplotlib
 7. integrate validate into novowrap
 #8. novowrap do not use BarcodeFinder
-9. mark BLAST result, if plus > 90% of region, plus, if plus zero but minus,
-reverse
+#9. mark BLAST result, if plus > 90% of region, plus, if plus zero but minus, reverse
+10. rm .blast
+11. merge new_gb and regions

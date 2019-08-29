@@ -246,17 +246,17 @@ def main():
         # count bases
         for rgn in count:
             # numpy slice vs FeatureLocation
-            p_slice = plus[int(option_regions[rgn].location.start):int(
-                option_regions[rgn].location.end)]
-            m_slice = plus[int(option_regions[rgn].location.start):int(
-                option_regions[rgn].location.end)]
+            start = int(option_regions[rgn].location.start)
+            end = int(option_regions[rgn].location.end)
+            p_slice = plus[start:end]
+            m_slice = minus[start:end]
             count[rgn]['plus'] = np.count_nonzero(p_slice)
             count[rgn]['minus'] = np.count_nonzero(m_slice)
             count[rgn]['union'] = np.count_nonzero(p_slice | m_slice)
         # assign strand
         for rgn in count:
             # also use arg.perc_identity for region
-            min_rgn_len = count[rgn]['len'] * arg.perc_identity
+            min_rgn_len = len(option_regions[rgn]) * arg.perc_identity
             p = count[rgn]['plus']
             m = count[rgn]['minus']
             u = count[rgn]['union']

@@ -170,7 +170,7 @@ def parse_blast_tab(filename):
     """
     Parse BLAST result (tab format).
     Return [qseqid, sseqid, sstrand, length, pident, gapopen,
-    qstart, qend, sstart, send, sstrand]
+    qstart, qend, sstart, send]
     Arg:
         filename(Path): blast result file
     Return:
@@ -471,11 +471,9 @@ def rc_regions(gb, choice='whole'):
     if choice not in choices:
         raise ValueError(f'Region must be in {choices}.')
     raw = SeqIO.read(gb, 'gb')
-    new_name = '_r_' + raw.name
-    new_file = Path(gb.parent, '_r_' + gb.with_suffix('.fasta'))
     data = {}
     new_seq = ''
-    regions = get_region(gb)
+    regions = get_regions(gb)
     for r in regions:
         data[r] = r.extract(raw)
     if choice != 'whole':
@@ -485,6 +483,9 @@ def rc_regions(gb, choice='whole'):
             new_seq += data[i]
     else:
         new_seq = rc(raw.seq)
+
+    new_name = '_r_' + raw.name
+    new_file = Path(gb.parent, '_r_' + gb.with_suffix('.fasta'))
     with open(new_file, 'w') as out:
         out.write(f'>{new_name}\n')
         out.write(new_seq)

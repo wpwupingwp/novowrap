@@ -42,24 +42,6 @@ def parse_args():
     return arg.parse_args()
 
 
-def get_region(gb):
-    """
-    Arg:
-        gb(Path): rotate_seq generated gb file, only contains one record
-    Return:
-        region({name: [start, end, length]}): region location info
-    """
-    ref_region = {}
-    for feature in SeqIO.read(gb, 'gb').features:
-        if (feature.type == 'misc_feature' and
-                feature.qualifiers.get('software', ['', ])[0] == 'rotate_seq'):
-            key = feature.qualifiers['note'][0][-4:-1]
-            value = [feature.location.start, feature.location.end,
-                     len(feature)]
-            ref_region[key] = value
-    return ref_region
-
-
 def compare(query, reference, perc_identity):
     """
     Use BLAST to compare two records.
@@ -76,8 +58,8 @@ def compare(query, reference, perc_identity):
     for query in parse_blast_tab(blast_result):
         record = []
         for i in query:
-            (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
-             qstart, qend, sstart, send) = i
+            (qseqid, sseqid, sstrand, length, pident, gapopen, qstart, qend,
+             sstart, send) = i
             record.append([qstart, qend, sstart, send, sstrand, pident])
         results.append([qseqid, record])
     assert len(results) == 1
@@ -160,11 +142,11 @@ def clean_rotate(filename, output):
     """
     Make the folder clean.
     """
-    r_gb, r_contig, r_regions = rotate_seq(filename)
-    for i in r_gb, r_contig, r_regions:
+    r_gb, r_contig = rotate_seq(filename)
+    for i in r_gb, r_contig:
         # rename does not return new name
         i.rename(output/i)
-    return output/r_gb, output/r_contig, output/r_regions
+    return output/r_gb, output/r_contig
 
 
 def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
@@ -236,11 +218,11 @@ def main():
                                   arg.top)
 
     # ref already in output
-    new_ref_gb, ref_fasta, ref_regions = rotate_seq(ref_gb)
+    new_ref_gb, ref_fasta = rotate_seq(ref_gb)
     ref_region_info = get_region(new_ref_gb)
 
     for i in option_files:
-        i_gb, i_fasta, i_regions = i
+        i_gb, i_fasta = i
         log.info(f'Analyze {i_fasta}.')
         option_region_info = get_region(i_gb)
         option_len = len(SeqIO.read(i_fasta, 'fasta'))

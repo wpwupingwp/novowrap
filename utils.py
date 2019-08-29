@@ -10,6 +10,7 @@ from time import sleep
 
 from Bio import Entrez, SeqIO
 from Bio.Alphabet import IUPAC
+from Bio.Seq import reverse_complement as rc
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.SeqRecord import SeqRecord
 
@@ -150,7 +151,7 @@ def blast(query, target, perc_identity=70):
     Return:
         blast_out(Path): blast result filename
     """
-    FMT = ('qseqid sseqid qseq sseq sstrand qlen pident gapopen qstart qend '
+    FMT = ('qseqid sseqid sstrand qlen pident gapopen qstart qend '
            'sstart send')
     blast_out = query.with_suffix('.blast')
     # use blastn -subject instead of makeblastdb
@@ -168,7 +169,7 @@ def blast(query, target, perc_identity=70):
 def parse_blast_tab(filename):
     """
     Parse BLAST result (tab format).
-    Return [qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
+    Return [qseqid, sseqid, sstrand, length, pident, gapopen,
     qstart, qend, sstart, send, sstrand]
     Arg:
         filename(Path): blast result file
@@ -298,7 +299,7 @@ def rotate_seq(filename, min_IR=1000):
         SeqIO.convert(gb, 'gb', fasta, 'fasta')
 
     new_fasta = fasta.with_suffix('.rotate')
-    new_regions = fasta.with_suffix('.regions')
+    # new_regions = fasta.with_suffix('.regions')
     new_gb = fasta.with_suffix('.new_gb')
     success = False
     repeat_fasta = repeat(fasta)
@@ -426,11 +427,11 @@ def rotate_seq(filename, min_IR=1000):
         log.info(f'\tIRb {new_seq.features[3].location}')
         with open(new_fasta, 'w') as out:
             out.write(f'>{name}\n{new_seq.seq}\n')
-        with open(new_regions, 'w') as o:
-            o.write(f'>{name}-LSC\n{seq_LSC.seq}\n')
-            o.write(f'>{name}-IRa\n{seq_IRa.seq}\n')
-            o.write(f'>{name}-SSC\n{seq_SSC.seq}\n')
-            o.write(f'>{name}-IRb\n{seq_IRb.seq}\n')
+        # with open(new_regions, 'w') as o:
+        #     o.write(f'>{name}-LSC\n{seq_LSC.seq}\n')
+        #     o.write(f'>{name}-IRa\n{seq_IRa.seq}\n')
+        #     o.write(f'>{name}-SSC\n{seq_SSC.seq}\n')
+        #     o.write(f'>{name}-IRb\n{seq_IRb.seq}\n')
         with open(new_gb, 'w') as out3:
             raw_gb.features.extend(features)
             SeqIO.write(raw_gb, out3, 'gb')
@@ -440,46 +441,60 @@ def rotate_seq(filename, min_IR=1000):
     remove(repeat_fasta)
     if not success:
         return None, None, None
-    return new_gb, new_fasta, new_regions
+    # return new_gb, new_fasta, new_regions
+    return new_gb, new_fasta
 
 
-def rc_region(fasta, regions=None, choice='whole'):
+def get_region(gb):
+    """
+    Arg:
+        gb(Path): rotate_seq generated gb file, only contains one record
+    Return:
+        region({name: SeqFeature}): region location dict
+    """
+    ref_region = {}
+    for feature in SeqIO.read(gb, 'gb').features:
+        if (feature.type == 'misc_feature' and
+                feature.qualifiers.get('software', ['', ])[0] == 'rotate_seq'):
+            key = feature.qualifiers['note'][0][-4:-1]
+            value = feature
+            ref_region[key] = value
+    return ref_region
+
+
+def rc_region(gb, choice='whole'):
     """
     Reverse and complement given region of sequence.
     Args:
-        fasta(Path or str): fasta file
-        regions(Path or str): fasta file contains regions
+        gb(Path or str): rotate_seq generated gb file
         choice(str): region to be processed, must be in 'LSC', 'IRa', 'SSC',
         'IRb', 'whole'.
     Return:
-        rc(Path): processed file
+        new_file(Path): fasta file after reverse complement
     """
     choices = ('LSC', 'IRa', 'SSC', 'IRb', 'whole')
     if choice not in choices:
         raise ValueError(f'Region must be in {choices}.')
-    if regions is None:
-        # unrotated
-        (r_gb, r_fasta, r_regions) = rotate_seq(fasta)
-        regions = r_regions
-    raw = SeqIO.read(fasta, 'fasta')
+    raw = SeqIO.read(gb, 'gb')
     new_name = '_r_' + raw.name
-    new_file = Path(fasta.parent, '_r_' + fasta.name)
+    new_file = Path(gb.parent, '_r_' + gb.with_suffix('.fasta'))
     data = {}
-    for i in SeqIO.parse(regions, 'fasta'):
-        name = i.id.split('-')[-1]
-        data[name] = i
+    new_seq = ''
+    regions = get_region(gb)
+    for r in regions:
+        data[r] = r.extract(raw)
     if choice != 'whole':
-        data[choice] = data[choice].reverse_complement(
-            id=new_name, name='', description='')
-        new = data['LSC']
+        data[choice] = rc(regions[choice].extract(raw))
+        new_seq = data['LSC']
         for i in ['IRa', 'SSC', 'IRb']:
-            new += data[i]
-        SeqIO.write(new, new_file, 'fasta')
+            new_seq += data[i]
     else:
-        SeqIO.write(raw.reverse_complement(id=new_name,
-                                           name='', description=''),
-                    new_file, 'fasta')
-        n_gb, new_file, n_regions = rotate_seq(new_file)
+        new_seq = rc(raw.seq)
+    with open(new_file, 'w') as out:
+        out.write(f'>{new_name}\n')
+        out.write(new_seq)
+        out.write('\n')
+    n_gb, new_file = rotate_seq(new_file)
     return new_file
 
 

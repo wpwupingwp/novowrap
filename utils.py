@@ -330,9 +330,8 @@ def rotate_seq(filename, min_IR=1000):
                 continue
             # allow few gaps
             if gapopen != 0:
-                log.warning(f'Found {gapopen} gaps.')
                 if gapopen > ambiguous_base_n:
-                    log.critical('Too much gaps. Reject.')
+                    log.critical('Too much gaps ({gapopen}). Reject.')
                     continue
             # mismatch
             location = tuple(sorted([qstart, qend, sstart, send]))
@@ -390,7 +389,7 @@ def rotate_seq(filename, min_IR=1000):
                 continue
         if len(seq_IRa) != len(seq_IRb):
             log.warning(f'IRa ({len(seq_IRa)}) and IRb ({len(seq_IRb)}) do '
-                        'not have same length! Reject.')
+                        'not have same length.')
             if abs(len(seq_IRa) - len(seq_IRb)) > ambiguous_base_n:
                 log.critical(f'Too much difference. Reject.')
                 continue

@@ -8,7 +8,7 @@ from Bio import SeqIO
 from matplotlib import pyplot as plt
 import numpy as np
 
-from utils import down_ref, blast, parse_blast_tab, rotate_seq
+from utils import down_ref, blast, parse_blast_tab, rotate_seq, rc_region
 
 
 # define logger
@@ -37,7 +37,7 @@ def parse_args():
                      default=0.1,
                      help='maximum percentage of length differnce of query to'
                      'reference, 0-100')
-    arg.add_argument('-n', type=int, default=0,
+    arg.add_argument('-n', dest='top', type=int, default=0,
                      help='top n of records to keep, 0 for all')
     return arg.parse_args()
 
@@ -169,7 +169,7 @@ def clean_rotate(filename, output):
     return output/r_gb, output/r_contig, output/r_regions
 
 
-def divide_records(fasta, output, ref_len, len_diff=0.2, top=0):
+def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
     """
     Make sure each file has only one record.
     Args:
@@ -190,10 +190,10 @@ def divide_records(fasta, output, ref_len, len_diff=0.2, top=0):
         for idx, record in enumerate(options):
             filename = output / f'{idx}-{fasta}'
             record_len = len(record)
-            if abs(1-(record_len/ref_len))*100 > len_diff:
-                log.warning(f'The length difference of record with reference'
-                            f'({abs(record_len-ref_len)} bp) is out of limit'
-                            f'({len_diff}%).')
+            if abs(1-(record_len/ref_len)) > len_diff:
+                log.critical(f'The length difference of record with reference '
+                             f'({abs(record_len-ref_len)} bp) is out of limit '
+                             f'({len_diff:.0%}, {len_diff*ref_len:d}).')
                 new_filename = str(filename) + '.bad_length'
                 SeqIO.write(record, new_filename, 'fasta')
                 log.warning(f'Skip {new_filename}.')
@@ -300,19 +300,22 @@ def main():
         # do not rc IR
         if count['LSC']['strand'] == count['SSC']['strand'] == 'minus':
             log.info(f'Reverse complement the whole sequence of {i_fasta}.')
+            edited = rc_region(i_fasta, i_regions, 'whole')
             pass
         elif count['LSC']['strand'] == 'minus':
             log.info(f'Reverse complement the LSC of {i_fasta}.')
+            edited = rc_region(i_fasta, i_regions, 'LSC')
             pass
         elif count['SSC']['strand'] == 'minus':
             log.info(f'Reverse complement the SSC of {i_fasta}.')
-            pass
-        validated.append(i_fasta)
+            edited = rc_region(i_fasta, i_regions, 'SSC')
+        else:
+            edited = i_fasta
+        validated.append(edited)
 
-        print(*count.items())
-
-        # np.count_nonzero(lsc_plus[20:30])
-
+    log.info('Validated sequences:')
+    for i in validated:
+        log.info(f'\t{i}')
     log.info('Bye.')
     return
 

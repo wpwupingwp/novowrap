@@ -438,7 +438,7 @@ def rotate_seq(filename, min_IR=1000):
     return new_gb, new_fasta, new_regions
 
 
-def rc(fasta, region=None, choice='whole'):
+def rc_region(fasta, region=None, choice='whole'):
     """
     Reverse and complement given region of sequence.
     Args:

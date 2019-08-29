@@ -475,9 +475,9 @@ def rc_regions(gb, choice='whole'):
     new_seq = ''
     regions = get_regions(gb)
     for r in regions:
-        data[r] = r.extract(raw)
+        data[r] = regions[r].extract(raw)
     if choice != 'whole':
-        data[choice] = rc(regions[choice].extract(raw))
+        data[choice] = rc(regions[choice].extract(raw.seq))
         new_seq = data['LSC']
         for i in ['IRa', 'SSC', 'IRb']:
             new_seq += data[i]

@@ -31,13 +31,13 @@ def parse_args():
     arg.add_argument('-t', '-taxon', dest='taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
     arg.add_argument('-i', '-perc_identity', dest='perc_identity', type=float,
-                     default=70.0,
+                     default=0.7,
                      help='minimum percentage of identity of BLAST, 0-100')
     arg.add_argument('-l', '-len_diff', dest='len_diff', type=float,
-                     default=10,
+                     default=0.1,
                      help='maximum percentage of length differnce of query to'
                      'reference, 0-100')
-    arg.add_argument('-n', type=int, default=5,
+    arg.add_argument('-n', type=int, default=0,
                      help='top n of records to keep, 0 for all')
     return arg.parse_args()
 
@@ -66,13 +66,13 @@ def compare(query, reference, perc_identity):
     Args:
         query(Path or str): query file
         reference(Path or str): reference file
-        arg(Path): BLAST parameters
+        perc_identity(float): percent identity for BLAST, need multiply 100
     Return:
         results[0][0]: qseqid
         results[0][1]: BLAST data
     """
     results = []
-    blast_result = blast(Path(query), reference, perc_identity)
+    blast_result = blast(Path(query), reference, perc_identity*100)
     # only one record in file, loop is for unpack
     for query in parse_blast_tab(blast_result):
         record = []
@@ -169,6 +169,47 @@ def clean_rotate(filename, output):
     return output/r_gb, output/r_contig, output/r_regions
 
 
+def divide_records(fasta, output, ref_len, len_diff=0.2, top=0):
+    """
+    Make sure each file has only one record.
+    Args:
+        fasta(Path or str): fasta file
+        output(Path): output folder
+        ref_len(int): length of reference, to filter bad records
+        len_diff: maximum allowed length difference
+        top(int): number of records to keep
+    Returns:
+        option_files(list(Path)):  list of divided files
+    """
+    options = list(SeqIO.parse(fasta, 'fasta'))
+    fasta = Path(fasta)
+    option_files = []
+    if len(options) > 1:
+        log.warning(f'Found {len(options)} records in {fasta}.')
+        log.info('Divide them into different files.')
+        for idx, record in enumerate(options):
+            filename = output / f'{idx}-{fasta}'
+            record_len = len(record)
+            if abs(1-(record_len/ref_len))*100 > len_diff:
+                log.warning(f'The length difference of record with reference'
+                            f'({abs(record_len-ref_len)} bp) is out of limit'
+                            f'({len_diff}%).')
+                new_filename = str(filename) + '.bad_length'
+                SeqIO.write(record, new_filename, 'fasta')
+                log.warning(f'Skip {new_filename}.')
+                continue
+            SeqIO.write(record, filename, 'fasta')
+            option_files.append(rotate_seq(filename))
+    else:
+        option_files.append(clean_rotate(fasta, output))
+    if top != 0:
+        skip = len(option_files) - top
+        if skip > 0:
+            log.critical(f'Skip {skip} records.')
+            option_files = option_files[:top]
+    return option_files
+
+
 def main():
     """
     Use BLAST to validate assembly result.
@@ -178,6 +219,7 @@ def main():
     arg.contig = Path(arg.contig)
     output = Path(arg.contig.stem)
     output.mkdir()
+    validated = []
     log.info(f'Contig:\t{arg.contig}')
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
@@ -197,32 +239,8 @@ def main():
     ref_gb = output / (ref_gb_name + '.gb')
     ref_len = len(SeqIO.read(ref_gb, 'gb'))
 
-    options = list(SeqIO.parse(arg.contig, 'fasta'))
-    option_files = []
-    if len(options) > 1:
-        log.warning(f'Find {len(options)} records in {arg.contig}.')
-        log.info('Divide them into different files.')
-        for idx, record in enumerate(options):
-            filename = output / f'{idx}-{arg.contig}'
-            record_len = len(record)
-            if abs(1-(record_len/ref_len))*100 > arg.len_diff:
-                log.warning(f'The length difference of record with reference'
-                            f'({abs(record_len-ref_len)} bp) is out of limit'
-                            f'({arg.len_diff}%).')
-                new_filename = str(filename) + '.bad_length'
-                SeqIO.write(record, new_filename, 'fasta')
-                log.warning(f'Skip {new_filename}.')
-                continue
-            log.info(f'\t{filename}')
-            SeqIO.write(record, filename, 'fasta')
-            option_files.append(rotate_seq(filename))
-    else:
-        option_files.append(clean_rotate(arg.contig, output))
-    if arg.n != 0:
-        skip = len(option_files) - arg.n
-        if skip > 0:
-            log.critical(f'Skip {skip} records.')
-            option_files = option_files[:arg.n]
+    option_files = divide_records(arg.contig, output, ref_len, arg.len_diff,
+                                  arg.top)
 
     # ref already in output
     new_ref_gb, ref_fasta, ref_regions = rotate_seq(ref_gb)
@@ -255,26 +273,42 @@ def main():
                 plus[qstart-1:qend] = True
             else:
                 minus[qstart-1:qend] = True
+        # count bases
         for rgn in count:
             p_slice = plus[count[rgn]['loc']]
             m_slice = minus[count[rgn]['loc']]
             count[rgn]['plus'] = np.count_nonzero(p_slice)
             count[rgn]['minus'] = np.count_nonzero(m_slice)
             count[rgn]['union'] = np.count_nonzero(p_slice | m_slice)
-        threshold = arg.perc_identity / 100
+        # assign strand
         for rgn in count:
-            min_rgn_len = count[rgn]['len'] * threshold
+            # also use arg.perc_identity for region
+            min_rgn_len = count[rgn]['len'] * arg.perc_identity
             p = count[rgn]['plus']
             m = count[rgn]['minus']
             u = count[rgn]['union']
             if p == m == 0:
                 count[rgn]['strand'] = 'missing'
+                log.critical(f'Region {rgn} of {i_fasta} is missing.')
             elif u < min_rgn_len:
                 count[rgn]['strand'] = 'incomplete'
+                log.critical(f'Region {rgn} of {i_fasta} is incomplete.')
             elif p > min_rgn_len:
                 count[rgn]['strand'] = 'plus'
             elif m > min_rgn_len:
                 count[rgn]['strand'] = 'minus'
+        # do not rc IR
+        if count['LSC']['strand'] == count['SSC']['strand'] == 'minus':
+            log.info(f'Reverse complement the whole sequence of {i_fasta}.')
+            pass
+        elif count['LSC']['strand'] == 'minus':
+            log.info(f'Reverse complement the LSC of {i_fasta}.')
+            pass
+        elif count['SSC']['strand'] == 'minus':
+            log.info(f'Reverse complement the SSC of {i_fasta}.')
+            pass
+        validated.append(i_fasta)
+
         print(*count.items())
 
         # np.count_nonzero(lsc_plus[20:30])

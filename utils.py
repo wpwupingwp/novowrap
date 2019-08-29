@@ -480,6 +480,7 @@ def rc_region(fasta, regions=None, choice='whole'):
         SeqIO.write(raw.reverse_complement(id=new_name,
                                            name='', description=''),
                     new_file, 'fasta')
+        n_gb, new_file, n_regions = rotate_seq(new_file)
     return new_file
 
 

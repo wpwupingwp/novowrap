@@ -246,6 +246,7 @@ def main():
         count = {}
         for region in option_region_info:
             count[region] = {'loc': slice(*option_region_info[region][:2]),
+                             'len': option_region_info[region][2],
                              'plus': 0, 'minus': 0}
 
         for hsp in compare_result:
@@ -255,8 +256,25 @@ def main():
             else:
                 minus[qstart-1:qend] = True
         for rgn in count:
-            count[rgn]['plus'] = np.count_nonzero(plus[count[rgn]['loc']])
-            count[rgn]['minus'] = np.count_nonzero(minus[count[rgn]['loc']])
+            p_slice = plus[count[rgn]['loc']]
+            m_slice = minus[count[rgn]['loc']]
+            count[rgn]['plus'] = np.count_nonzero(p_slice)
+            count[rgn]['minus'] = np.count_nonzero(m_slice)
+            count[rgn]['union'] = np.count_nonzero(p_slice | m_slice)
+        threshold = arg.perc_identity / 100
+        for rgn in count:
+            min_rgn_len = count[rgn]['len'] * threshold
+            p = count[rgn]['plus']
+            m = count[rgn]['minus']
+            u = count[rgn]['union']
+            if p == m == 0:
+                count[rgn]['strand'] = 'missing'
+            elif u < min_rgn_len:
+                count[rgn]['strand'] = 'incomplete'
+            elif p > min_rgn_len:
+                count[rgn]['strand'] = 'plus'
+            elif m > min_rgn_len:
+                count[rgn]['strand'] = 'minus'
         print(*count.items())
 
         # np.count_nonzero(lsc_plus[20:30])

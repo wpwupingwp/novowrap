@@ -447,7 +447,7 @@ def rc(fasta, region=None, choice='whole'):
         choice(str): region to be processed, must be in 'LSC', 'IRa', 'SSC',
         'IRb', 'whole'.
     Return:
-        rc(str): processed file
+        rc(Path): processed file
     """
     choices = ('LSC', 'IRa', 'SSC', 'IRb', 'whole')
     if choice not in choices:
@@ -458,7 +458,7 @@ def rc(fasta, region=None, choice='whole'):
         region = r_regions
     raw = SeqIO.read(fasta, 'fasta')
     new_name = raw.name + '_rc'
-    new_file = fasta + '.rc'
+    new_file = Path(str(fasta) + '.rc')
     data = {}
     for i in SeqIO.parse(r_regions, 'fasta'):
         name = i.id.split('-')[-1]
@@ -474,6 +474,7 @@ def rc(fasta, region=None, choice='whole'):
         SeqIO.write(raw.reverse_complement(id=new_name,
                                            name='', description=''),
                     new_file, 'fasta')
+    return new_file
 
 
 def parse_args():

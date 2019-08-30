@@ -172,11 +172,12 @@ def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
         for idx, record in enumerate(options):
             filename = output / f'{idx}_{fasta}'
             record_len = len(record)
-            if abs(1-(record_len/ref_len)) > len_diff:
-                log.critical(f'The length difference of record with reference '
-                             f'({abs(record_len-ref_len)} bp) is out of limit '
-                             f'({len_diff:.0%}, {len_diff*ref_len:.0f}).')
-                new_filename = str(filename) + '.bad_length'
+            record_len_diff = abs(1-(record_len/ref_len))
+            if record_len_diff > len_diff:
+                log.critical(f'The length difference of the {idx+1} record '
+                             f'with reference is out of limit '
+                             f'({record_len_diff:.2%} > {len_diff:.2%}).')
+                new_filename = filename.with_suffix('.bad_length')
                 SeqIO.write(record, new_filename, 'fasta')
                 log.warning(f'Skip {new_filename}.')
                 continue
@@ -195,7 +196,6 @@ def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
 def main():
     """
     Use BLAST to validate assembly result.
-    Only handle first record in file.
     """
     arg = parse_args()
     arg.contig = Path(arg.contig)

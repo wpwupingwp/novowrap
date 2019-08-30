@@ -2,7 +2,7 @@
 
 import argparse
 import logging
-from os import devnull, remove
+from os import devnull
 from pathlib import Path
 from subprocess import run
 from tempfile import TemporaryDirectory
@@ -12,7 +12,6 @@ from Bio import Entrez, SeqIO
 from Bio.Alphabet import IUPAC
 from Bio.Seq import reverse_complement as rc
 from Bio.SeqFeature import SeqFeature, FeatureLocation
-from Bio.SeqRecord import SeqRecord
 
 
 # temporary directory
@@ -196,7 +195,9 @@ def _repeat(filename, fmt):
     """
     Duplicate sequence to get full length of IR which may locate in start or
     end of sequences that BLAST cannot get whole length.
-    The repeated gb record contains two "source"-type features, which may not be parsed correctly by other functions, hence make this function private.
+
+    The repeated gb record contains two "source"-type features, which may not
+    be parsed correctly by other functions, hence make this function private.
     Args:
         filename(Path): file to be repeat
         fmt(str): 'gb' or 'fasta'
@@ -304,7 +305,6 @@ def rotate_seq(filename, min_IR=1000):
     for query in parse_blast_tab(blast_result):
         locations = set()
         # use fasta's description
-        name = ''
         ambiguous_base_n = len(str(origin_seq).strip('ATCGatcg'))
         # only use hit of IR to IR
         max_aln_n = 0
@@ -408,9 +408,10 @@ def rotate_seq(filename, min_IR=1000):
             offset += length
         new_seq.features.extend(features)
         # print feature
-        log.info(f'\tRegions of {name}:')
+        log.info(f'\tRegions of rotated record:')
         for f in features:
-            log.info(f'\t\t{f.id}: from {f.location.start} to {f.location.end} ({len(f)}')
+            log.info(f'\t{f.qualifiers["note"][-4:-1]}: {f.location.start} to '
+                     f'{f.location.end} ({len(f)} bp)')
         SeqIO.write(new_seq, new_gb, 'gb')
         SeqIO.write(new_seq, new_fasta, 'fasta')
         success = True

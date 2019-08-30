@@ -26,7 +26,7 @@ except ImportError:
 def parse_args():
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    arg.add_argument('contig', help='contig file')
+    arg.add_argument('input', help='input filename')
     arg.add_argument('-r', '-ref_gb', dest='ref_gb', help='reference gb')
     arg.add_argument('-t', '-taxon', dest='taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
@@ -198,12 +198,11 @@ def main():
     Use BLAST to validate assembly result.
     """
     arg = parse_args()
-    arg.contig = Path(arg.contig)
-    output = Path(arg.contig.stem)
+    arg.input = Path(arg.input)
+    output = arg.input.stem
     output.mkdir()
     validated = []
-    result_info = []
-    log.info(f'Contig:\t{arg.contig}')
+    log.info(f'Contig:\t{arg.input}')
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
     # get ref
@@ -222,8 +221,10 @@ def main():
         log.critical('Please consider to use another reference.')
         raise SystemExit
     ref_regions = get_regions(new_ref_gb)
-    option_files = divide_records(arg.contig, output, ref_len,
+    # to be continued
+    option_files = divide_records(arg.input, output, ref_len,
                                   arg.len_diff, arg.top)
+    option_info = []
     for i in option_files:
         if i is None:
             continue

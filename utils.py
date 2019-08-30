@@ -29,7 +29,7 @@ try:
     coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
 except ImportError:
     pass
-log = logging.getLogger(__name__)
+log = logging.getLogger('__main__')
 
 
 def down_ref(taxon, output):

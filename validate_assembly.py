@@ -280,8 +280,8 @@ def main():
             to_rc = 'SSC'
         if to_rc is not None:
             log.warning(f'Reverse complement the {to_rc} of {i_fasta}.')
+            # hide rotate log
             log.setLevel(logging.WARNING)
-            log.info('test')
             rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
             log.setLevel(logging.INFO)
             new_compare_result = compare(rc_fasta, ref_fasta,

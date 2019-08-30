@@ -264,8 +264,7 @@ def slice_gb(seq, location):
 def rotate_seq(filename, min_IR=1000):
     """
     Rotate genbank or fasta record, from LSC (trnH-psbA) to IRa, SSC, IRb.
-    Repeat length parameters for easily call rotate function instead of run
-    whole program.
+    Input file should only contains one record.
     Arg:
         filename(Path or str): genbank or filename
         min_IR: minimum IR length
@@ -281,13 +280,7 @@ def rotate_seq(filename, min_IR=1000):
             fmt = 'fasta'
         else:
             fmt = 'gb'
-    records = list(SeqIO.parse(filename, fmt))
-    if len(records) > 1:
-        log.warning(f'\tFound {len(records)} records')
-        log.warning(f'\tOnly handle the first as representative.')
-        log.warning(f'\tDivide them if you want to rotate all.')
-        filename = str(filename) + '.1'
-        SeqIO.write(records[0], filename, fmt)
+    record = SeqIO.read(filename, fmt)
     if fmt == 'fasta':
         fasta = Path(filename)
         gb = fasta.with_suffix('.gb')
@@ -298,7 +291,6 @@ def rotate_seq(filename, min_IR=1000):
         SeqIO.convert(gb, 'gb', fasta, 'fasta')
 
     new_fasta = fasta.with_suffix('.rotate')
-    # new_regions = fasta.with_suffix('.regions')
     new_gb = fasta.with_suffix('.new_gb')
     success = False
     repeat_fasta = repeat(fasta)
@@ -400,7 +392,6 @@ def rotate_seq(filename, min_IR=1000):
         # output
         offset = -1
         features = []
-        # for ogdraw
         for f_name, f in zip(('large single copy (LSC)',
                               'inverted repeat A (IRa)',
                               'small single copy (SSC)',
@@ -413,7 +404,6 @@ def rotate_seq(filename, min_IR=1000):
                 qualifiers={'note': f_name, 'software': 'rotate_seq'},
                 strand=1))
             offset += length
-        # output
         new_seq.features.extend(features)
         assert str(seq_SSC.seq) == str(
             new_seq.features[2].extract(new_seq).seq)

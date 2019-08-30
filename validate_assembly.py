@@ -63,6 +63,7 @@ def compare(query, reference, perc_identity):
             record.append([qstart, qend, sstart, send, sstrand, pident])
         results.append(record)
     assert len(results) == 1
+    blast_result.unlink()
     return results[0]
 
 
@@ -201,7 +202,6 @@ def main():
     arg.input = Path(arg.input)
     output = Path(arg.input.stem)
     output.mkdir()
-    validated = []
     log.info(f'Contig:\t{arg.input}')
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
@@ -225,6 +225,7 @@ def main():
     option_files = divide_records(arg.input, output, ref_len,
                                   arg.len_diff, arg.top)
     option_info = []
+    validated = []
     for i in option_files:
         if i is None:
             continue

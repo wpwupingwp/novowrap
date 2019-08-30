@@ -199,7 +199,7 @@ def main():
     """
     arg = parse_args()
     arg.input = Path(arg.input)
-    output = arg.input.stem
+    output = Path(arg.input.stem)
     output.mkdir()
     validated = []
     log.info(f'Contig:\t{arg.input}')

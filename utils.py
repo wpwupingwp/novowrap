@@ -20,10 +20,7 @@ NULL = open(devnull, 'w')
 # define logger
 FMT = '%(asctime)s %(levelname)-8s %(message)s'
 DATEFMT = '%H:%M:%S'
-TEMP_LOG = 'Temp.log'
-logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO,
-                    handlers=[logging.StreamHandler(),
-                              logging.FileHandler(TEMP_LOG)])
+logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
 try:
     import coloredlogs
     coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)

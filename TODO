@@ -8,4 +8,6 @@
 #8. novowrap do not use BarcodeFinder
 #9. mark BLAST result, if plus > 90% of region, plus, if plus zero but minus, reverse
 10. rm .blast
-11. merge new_gb and regions
+#11. merge new_gb and regions
+12. arg.ref_gb to arg.ref (fasta also ok)
+13. fewer files

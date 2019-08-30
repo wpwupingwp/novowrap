@@ -192,20 +192,20 @@ def parse_blast_tab(filename):
                 query.append(line)
 
 
-def repeat(filename, fmt):
+def _repeat(filename, fmt):
     """
     Duplicate sequence to get full length of IR which may locate in start or
     end of sequences that BLAST cannot get whole length.
-    Assume the strand of sequence is in correct direction.
+    The repeated gb record contains two "source"-type features, which may not be parsed correctly by other functions, hence make this function private.
     Args:
         filename(Path): file to be repeat
         fmt(str): 'gb' or 'fasta'
     Return:
-        repeated(Path): repeated file with origin format
-        repeat_fasta(Path): fasta file for BLAST
+        new_file(Path): repeated file with origin format
+        new_fasta(Path): fasta file for BLAST
     """
-    new_file = filename.with_suffix('.repeat')
-    new_fasta = filename.with_suffix('.repeat_fasta')
+    new_file = filename.with_suffix('.rpt')
+    new_fasta = filename.with_suffix('.rpt_fasta')
     raw = SeqIO.read(filename, fmt)
     new = raw + raw
     SeqIO.write(new, new_file, fmt)
@@ -221,7 +221,7 @@ def slice_gb(seq, location):
     Biopython will skip incomplete annotation.
     Use this function to keep those fragments.
     Arg:
-        seq(SeqRecord): gb record
+        seq(SeqRecord): sequence
         location(FeatureLocation): location
     Return:
         new_seq(SeqRecord): new SeqRecord
@@ -279,33 +279,27 @@ def rotate_seq(filename, min_IR=1000):
     # FMT = 'qseqid sseqid length pident gapopen qstart qend sstart
     # send'
     log.info(f'Rotate {filename}...')
+    filename = Path(filename)
     with open(filename, 'r') as _:
         start = _.readline()
         if start.startswith('>'):
             fmt = 'fasta'
         else:
             fmt = 'gb'
-    # if fmt == 'fasta':
-        # fasta = Path(filename)
-        # gb = fasta.with_suffix('.gb')
         # SeqIO.convert(fasta, 'fasta', gb, 'gb', alphabet=IUPAC.ambiguous_dna)
-    if fmt == 'gb':
-        # gb = Path(filename)
-        fasta = gb.with_suffix('.fasta')
-        SeqIO.convert(gb, 'gb', fasta, 'fasta')
-    else:
-        fasta = filename
-    new_fasta = fasta.with_suffix('.rotate')
-    new_gb = fasta.with_suffix('.new_gb')
-    success = False
 
+    # get origin seq
     origin_seq = list(SeqIO.parse(filename, fmt))
     assert len(origin_seq) == 1
     origin_seq = origin_seq[0]
     origin_len = len(origin_seq)
-    repeat_fasta = repeat(fasta)
-    repeat_seq = SeqIO.read(repeat_fasta, 'fasta')
+    # get repeat seq
+    repeat_record, repeat_fasta = _repeat(filename, fmt)
+    repeat_seq = SeqIO.read(repeat_record, fmt)
     blast_result = blast(repeat_fasta, repeat_fasta)
+    new_fasta = filename.with_suffix('.rotate')
+    new_gb = filename.with_suffix('.new_gb')
+    success = False
     # only one record, loop just for for unpack
     for query in parse_blast_tab(blast_result):
         locations = set()
@@ -413,23 +407,17 @@ def rotate_seq(filename, min_IR=1000):
                 strand=1))
             offset += length
         new_seq.features.extend(features)
-        assert str(seq_SSC.seq) == str(
-            new_seq.features[2].extract(new_seq).seq)
-        success = True
+        # print feature
         log.info(f'\tRegions of {name}:')
-        log.info(f'\t\tLSC {new_seq.features[0].location}')
-        log.info(f'\t\tIRa {new_seq.features[1].location}')
-        log.info(f'\t\tSSC {new_seq.features[2].location}')
-        log.info(f'\t\tIRb {new_seq.features[3].location}')
-        with open(new_fasta, 'w') as out:
-            out.write(f'>{name}\n{new_seq.seq}\n')
-    with open(new_gb, 'w') as out3:
-        raw_gb.features.extend(features)
-        SeqIO.write(raw_gb, out3, 'gb')
-
-
-    remove(blast_result)
-    remove(repeat_fasta)
+        for f in features:
+            log.info(f'\t\t{f.id}: from {f.location.start} to {f.location.end} ({len(f)}')
+        SeqIO.write(new_seq, new_gb, 'gb')
+        SeqIO.write(new_seq, new_fasta, 'fasta')
+        success = True
+    blast_result.unlink()
+    repeat_record.unlink()
+    if repeat_fasta.exists():
+        repeat_fasta.unlink()
     if not success:
         log.critical(f'Failed to rotate {filename}.')
         raise SystemExit

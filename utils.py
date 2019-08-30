@@ -192,23 +192,28 @@ def parse_blast_tab(filename):
                 query.append(line)
 
 
-def repeat(fasta):
+def repeat(filename, fmt):
     """
     Duplicate sequence to get full length of IR which may locate in start or
     end of sequences that BLAST cannot get whole length.
     Assume the strand of sequence is in correct direction.
     Args:
-        fasta(Path): fasta filename
+        filename(Path): file to be repeat
+        fmt(str): 'gb' or 'fasta'
     Return:
-        new_fasta(Path): new_fasta's name
+        repeated(Path): repeated file with origin format
+        repeat_fasta(Path): fasta file for BLAST
     """
-    new_fasta = fasta.with_suffix('.new')
-    new = []
-    for i in SeqIO.parse(fasta, 'fasta'):
-        i.seq = i.seq + i.seq
-        new.append(i)
-    SeqIO.write(new, new_fasta, 'fasta')
-    return new_fasta
+    new_file = filename.with_suffix('.repeat')
+    new_fasta = filename.with_suffix('.repeat_fasta')
+    raw = SeqIO.read(filename, fmt)
+    new = raw + raw
+    SeqIO.write(new, new_file, fmt)
+    if fmt != 'fasta':
+        SeqIO.write(new, new_fasta, 'fasta')
+    else:
+        new_fasta = new_file
+    return new_file, new_fasta
 
 
 def slice_gb(seq, location):
@@ -217,7 +222,7 @@ def slice_gb(seq, location):
     Use this function to keep those fragments.
     Arg:
         seq(SeqRecord): gb record
-        location(slice): location
+        location(FeatureLocation): location
     Return:
         new_seq(SeqRecord): new SeqRecord
     """
@@ -280,61 +285,64 @@ def rotate_seq(filename, min_IR=1000):
             fmt = 'fasta'
         else:
             fmt = 'gb'
-    record = SeqIO.read(filename, fmt)
-    if fmt == 'fasta':
-        fasta = Path(filename)
-        gb = fasta.with_suffix('.gb')
-        SeqIO.convert(fasta, 'fasta', gb, 'gb', alphabet=IUPAC.ambiguous_dna)
-    else:
-        gb = Path(filename)
+    # if fmt == 'fasta':
+        # fasta = Path(filename)
+        # gb = fasta.with_suffix('.gb')
+        # SeqIO.convert(fasta, 'fasta', gb, 'gb', alphabet=IUPAC.ambiguous_dna)
+    if fmt == 'gb':
+        # gb = Path(filename)
         fasta = gb.with_suffix('.fasta')
         SeqIO.convert(gb, 'gb', fasta, 'fasta')
-
+    else:
+        fasta = filename
     new_fasta = fasta.with_suffix('.rotate')
     new_gb = fasta.with_suffix('.new_gb')
     success = False
+
+    origin_seq = list(SeqIO.parse(filename, fmt))
+    assert len(origin_seq) == 1
+    origin_seq = origin_seq[0]
+    origin_len = len(origin_seq)
     repeat_fasta = repeat(fasta)
+    repeat_seq = SeqIO.read(repeat_fasta, 'fasta')
     blast_result = blast(repeat_fasta, repeat_fasta)
-    # blast and fasta use same order
-    for query, seq, raw_gb in zip(parse_blast_tab(blast_result),
-                                  SeqIO.parse(repeat_fasta, 'fasta'),
-                                  SeqIO.parse(gb, 'gb')):
+    # only one record, loop just for for unpack
+    for query in parse_blast_tab(blast_result):
         locations = set()
         # use fasta's description
         name = ''
-        original_seq_len = len(seq) // 2
-        ambiguous_base_n = len(str(seq).strip('ATCGatcg')) // 2
+        ambiguous_base_n = len(str(origin_seq).strip('ATCGatcg'))
         # only use hit of IR to IR
         max_aln_n = 0
         # because of ambiguous base, percent of identity bases may not be 100%
         if ambiguous_base_n != 0:
             log.warning(f'\tFound {ambiguous_base_n} ambiguous bases.')
-            p_ident_min = int((1-(ambiguous_base_n/original_seq_len))*100)
+            p_ident_min = int((1-(ambiguous_base_n/origin_len))*100)
         else:
             p_ident_min = 100
         for hit in query:
             (qseqid, sseqid, sstrand, length, pident, gapopen, qstart, qend,
              sstart, send) = hit
-            name = seq.name
+            # name = seq.name
             # only self
             if qseqid != sseqid:
                 continue
             # skip too short match
             if length < min_IR:
                 continue
-            # origin to repeat
-            if length == len(seq):
+            # too long, origin to repeat
+            if length >= origin_len:
                 continue
             # allow few gaps
             if gapopen != 0:
                 if gapopen > ambiguous_base_n:
                     continue
-            # mismatch
-            location = tuple(sorted([qstart, qend, sstart, send]))
             if pident < p_ident_min:
                 continue
+            # mismatch
+            location = tuple(sorted([qstart, qend, sstart, send]))
             # hit across origin and repeat
-            if location[-1] - location[0] > original_seq_len:
+            if location[-1] - location[0] > origin_len:
                 continue
             # self to self or self to repeat self
             if len(set(location)) != 4:
@@ -371,16 +379,16 @@ def rotate_seq(filename, min_IR=1000):
             region_SSC = b
             region_IRb = c
         # self to self is the longest match
-        seq_LSC = slice_gb(seq, region_LSC)
-        seq_IRa = slice_gb(seq, region_IRa)
-        seq_SSC = slice_gb(seq, region_SSC)
-        seq_IRb = slice_gb(seq, region_IRb)
+        seq_LSC = slice_gb(repeat_seq, region_LSC)
+        seq_IRa = slice_gb(repeat_seq, region_IRa)
+        seq_SSC = slice_gb(repeat_seq, region_SSC)
+        seq_IRb = slice_gb(repeat_seq, region_IRb)
         new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
         new_seq.seq.alphabet = IUPAC.ambiguous_dna
-        if len(seq)//2 != len(new_seq):
+        if origin_len != len(new_seq):
             log.warning(f'\tOld and new sequences do not have save length.')
-            log.info(f'Old: {len(seq)//2}\tNew: {len(new_seq)}')
-            if abs(len(seq)//2 - len(new_seq)) > ambiguous_base_n:
+            log.info(f'Old: {origin_len}\tNew: {len(new_seq)}')
+            if abs(origin_len - len(new_seq)) > ambiguous_base_n:
                 log.critical(f'\tToo much difference. Reject.')
                 continue
         if len(seq_IRa) != len(seq_IRb):
@@ -407,6 +415,7 @@ def rotate_seq(filename, min_IR=1000):
         new_seq.features.extend(features)
         assert str(seq_SSC.seq) == str(
             new_seq.features[2].extract(new_seq).seq)
+        success = True
         log.info(f'\tRegions of {name}:')
         log.info(f'\t\tLSC {new_seq.features[0].location}')
         log.info(f'\t\tIRa {new_seq.features[1].location}')
@@ -414,10 +423,10 @@ def rotate_seq(filename, min_IR=1000):
         log.info(f'\t\tIRb {new_seq.features[3].location}')
         with open(new_fasta, 'w') as out:
             out.write(f'>{name}\n{new_seq.seq}\n')
-        with open(new_gb, 'w') as out3:
-            raw_gb.features.extend(features)
-            SeqIO.write(raw_gb, out3, 'gb')
-        success = True
+    with open(new_gb, 'w') as out3:
+        raw_gb.features.extend(features)
+        SeqIO.write(raw_gb, out3, 'gb')
+
 
     remove(blast_result)
     remove(repeat_fasta)

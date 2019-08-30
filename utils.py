@@ -199,7 +199,6 @@ def repeat(fasta):
     Assume the strand of sequence is in correct direction.
     Args:
         fasta(Path): fasta filename
-        taxon(Path): taxonomy of given fasta
     Return:
         new_fasta(Path): new_fasta's name
     """
@@ -435,8 +434,6 @@ def rotate_seq(filename, min_IR=1000):
     if not success:
         log.critical(f'Failed to rotate {filename}.')
         raise SystemExit
-        return None, None
-    # return new_gb, new_fasta, new_regions
     return new_gb, new_fasta
 
 
@@ -489,6 +486,8 @@ def rc_regions(gb, choice='whole'):
     with open(new_file, 'w') as out:
         out.write(f'>{new_name}\n')
         out.write(f'{new_seq}\n')
+    # hotfix
+
     n_gb, n_fasta = rotate_seq(new_file)
     return n_gb, n_fasta
 

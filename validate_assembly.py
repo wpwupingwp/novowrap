@@ -93,7 +93,8 @@ def draw(title, ref_regions, option_regions, data):
     Draw figure.
     Args:
         title(str): figure title
-        ref_region(list): reference region information
+        ref_regions(dict): reference region information
+        option_regions(dict): option sequence's region information
         data(list): BLAST result
     Return:
         pdf(Path): figure file
@@ -286,7 +287,7 @@ def main():
             rc_gb, rc_fasta = rc_regions(i_gb, 'SSC')
         else:
             rc_fasta = i_fasta
-        print(rc_fasta, i_fasta)
+            rc_gb = None
         if rc_fasta != i_fasta:
             new_compare_result = compare(rc_fasta, ref_fasta,
                                          arg.perc_identity)

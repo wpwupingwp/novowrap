@@ -206,7 +206,7 @@ def main():
     log.info(f'Contig:\t{arg.contig}')
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
-
+    # get ref
     if arg.ref_gb is None:
         ref_gb = down_ref(arg.taxon, output)
     else:
@@ -217,11 +217,16 @@ def main():
     ref_len = len(SeqIO.read(ref_gb, 'gb'))
     # ref already in output
     new_ref_gb, ref_fasta = rotate_seq(ref_gb)
+    if new_ref_gb is None:
+        log.critical('Cannot get rotated reference sequence.')
+        log.critical('Please consider to use another reference.')
+        raise SystemExit
     ref_regions = get_regions(new_ref_gb)
-
-    option_files = divide_records(arg.contig, output, ref_len, arg.len_diff,
-                                  arg.top)
+    option_files = divide_records(arg.contig, output, ref_len,
+                                  arg.len_diff, arg.top)
     for i in option_files:
+        if i is None:
+            continue
         i_gb, i_fasta = i
         log.info(f'Analyze {i_fasta}.')
         option_regions = get_regions(i_gb)
@@ -280,10 +285,7 @@ def main():
             to_rc = 'SSC'
         if to_rc is not None:
             log.warning(f'Reverse complement the {to_rc} of {i_fasta}.')
-            # hide rotate log
-            log.setLevel(logging.WARNING)
             rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
-            log.setLevel(logging.INFO)
             new_compare_result = compare(rc_fasta, ref_fasta,
                                          arg.perc_identity)
             fig_title = str(output / f'{rc_fasta.stem}-{ref_gb.stem}')

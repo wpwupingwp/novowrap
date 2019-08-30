@@ -47,8 +47,9 @@ def down_ref(taxon, output):
         log.warning(f'Cannot find {taxon}, use Nicotiana tabacum instead.')
         lineage = list(reversed(get_full_taxon('Nicotiana tabacum')))
     if lineage is None:
-        log.critical('Failed to get taxon. Quit.')
-        exit(-2)
+        log.critical('Failed to get taxon. Please check your internet.')
+        log.info('Quit.')
+        raise SystemExit
     for taxon in lineage:
         if taxon == '':
             continue
@@ -161,7 +162,7 @@ def blast(query, target, perc_identity=70):
     # remove makeblastdb result
     if blast.returncode != 0:
         log.critical('Cannot run BLAST.')
-        exit(-1)
+        raise SystemExit(-1)
     return blast_out
 
 
@@ -421,7 +422,7 @@ def rotate_seq(filename, min_IR=1000):
         repeat_fasta.unlink()
     if not success:
         log.critical(f'Failed to rotate {filename}.')
-        raise SystemExit
+        return None, None
     return new_gb, new_fasta
 
 
@@ -474,7 +475,10 @@ def rc_regions(gb, choice='whole'):
     with open(new_file, 'w') as out:
         out.write(f'>{new_name}\n')
         out.write(f'{new_seq}\n')
+    # hide rotate log
+    log.setLevel(logging.CRITICAL)
     n_gb, n_fasta = rotate_seq(new_file)
+    log.setLevel(logging.INFO)
     return n_gb, n_fasta
 
 

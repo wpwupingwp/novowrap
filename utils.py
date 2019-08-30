@@ -474,8 +474,6 @@ def rc_regions(gb, choice='whole'):
     with open(new_file, 'w') as out:
         out.write(f'>{new_name}\n')
         out.write(f'{new_seq}\n')
-    # hotfix
-
     n_gb, n_fasta = rotate_seq(new_file)
     return n_gb, n_fasta
 

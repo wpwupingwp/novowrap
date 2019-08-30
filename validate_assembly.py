@@ -124,9 +124,9 @@ def draw(title, ref_regions, option_regions, data):
         qstart, qend, sstart, send, sstrand, pident = i
         if sstrand == 'plus':
             plt.plot([qstart, qend], [0.95, 0.95], 'r-+', linewidth=5)
+            # ignore these line
             if abs(qstart-sstart) > ignore_offset:
                 continue
-            # ignore these line
             plt.fill([sstart, qstart, qend, send], [0.8, 0.95, 0.95, 0.8],
                      color='r', alpha=get_alpha(pident))
         # minus strand
@@ -211,7 +211,7 @@ def main():
         ref_gb = down_ref(arg.taxon, output)
     else:
         ref_gb = output / arg.ref_gb
-        # Path.rename is problematic
+        # fail to use Path.rename
         with open(arg.ref_gb, 'r') as i, open(ref_gb, 'w') as o:
             o.write(i.read())
     ref_len = len(SeqIO.read(ref_gb, 'gb'))
@@ -246,7 +246,6 @@ def main():
                 minus[qstart-1:qend] = True
         # count bases
         for rgn in count:
-            # numpy slice vs FeatureLocation
             start = int(option_regions[rgn].location.start)
             end = int(option_regions[rgn].location.end)
             p_slice = plus[start:end]
@@ -272,23 +271,19 @@ def main():
             elif m > min_rgn_len:
                 count[rgn]['strand'] = 'minus'
         # do not rc IR
+        to_rc = None
         if count['LSC']['strand'] == count['SSC']['strand'] == 'minus':
-            log.info(f'Reverse complement the whole sequence of {i_fasta}.')
-            rc_gb, rc_fasta = rc_regions(i_gb, 'whole')
+            to_rc = 'whole'
         elif count['LSC']['strand'] == 'minus':
-            log.warning(f'Reverse complement the LSC of {i_fasta}.')
-            ir = get_regions(i_gb)['IRa']
-            before = ir.extract(SeqIO.read(i_gb, 'gb'))
-            rc_gb, rc_fasta = rc_regions(i_gb, 'LSC')
-            after = ir.extract(SeqIO.read(rc_gb, 'gb'))
-            assert before.seq == after.seq
+            to_rc = 'LSC'
         elif count['SSC']['strand'] == 'minus':
-            log.warning(f'Reverse complement the SSC of {i_fasta}.')
-            rc_gb, rc_fasta = rc_regions(i_gb, 'SSC')
-        else:
-            rc_fasta = i_fasta
-            rc_gb = None
-        if rc_fasta != i_fasta:
+            to_rc = 'SSC'
+        if to_rc is not None:
+            log.warning(f'Reverse complement the {to_rc} of {i_fasta}.')
+            log.setLevel(logging.WARNING)
+            log.info('test')
+            rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
+            log.setLevel(logging.INFO)
             new_compare_result = compare(rc_fasta, ref_fasta,
                                          arg.perc_identity)
             fig_title = str(output / f'{rc_fasta.stem}-{ref_gb.stem}')
@@ -296,6 +291,9 @@ def main():
             pdf = draw(fig_title, ref_regions, new_regions,
                        new_compare_result)
             log.info(f'Write figure {pdf}.')
+        else:
+            rc_fasta = i_fasta
+            rc_gb = None
         validated.append(rc_fasta)
 
     log.info('Validated sequences:')

@@ -264,6 +264,7 @@ def main():
     log.info(f'Contig:\t{arg.input}')
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
+        arg.taxon = None
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
@@ -318,7 +319,6 @@ def main():
                 success = False
             else:
                 pass
-
         if to_rc is not None:
             log.warning(f'Reverse complement the {to_rc} of {i_fasta}.')
             rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
@@ -350,6 +350,7 @@ def main():
     for i in divided:
         if divided[i]['success']:
             log.info(f"\t{divided[i].get('rc_fasta', divided[i]['r_fasta'])}")
+    reference_info = output / 'Reference.csv'
     output_info = output / 'Results.csv'
     with open(output_info, 'w') as out:
         out.write('Raw,Success,Skip,Rotated_gb,Rotated_fasta,Length,LSC,IRa,'
@@ -360,7 +361,14 @@ def main():
             out.write('{success},{skip},{r_gb},{r_fasta},{length},{LSC},{IRa},'
                       '{SSC},{IRb},{rc},{rc_gb},{rc_fasta},{figure},'
                       '{figure_after}\n'.format(**divided[record]))
+    with open(reference_info, 'w') as out:
+        out.write('Reference,Taxon,Length,LSC,IRa,SSC,IRb\n')
+        out.write('{},{},{},{},{},{},{}\n'.format(
+            ref_fasta, arg.taxon, ref_len, len(ref_regions['LSC']),
+            len(ref_regions['IRa']), len(ref_regions['SSC']),
+            len(ref_regions['IRb'])))
     log.info(f'Validation result was written into {output_info}')
+    log.info(f'Reference information was written into {reference_info}')
     log.info('Bye.')
     return
 

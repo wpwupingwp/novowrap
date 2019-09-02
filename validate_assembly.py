@@ -70,32 +70,25 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
     divided = {}
     keys = ('skip,gb,fasta,length,LSC,IRa,SSC,IRb,missing,incomplete,rc,'
             'figure,figure_after').split(',')
-    if len(options) > 1:
-        log.warning(f'Found {len(options)} records in {fasta}.')
-        log.info('Divide them into different files.')
-        for idx, record in enumerate(options):
-            skip = False
-            r_gb = r_fasta = None
-            filename = output / f'{idx}_{fasta}'
-            divided[filename] = dict((key, '') for key in keys)
-            record_len = len(record)
-            record_len_diff = abs(1-(record_len/ref_len))
-            if record_len_diff > len_diff:
-                log.critical(f'The length difference of NO.{idx+1} record '
-                             f'with reference is out of limit '
-                             f'({record_len_diff:.2%} > {len_diff:.2%}).')
-                skip = True
-            SeqIO.write(record, filename, 'fasta')
-            if not skip:
-                r_gb, r_fasta = rotate_seq(filename)
-            divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
-                                      'length': record_len, 'skip': skip})
-    else:
-        _r_gb, _r_fasta = rotate_seq(fasta)
-        r_gb = move(_r_gb, output/_r_gb)
-        r_fasta = move(_r_fasta, output/_r_fasta)
-        divided[fasta].update({'gb': r_gb, 'fasta': r_fasta, 'length':
-                               len(options[0]), 'skip': False})
+    log.warning(f'Found {len(options)} records in {fasta}.')
+    log.info('Divide them into different files.')
+    for idx, record in enumerate(options):
+        skip = False
+        r_gb = r_fasta = None
+        filename = output / f'{idx}_{fasta}'
+        divided[filename] = dict((key, '') for key in keys)
+        record_len = len(record)
+        record_len_diff = abs(1-(record_len/ref_len))
+        if record_len_diff > len_diff:
+            log.critical(f'The length difference of NO.{idx+1} record '
+                         f'with reference is out of limit '
+                         f'({record_len_diff:.2%} > {len_diff:.2%}).')
+            skip = True
+        SeqIO.write(record, filename, 'fasta')
+        if not skip:
+            r_gb, r_fasta = rotate_seq(filename)
+        divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
+                                  'length': record_len, 'skip': skip})
     return divided
 
 

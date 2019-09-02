@@ -29,54 +29,6 @@ except ImportError:
 log = logging.getLogger('__main__')
 
 
-def down_ref(taxon, output):
-    """
-    Arg:
-        taxon(str): given taxon name
-        output(Path): output folder
-    Return:
-        ref(Path): gb file
-    """
-    lineage = get_full_taxon(taxon)
-    if lineage is not None:
-        lineage = list(reversed(lineage))
-    else:
-        log.warning(f'Cannot find {taxon}, use Nicotiana tabacum instead.')
-        lineage = list(reversed(get_full_taxon('Nicotiana tabacum')))
-    if lineage is None:
-        log.critical('Failed to get taxon. Please check your internet.')
-        log.info('Quit.')
-        raise SystemExit
-    for taxon in lineage:
-        if taxon == '':
-            continue
-        if ' ' in taxon:
-            taxon = taxon.strip('"')
-            taxon = taxon.replace(' ', '_')
-        # Entrez has limitation on query frenquency (3 times per second)
-        # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
-        sleep(0.5)
-        query = (f'''{taxon}[Organism] AND refseq[filter] '''
-                 f'''AND (chloroplast[filter] OR plastid[filter])''')
-        log.info(f'Query:\t{query}')
-        handle = Entrez.read(Entrez.esearch(db='nuccore', term=query,
-                                            usehistory='y'))
-        info = Entrez.read(Entrez.esummary(db='nuccore',
-                                           webenv=handle['WebEnv'],
-                                           query_key=handle['QueryKey']))
-        accession = info[0]['Caption']
-        count = int(handle['Count'])
-        if count == 0:
-            continue
-        ref = output / f'{taxon}_{accession}.gb'
-        content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
-                                query_key=handle['QueryKey'], rettype='gb',
-                                retmode='text', retmax=1)
-        with open(ref, 'w') as out:
-            out.write(content.read())
-        return ref
-
-
 def get_full_taxon(taxon):
     """
     Get full lineage of given taxon
@@ -136,6 +88,55 @@ def get_full_taxon(taxon):
     if lineage[-1] != '' and lineage[-2] != '':
         lineage[-1] = f'"{lineage[-2]} {lineage[-1]}"'
     return lineage
+
+
+def down_ref(taxon, output):
+    """
+    Arg:
+        taxon(str): given taxon name
+        output(Path): output folder
+    Return:
+        taxon(str): taxonomy
+        ref(Path): gb file
+    """
+    lineage = get_full_taxon(taxon)
+    if lineage is not None:
+        lineage = list(reversed(lineage))
+    else:
+        log.warning(f'Cannot find {taxon}, use Nicotiana tabacum instead.')
+        lineage = list(reversed(get_full_taxon('Nicotiana tabacum')))
+    if lineage is None:
+        log.critical('Failed to get taxon. Please check your internet.')
+        log.info('Quit.')
+        raise SystemExit
+    for taxon in lineage:
+        if taxon == '':
+            continue
+        if ' ' in taxon:
+            taxon = taxon.strip('"')
+            taxon = taxon.replace(' ', '_')
+        # Entrez has limitation on query frenquency (3 times per second)
+        # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
+        sleep(0.5)
+        query = (f'''{taxon}[Organism] AND refseq[filter] '''
+                 f'''AND (chloroplast[filter] OR plastid[filter])''')
+        log.info(f'Query:\t{query}')
+        handle = Entrez.read(Entrez.esearch(db='nuccore', term=query,
+                                            usehistory='y'))
+        count = int(handle['Count'])
+        if count == 0:
+            continue
+        info = Entrez.read(Entrez.esummary(db='nuccore',
+                                           webenv=handle['WebEnv'],
+                                           query_key=handle['QueryKey']))
+        accession = info[0]['Caption']
+        ref = output / f'{taxon}_{accession}.gb'
+        content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
+                                query_key=handle['QueryKey'], rettype='gb',
+                                retmode='text', retmax=1)
+        with open(ref, 'w') as out:
+            out.write(content.read())
+        return taxon, ref
 
 
 def blast(query, target, perc_identity=70):
@@ -298,7 +299,6 @@ def rotate_seq(filename, min_IR=1000):
     log.info(f'Rotate {filename}...')
     filename = Path(filename)
     fmt = get_fmt(filename)
-
     # get origin seq
     origin_seq = list(SeqIO.parse(filename, fmt))
     assert len(origin_seq) == 1

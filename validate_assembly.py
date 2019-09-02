@@ -40,6 +40,61 @@ def parse_args():
     return arg.parse_args()
 
 
+def clean_rotate(filename, output):
+    """
+    Make the folder clean.
+    """
+    r_gb, r_contig = rotate_seq(filename)
+    for i in r_gb, r_contig:
+        # rename does not return new name
+        i.rename(output/i)
+    return output/r_gb, output/r_contig
+
+
+def divide_records(fasta, output, ref_len, len_diff=0.1):
+    """
+    Make sure each file has only one record.
+    Args:
+        fasta(Path or str): fasta file
+        output(Path): output folder
+        ref_len(int): length of reference, to filter bad records
+        len_diff: maximum allowed length difference
+    Returns:
+        option_files(list(Path)):  list of divided files
+        info(list): file info
+    """
+    options = list(SeqIO.parse(fasta, 'fasta'))
+    fasta = Path(fasta)
+    divided = {}
+    keys = ('skip,r_gb,r_fasta,length,LSC,IRa,SSC,IRb,rc,rc_gb,'
+            'rc_fasta,figure,figure_after').split(',')
+    if len(options) > 1:
+        log.warning(f'Found {len(options)} records in {fasta}.')
+        log.info('Divide them into different files.')
+        for idx, record in enumerate(options):
+            skip = False
+            r_gb = r_fasta = None
+            filename = output / f'{idx}_{fasta}'
+            divided[filename] = dict((key, None) for key in keys)
+            record_len = len(record)
+            record_len_diff = abs(1-(record_len/ref_len))
+            if record_len_diff > len_diff:
+                log.critical(f'The length difference of NO.{idx+1} record '
+                             f'with reference is out of limit '
+                             f'({record_len_diff:.2%} > {len_diff:.2%}).')
+                skip = True
+            SeqIO.write(record, filename, 'fasta')
+            if not skip:
+                r_gb, r_fasta = rotate_seq(filename)
+            divided[filename].update({'r_gb': r_gb, 'r_fasta': r_fasta,
+                                      'length': record_len, 'skip': skip})
+    else:
+        r_gb, r_fasta = clean_rotate(fasta, output)
+        divided[fasta].update({'r_gb': r_gb, 'r_fasta': r_fasta, 'length':
+                               len(options[0]), 'skip': False})
+    return divided
+
+
 def compare(query, reference, perc_identity):
     """
     Use BLAST to compare two records.
@@ -139,61 +194,6 @@ def draw(title, ref_regions, option_regions, data):
     return pdf
 
 
-def clean_rotate(filename, output):
-    """
-    Make the folder clean.
-    """
-    r_gb, r_contig = rotate_seq(filename)
-    for i in r_gb, r_contig:
-        # rename does not return new name
-        i.rename(output/i)
-    return output/r_gb, output/r_contig
-
-
-def divide_records(fasta, output, ref_len, len_diff=0.1):
-    """
-    Make sure each file has only one record.
-    Args:
-        fasta(Path or str): fasta file
-        output(Path): output folder
-        ref_len(int): length of reference, to filter bad records
-        len_diff: maximum allowed length difference
-    Returns:
-        option_files(list(Path)):  list of divided files
-        info(list): file info
-    """
-    options = list(SeqIO.parse(fasta, 'fasta'))
-    fasta = Path(fasta)
-    divided = {}
-    keys = ('skip,r_gb,r_fasta,length,LSC,IRa,SSC,IRb,rc,rc_gb,'
-            'rc_fasta,figure,figure_after').split(',')
-    if len(options) > 1:
-        log.warning(f'Found {len(options)} records in {fasta}.')
-        log.info('Divide them into different files.')
-        for idx, record in enumerate(options):
-            skip = False
-            r_gb = r_fasta = None
-            filename = output / f'{idx}_{fasta}'
-            divided[filename] = dict((key, None) for key in keys)
-            record_len = len(record)
-            record_len_diff = abs(1-(record_len/ref_len))
-            if record_len_diff > len_diff:
-                log.critical(f'The length difference of NO.{idx+1} record '
-                             f'with reference is out of limit '
-                             f'({record_len_diff:.2%} > {len_diff:.2%}).')
-                skip = True
-            SeqIO.write(record, filename, 'fasta')
-            if not skip:
-                r_gb, r_fasta = rotate_seq(filename)
-            divided[filename].update({'r_gb': r_gb, 'r_fasta': r_fasta,
-                                      'length': record_len, 'skip': skip})
-    else:
-        r_gb, r_fasta = clean_rotate(fasta, output)
-        divided[fasta].update({'r_gb': r_gb, 'r_fasta': r_fasta, 'length':
-                               len(options[0]), 'skip': False})
-    return divided
-
-
 def validate_regions(length, regions, compare, perc_identity=0.7):
     """
     Use BLAST results to validate regions.
@@ -270,7 +270,7 @@ def main():
     log.info(f'Use {output} as output folder.')
     # get ref
     if arg.ref is None:
-        ref_gb = down_ref(arg.taxon, output)
+        arg.taxon, ref_gb = down_ref(arg.taxon, output)
         fmt = 'gb'
     else:
         ref_gb = output / arg.ref

@@ -344,7 +344,6 @@ def main():
             if to_rc_2 is None:
                 success = True
         else:
-            success = True
             rc_fasta = i_fasta
             rc_gb = None
         divided[i]['success'] = success

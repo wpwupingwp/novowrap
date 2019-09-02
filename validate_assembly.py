@@ -344,8 +344,7 @@ def main():
             if to_rc_2 is None:
                 success = True
         else:
-            rc_fasta = i_fasta
-            rc_gb = None
+            divided[i]['figure_after'] = divided[i]['figure']
         divided[i]['success'] = success
 
     log.info('Validated sequences:')

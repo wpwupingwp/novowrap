@@ -265,6 +265,24 @@ def slice_gb(seq, location):
     return new_seq
 
 
+def get_fmt(filename):
+    """
+    Detect file format.
+    Only support fasta and gb.
+    Args:
+        filename(Path or str): filename
+    Return:
+        fmt(str): 'fasta' or 'gb'
+    """
+    with open(filename, 'r') as _:
+        start = _.readline()
+        if start.startswith('>'):
+            fmt = 'fasta'
+        else:
+            fmt = 'gb'
+    return fmt
+
+
 def rotate_seq(filename, min_IR=1000):
     """
     Rotate genbank or fasta record, from LSC (trnH-psbA) to IRa, SSC, IRb.
@@ -279,13 +297,7 @@ def rotate_seq(filename, min_IR=1000):
     # send'
     log.info(f'Rotate {filename}...')
     filename = Path(filename)
-    with open(filename, 'r') as _:
-        start = _.readline()
-        if start.startswith('>'):
-            fmt = 'fasta'
-        else:
-            fmt = 'gb'
-        # SeqIO.convert(fasta, 'fasta', gb, 'gb', alphabet=IUPAC.ambiguous_dna)
+    fmt = get_fmt(filename)
 
     # get origin seq
     origin_seq = list(SeqIO.parse(filename, fmt))

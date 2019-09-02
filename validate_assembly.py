@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from utils import down_ref, blast, parse_blast_tab
-from utils import rotate_seq, get_regions, rc_regions
+from utils import get_fmt, rotate_seq, get_regions, rc_regions
 
 # define logger
 FMT = '%(asctime)s %(levelname)-8s %(message)s'
@@ -27,7 +27,7 @@ def parse_args():
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     arg.add_argument('input', help='input filename')
-    arg.add_argument('-r', '-ref_gb', dest='ref_gb', help='reference gb')
+    arg.add_argument('-r', '-ref', dest='ref', help='reference gb')
     arg.add_argument('-t', '-taxon', dest='taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
     arg.add_argument('-i', '-perc_identity', dest='perc_identity', type=float,
@@ -206,14 +206,16 @@ def main():
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
     # get ref
-    if arg.ref_gb is None:
+    if arg.ref is None:
         ref_gb = down_ref(arg.taxon, output)
+        fmt = 'gb'
     else:
-        ref_gb = output / arg.ref_gb
+        ref_gb = output / arg.ref
+        fmt = get_fmt(arg.ref)
         # fail to use Path.rename
-        with open(arg.ref_gb, 'r') as i, open(ref_gb, 'w') as o:
+        with open(arg.ref, 'r') as i, open(ref_gb, 'w') as o:
             o.write(i.read())
-    ref_len = len(SeqIO.read(ref_gb, 'gb'))
+    ref_len = len(SeqIO.read(ref_gb, fmt))
     # ref already in output
     new_ref_gb, ref_fasta = rotate_seq(ref_gb)
     if new_ref_gb is None:
@@ -224,7 +226,7 @@ def main():
     # to be continued
     option_files = divide_records(arg.input, output, ref_len,
                                   arg.len_diff, arg.top)
-    option_info = []
+    report = []
     validated = []
     for i in option_files:
         if i is None:

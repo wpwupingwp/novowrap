@@ -479,14 +479,15 @@ def rc_regions(gb, choice='whole'):
             new_seq += data[i]
     else:
         new_seq = rc(raw.seq)
-    new_name = '_r_' + raw.name
-    new_file = Path(gb.parent, '_r_' + gb.stem + '.fasta')
+    new_name = '_RC_' + raw.name
+    new_file = Path(gb.parent, '_RC_' + gb.stem + '.fasta')
     with open(new_file, 'w') as out:
         out.write(f'>{new_name}\n')
         out.write(f'{new_seq}\n')
     # hide rotate log
     log.setLevel(logging.CRITICAL)
     n_gb, n_fasta = rotate_seq(new_file)
+    new_file.unlink()
     log.setLevel(logging.INFO)
     return n_gb, n_fasta
 

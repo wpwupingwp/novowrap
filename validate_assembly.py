@@ -40,15 +40,17 @@ def parse_args():
     return arg.parse_args()
 
 
-def clean_rotate(filename, output):
+def move(source, dest):
     """
-    Make the folder clean.
+    Move source to dest and return dest.
+    Args:
+        source(Path): old path
+        dest(Path or str): new path
+    Return:
+        dest(Path): new path
     """
-    r_gb, r_contig = rotate_seq(filename)
-    for i in r_gb, r_contig:
-        # rename does not return new name
-        i.rename(output/i)
-    return output/r_gb, output/r_contig
+    source.rename(dest)
+    return Path(dest)
 
 
 def divide_records(fasta, output, ref_len, len_diff=0.1):
@@ -66,8 +68,8 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
     options = list(SeqIO.parse(fasta, 'fasta'))
     fasta = Path(fasta)
     divided = {}
-    keys = ('skip,r_gb,r_fasta,length,LSC,IRa,SSC,IRb,rc,rc_gb,'
-            'rc_fasta,figure,figure_after').split(',')
+    keys = ('skip,gb,fasta,length,LSC,IRa,SSC,IRb,missing,incomplete,rc,'
+            'figure,figure_after').split(',')
     if len(options) > 1:
         log.warning(f'Found {len(options)} records in {fasta}.')
         log.info('Divide them into different files.')
@@ -75,7 +77,7 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
             skip = False
             r_gb = r_fasta = None
             filename = output / f'{idx}_{fasta}'
-            divided[filename] = dict((key, None) for key in keys)
+            divided[filename] = dict((key, '') for key in keys)
             record_len = len(record)
             record_len_diff = abs(1-(record_len/ref_len))
             if record_len_diff > len_diff:
@@ -86,11 +88,13 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
             SeqIO.write(record, filename, 'fasta')
             if not skip:
                 r_gb, r_fasta = rotate_seq(filename)
-            divided[filename].update({'r_gb': r_gb, 'r_fasta': r_fasta,
+            divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
                                       'length': record_len, 'skip': skip})
     else:
-        r_gb, r_fasta = clean_rotate(fasta, output)
-        divided[fasta].update({'r_gb': r_gb, 'r_fasta': r_fasta, 'length':
+        _r_gb, _r_fasta = rotate_seq(fasta)
+        r_gb = move(_r_gb, output/_r_gb)
+        r_fasta = move(_r_fasta, output/_r_fasta)
+        divided[fasta].update({'gb': r_gb, 'fasta': r_fasta, 'length':
                                len(options[0]), 'skip': False})
     return divided
 
@@ -261,6 +265,8 @@ def main():
     arg.input = Path(arg.input)
     output = Path(arg.input.stem)
     output.mkdir()
+    tmp = output / 'Temporary'
+    tmp.mkdir()
     log.info(f'Contig:\t{arg.input}')
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
@@ -273,11 +279,8 @@ def main():
         arg.taxon, ref_gb = down_ref(arg.taxon, output)
         fmt = 'gb'
     else:
-        ref_gb = output / arg.ref
         fmt = get_fmt(arg.ref)
-        # fail to use Path.rename
-        with open(arg.ref, 'r') as i, open(ref_gb, 'w') as o:
-            o.write(i.read())
+        ref_gb = move(Path(arg.ref), output/arg.ref)
     ref_len = len(SeqIO.read(ref_gb, fmt))
     # ref already in output
     new_ref_gb, ref_fasta = rotate_seq(ref_gb)
@@ -292,8 +295,8 @@ def main():
         divided[i]['success'] = success
         if divided[i]['skip']:
             continue
-        i_gb = divided[i]['r_gb']
-        i_fasta = divided[i]['r_fasta']
+        i_gb = divided[i]['gb']
+        i_fasta = divided[i]['fasta']
         log.info(f'Analyze {i_fasta}.')
         option_regions = get_regions(i_gb)
         # add regions info
@@ -310,28 +313,35 @@ def main():
                                         compare_result, arg.perc_identity)
         for rgn in count:
             if count[rgn]['strand'] == 'missing':
-                divided[i][f'v_{rgn}'] = 'missing'
+                divided[i]['missing'] = ','.join([divided[i]['missing'], rgn])
                 log.critical(f'Region {rgn} of {i_fasta} is missing.')
                 success = False
             elif count[rgn]['strand'] == 'incomplete':
                 log.critical(f'Region {rgn} of {i_fasta} is incomplete.')
-                divided[i][f'v_{rgn}'] = 'incomplete'
+                divided[i]['incomplete'] = ','.join([divided[i]['incomplete'],
+                                                     rgn])
                 success = False
             else:
                 pass
         if to_rc is not None:
             log.warning(f'Reverse complement the {to_rc} of {i_fasta}.')
             rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
+            # clean old files
+            i_fasta.rename(tmp/i_fasta.name)
+            i_gb.rename(tmp/i_gb.name)
+            rc_gb = move(rc_gb, rc_gb.parent/rc_gb.name.replace('_RC_', ''))
+            rc_fasta = move(rc_fasta, rc_fasta.parent/rc_fasta.name.replace(
+                '_RC_', ''))
             new_compare_result = compare(rc_fasta, ref_fasta,
                                          arg.perc_identity)
-            fig_title = str(output / f'{rc_fasta.stem}-{ref_gb.stem}')
+            fig_title = str(output / f'_RC_{rc_fasta.stem}-{ref_gb.stem}')
             new_regions = get_regions(rc_gb)
             pdf = draw(fig_title, ref_regions, new_regions,
                        new_compare_result)
             divided[i]['figure_after'] = pdf
             divided[i]['rc'] = to_rc
-            divided[i]['rc_gb'] = rc_gb
-            divided[i]['rc_fasta'] = rc_fasta
+            divided[i]['gb'] = rc_gb
+            divided[i]['fasta'] = rc_fasta
             for _ in new_regions:
                 divided[i][_] = len(new_regions[_])
             # validate again
@@ -349,17 +359,17 @@ def main():
     log.info('Validated sequences:')
     for i in divided:
         if divided[i]['success']:
-            log.info(f"\t{divided[i].get('rc_fasta', divided[i]['r_fasta'])}")
+            log.info(f"\t{divided[i]['fasta']}")
     reference_info = output / 'Reference.csv'
     output_info = output / 'Results.csv'
     with open(output_info, 'w') as out:
-        out.write('Raw,Success,Skip,Rotated_gb,Rotated_fasta,Length,LSC,IRa,'
-                  'SSC,IRb,RC,RC_gb,RC_fasta,Figure,Figure_after\n')
+        out.write('Raw,Success,Skip,gb,fasta,Length,LSC,IRa,'
+                  'SSC,IRb,Missing,Incomplete,RC_region,Figure,Figure_after\n')
         for record in divided:
             # format is easier than f-string for dict
             out.write('{},'.format(record))
-            out.write('{success},{skip},{r_gb},{r_fasta},{length},{LSC},{IRa},'
-                      '{SSC},{IRb},{rc},{rc_gb},{rc_fasta},{figure},'
+            out.write('{success},{skip},{gb},{fasta},{length},{LSC},{IRa},'
+                      '{SSC},{IRb},{missing},{incomplete},{rc},{figure},'
                       '{figure_after}\n'.format(**divided[record]))
     with open(reference_info, 'w') as out:
         out.write('Reference,Taxon,Length,LSC,IRa,SSC,IRb\n')

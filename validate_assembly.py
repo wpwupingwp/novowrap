@@ -37,8 +37,6 @@ def parse_args():
                      default=0.1,
                      help='maximum percentage of length differnce of query to'
                      'reference, 0-100')
-    arg.add_argument('-n', dest='top', type=int, default=0,
-                     help='top n of records to keep, 0 for all')
     return arg.parse_args()
 
 
@@ -152,7 +150,7 @@ def clean_rotate(filename, output):
     return output/r_gb, output/r_contig
 
 
-def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
+def divide_records(fasta, output, ref_len, len_diff=0.1):
     """
     Make sure each file has only one record.
     Args:
@@ -160,7 +158,6 @@ def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
         output(Path): output folder
         ref_len(int): length of reference, to filter bad records
         len_diff: maximum allowed length difference
-        top(int): number of records to keep
     Returns:
         option_files(list(Path)):  list of divided files
         info(list): file info
@@ -168,6 +165,8 @@ def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
     options = list(SeqIO.parse(fasta, 'fasta'))
     fasta = Path(fasta)
     divided = {}
+    keys = ('skip,r_gb,r_fasta,length,LSC,IRa,SSC,IRb,rc,rc_gb,'
+            'rc_fasta,figure,figure_after').split(',')
     if len(options) > 1:
         log.warning(f'Found {len(options)} records in {fasta}.')
         log.info('Divide them into different files.')
@@ -175,6 +174,7 @@ def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
             skip = False
             r_gb = r_fasta = None
             filename = output / f'{idx}_{fasta}'
+            divided[filename] = dict((key, None) for key in keys)
             record_len = len(record)
             record_len_diff = abs(1-(record_len/ref_len))
             if record_len_diff > len_diff:
@@ -185,13 +185,72 @@ def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
             SeqIO.write(record, filename, 'fasta')
             if not skip:
                 r_gb, r_fasta = rotate_seq(filename)
-            divided[filename] = {'r_gb': r_gb, 'r_fasta': r_fasta, 'length':
-                                 record_len, 'skip': skip}
+            divided[filename].update({'r_gb': r_gb, 'r_fasta': r_fasta,
+                                      'length': record_len, 'skip': skip})
     else:
         r_gb, r_fasta = clean_rotate(fasta, output)
-        divided[fasta] = {'r_gb': r_gb, 'r_fasta': r_fasta, 'length':
-                          len(options[0]), 'skip': False}
+        divided[fasta].update({'r_gb': r_gb, 'r_fasta': r_fasta, 'length':
+                               len(options[0]), 'skip': False})
     return divided
+
+
+def validate_regions(length, regions, compare, perc_identity=0.7):
+    """
+    Use BLAST results to validate regions.
+    Args:
+        length(int): length of whole sequences
+        regions(dict): regions information
+        compare(list): BLAST result
+        perc_identity: threshold of region similarity
+    Returns:
+        count(dict): count information
+        to_rc(str or None): regions need to reverse-complement
+    """
+    count = {}
+    to_rc = None
+    plus = np.zeros(length, dtype=bool)
+    minus = np.zeros(length, dtype=bool)
+    for region in regions:
+        count[region] = {'plus': 0, 'minus': 0}
+    for hsp in compare:
+        qstart, qend, sstart, send, sstrand, pident = hsp
+        if sstrand == 'plus':
+            plus[qstart-1:qend] = True
+        else:
+            minus[qstart-1:qend] = True
+    # count bases
+    for rgn in count:
+        start = int(regions[rgn].location.start)
+        end = int(regions[rgn].location.end)
+        p_slice = plus[start:end]
+        m_slice = minus[start:end]
+        count[rgn]['plus'] = np.count_nonzero(p_slice)
+        count[rgn]['minus'] = np.count_nonzero(m_slice)
+        count[rgn]['union'] = np.count_nonzero(p_slice | m_slice)
+    # assign strand
+    for rgn in count:
+        # also use arg.perc_identity for region
+        min_rgn_len = len(regions[rgn]) * perc_identity
+        p = count[rgn]['plus']
+        m = count[rgn]['minus']
+        u = count[rgn]['union']
+        if p == m == 0:
+            count[rgn]['strand'] = 'missing'
+        elif u < min_rgn_len:
+            count[rgn]['strand'] = 'incomplete'
+        elif p > min_rgn_len:
+            count[rgn]['strand'] = 'plus'
+        elif m > min_rgn_len:
+            count[rgn]['strand'] = 'minus'
+    # do not rc IR
+    to_rc = None
+    if count['LSC']['strand'] == count['SSC']['strand'] == 'minus':
+        to_rc = 'whole'
+    elif count['LSC']['strand'] == 'minus':
+        to_rc = 'LSC'
+    elif count['SSC']['strand'] == 'minus':
+        to_rc = 'SSC'
+    return count, to_rc
 
 
 def main():
@@ -226,70 +285,40 @@ def main():
         log.critical('Please consider to use another reference.')
         raise SystemExit
     ref_regions = get_regions(new_ref_gb)
-    # info = ('fileinfo', ['raw', 'length', 'rotate', 'lsc', 'ira', 'ssc',
-    #                                'irb', 'rc_region', 'rc_file', 'skip'])
-    divided = divide_records(arg.input, output, ref_len,
-                             arg.len_diff, arg.top)
-    validated = []
-    for i in option_files:
-        if report[i.name]['skip']:
+    divided = divide_records(arg.input, output, ref_len, arg.len_diff)
+    for i in divided:
+        success = False
+        divided[i]['success'] = success
+        if divided[i]['skip']:
             continue
-        i_gb, i_fasta = i
+        i_gb = divided[i]['r_gb']
+        i_fasta = divided[i]['r_fasta']
         log.info(f'Analyze {i_fasta}.')
         option_regions = get_regions(i_gb)
-        option_len = len(SeqIO.read(i_fasta, 'fasta'))
+        # add regions info
+        for _ in option_regions:
+            divided[i][_] = len(option_regions[_])
         compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
         fig_title = str(output / f'{i_fasta.stem}-{ref_gb.stem}')
         pdf = draw(fig_title, ref_regions, option_regions,
                    compare_result)
-        log.info(f'Write figure {pdf}.')
+        divided[i]['figure'] = pdf
         log.info('Detecting reverse complement region.')
-
-        plus = np.zeros(option_len, dtype=bool)
-        minus = np.zeros(option_len, dtype=bool)
-        count = {}
-        for region in option_regions:
-            count[region] = {'plus': 0, 'minus': 0}
-        for hsp in compare_result:
-            qstart, qend, sstart, send, sstrand, pident = hsp
-            if sstrand == 'plus':
-                plus[qstart-1:qend] = True
-            else:
-                minus[qstart-1:qend] = True
-        # count bases
+        option_len = divided[i]['length']
+        count, to_rc = validate_regions(option_len, option_regions,
+                                        compare_result, arg.perc_identity)
         for rgn in count:
-            start = int(option_regions[rgn].location.start)
-            end = int(option_regions[rgn].location.end)
-            p_slice = plus[start:end]
-            m_slice = minus[start:end]
-            count[rgn]['plus'] = np.count_nonzero(p_slice)
-            count[rgn]['minus'] = np.count_nonzero(m_slice)
-            count[rgn]['union'] = np.count_nonzero(p_slice | m_slice)
-        # assign strand
-        for rgn in count:
-            # also use arg.perc_identity for region
-            min_rgn_len = len(option_regions[rgn]) * arg.perc_identity
-            p = count[rgn]['plus']
-            m = count[rgn]['minus']
-            u = count[rgn]['union']
-            if p == m == 0:
-                count[rgn]['strand'] = 'missing'
+            if count[rgn]['strand'] == 'missing':
+                divided[i][f'v_{rgn}'] = 'missing'
                 log.critical(f'Region {rgn} of {i_fasta} is missing.')
-            elif u < min_rgn_len:
-                count[rgn]['strand'] = 'incomplete'
+                success = False
+            elif count[rgn]['strand'] == 'incomplete':
                 log.critical(f'Region {rgn} of {i_fasta} is incomplete.')
-            elif p > min_rgn_len:
-                count[rgn]['strand'] = 'plus'
-            elif m > min_rgn_len:
-                count[rgn]['strand'] = 'minus'
-        # do not rc IR
-        to_rc = None
-        if count['LSC']['strand'] == count['SSC']['strand'] == 'minus':
-            to_rc = 'whole'
-        elif count['LSC']['strand'] == 'minus':
-            to_rc = 'LSC'
-        elif count['SSC']['strand'] == 'minus':
-            to_rc = 'SSC'
+                divided[i][f'v_{rgn}'] = 'incomplete'
+                success = False
+            else:
+                pass
+
         if to_rc is not None:
             log.warning(f'Reverse complement the {to_rc} of {i_fasta}.')
             rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
@@ -299,17 +328,40 @@ def main():
             new_regions = get_regions(rc_gb)
             pdf = draw(fig_title, ref_regions, new_regions,
                        new_compare_result)
-            log.info(f'Write figure {pdf}.')
+            divided[i]['figure_after'] = pdf
+            divided[i]['rc'] = to_rc
+            divided[i]['rc_gb'] = rc_gb
+            divided[i]['rc_fasta'] = rc_fasta
+            for _ in new_regions:
+                divided[i][_] = len(new_regions[_])
+            # validate again
+            count_2, to_rc_2 = validate_regions(option_len, new_regions,
+                                                new_compare_result,
+                                                arg.perc_identity)
+            if to_rc_2 is None:
+                success = True
         else:
+            success = True
             rc_fasta = i_fasta
             rc_gb = None
-        validated.append(rc_fasta)
+        divided[i]['success'] = success
 
     log.info('Validated sequences:')
-    for i in validated:
-        log.info(f'\t{i}')
+    for i in divided:
+        if divided[i]['success']:
+            log.info(f"\t{divided[i].get('rc_fasta', divided[i]['r_fasta'])}")
+    output_info = output / 'Results.csv'
+    with open(output_info, 'w') as out:
+        out.write('Raw,Success,Skip,Rotated_gb,Rotated_fasta,Length,LSC,IRa,'
+                  'SSC,IRb,RC,RC_gb,RC_fasta,Figure,Figure_after\n')
+        for record in divided:
+            # format is easier than f-string for dict
+            out.write('{},'.format(record))
+            out.write('{success},{skip},{r_gb},{r_fasta},{length},{LSC},{IRa},'
+                      '{SSC},{IRb},{rc},{rc_gb},{rc_fasta},{figure},'
+                      '{figure_after}\n'.format(**divided[record]))
+    log.info(f'Validation result was written into {output_info}')
     log.info('Bye.')
-    print(report)
     return
 
 

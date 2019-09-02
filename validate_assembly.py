@@ -203,7 +203,10 @@ def main():
     output = Path(arg.input.stem)
     output.mkdir()
     log.info(f'Contig:\t{arg.input}')
-    log.info(f'Taxonomy:\t{arg.taxon}')
+    if arg.ref is not None:
+        log.info(f'Reference:\t{arg.ref}')
+    else:
+        log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Use {output} as output folder.')
     # get ref
     if arg.ref is None:

@@ -74,7 +74,7 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
     log.info('Divide them into different files.')
     for idx, record in enumerate(options):
         skip = False
-        r_gb = r_fasta = None
+        r_gb = r_fasta = ''
         filename = output / f'{idx}_{fasta}'
         divided[filename] = dict((key, '') for key in keys)
         record_len = len(record)
@@ -320,8 +320,8 @@ def main():
             log.warning(f'Reverse complement the {to_rc} of {i_fasta}.')
             rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
             # clean old files
-            i_fasta.rename(tmp/i_fasta.name)
-            i_gb.rename(tmp/i_gb.name)
+            i_fasta = move(i_fasta, tmp/(i_fasta.name+'.tmp'))
+            i_gb = move(i_gb, tmp/(i_gb.name+'.tmp'))
             rc_gb = move(rc_gb, rc_gb.parent/rc_gb.name.replace('_RC_', ''))
             rc_fasta = move(rc_fasta, rc_fasta.parent/rc_fasta.name.replace(
                 '_RC_', ''))
@@ -360,14 +360,21 @@ def main():
                   'SSC,IRb,Missing,Incomplete,RC_region,Figure,Figure_after\n')
         for record in divided:
             # format is easier than f-string for dict
+            simple = divided[record]
+            if simple['gb'] != '':
+                simple['gb'] = simple['gb'].name
+                simple['fasta'] = simple['fasta'].name
+                simple['figure'] = simple['figure'].name
+                simple['figure_after'] = simple['figure_after'].name
+            record = record.name
             out.write('{},'.format(record))
             out.write('{success},{skip},{gb},{fasta},{length},{LSC},{IRa},'
                       '{SSC},{IRb},{missing},{incomplete},{rc},{figure},'
-                      '{figure_after}\n'.format(**divided[record]))
+                      '{figure_after}\n'.format(**simple))
     with open(reference_info, 'w') as out:
         out.write('Reference,Taxon,Length,LSC,IRa,SSC,IRb\n')
         out.write('{},{},{},{},{},{},{}\n'.format(
-            ref_fasta, arg.taxon, ref_len, len(ref_regions['LSC']),
+            ref_fasta.name, arg.taxon, ref_len, len(ref_regions['LSC']),
             len(ref_regions['IRa']), len(ref_regions['SSC']),
             len(ref_regions['IRb'])))
     log.info(f'Validation result was written into {output_info}')

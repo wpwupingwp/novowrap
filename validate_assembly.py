@@ -353,8 +353,8 @@ def main():
     for i in divided:
         if divided[i]['success']:
             log.info(f"\t{divided[i]['fasta']}")
-    reference_info = output / 'Reference.csv'
-    output_info = output / 'Results.csv'
+    reference_info = output / f'{output.name}-Reference.csv'
+    output_info = output / f'{output.name}-Results.csv'
     with open(output_info, 'w') as out:
         out.write('Raw,Success,Skip,gb,fasta,Length,LSC,IRa,'
                   'SSC,IRb,Missing,Incomplete,RC_region,Figure,Figure_after\n')

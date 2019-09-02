@@ -163,35 +163,35 @@ def divide_records(fasta, output, ref_len, len_diff=0.1, top=0):
         top(int): number of records to keep
     Returns:
         option_files(list(Path)):  list of divided files
+        info(list): file info
     """
     options = list(SeqIO.parse(fasta, 'fasta'))
     fasta = Path(fasta)
-    option_files = []
+    divided = {}
     if len(options) > 1:
         log.warning(f'Found {len(options)} records in {fasta}.')
         log.info('Divide them into different files.')
         for idx, record in enumerate(options):
+            skip = False
+            r_gb = r_fasta = None
             filename = output / f'{idx}_{fasta}'
             record_len = len(record)
             record_len_diff = abs(1-(record_len/ref_len))
             if record_len_diff > len_diff:
-                log.critical(f'The length difference of the {idx+1} record '
+                log.critical(f'The length difference of NO.{idx+1} record '
                              f'with reference is out of limit '
                              f'({record_len_diff:.2%} > {len_diff:.2%}).')
-                new_filename = filename.with_suffix('.bad_length')
-                SeqIO.write(record, new_filename, 'fasta')
-                log.warning(f'Skip {new_filename}.')
-                continue
+                skip = True
             SeqIO.write(record, filename, 'fasta')
-            option_files.append(rotate_seq(filename))
+            if not skip:
+                r_gb, r_fasta = rotate_seq(filename)
+            divided[filename] = {'r_gb': r_gb, 'r_fasta': r_fasta, 'length':
+                                 record_len, 'skip': skip}
     else:
-        option_files.append(clean_rotate(fasta, output))
-    if top != 0:
-        skip = len(option_files) - top
-        if skip > 0:
-            log.critical(f'Skip {skip} records.')
-            option_files = option_files[:top]
-    return option_files
+        r_gb, r_fasta = clean_rotate(fasta, output)
+        divided[fasta] = {'r_gb': r_gb, 'r_fasta': r_fasta, 'length':
+                          len(options[0]), 'skip': False}
+    return divided
 
 
 def main():
@@ -226,13 +226,13 @@ def main():
         log.critical('Please consider to use another reference.')
         raise SystemExit
     ref_regions = get_regions(new_ref_gb)
-    # to be continued
-    option_files = divide_records(arg.input, output, ref_len,
-                                  arg.len_diff, arg.top)
-    report = []
+    # info = ('fileinfo', ['raw', 'length', 'rotate', 'lsc', 'ira', 'ssc',
+    #                                'irb', 'rc_region', 'rc_file', 'skip'])
+    divided = divide_records(arg.input, output, ref_len,
+                             arg.len_diff, arg.top)
     validated = []
     for i in option_files:
-        if i is None:
+        if report[i.name]['skip']:
             continue
         i_gb, i_fasta = i
         log.info(f'Analyze {i_fasta}.')
@@ -309,6 +309,7 @@ def main():
     for i in validated:
         log.info(f'\t{i}')
     log.info('Bye.')
+    print(report)
     return
 
 

@@ -80,9 +80,10 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
         record_len = len(record)
         record_len_diff = abs(1-(record_len/ref_len))
         if record_len_diff > len_diff:
-            log.critical(f'The length difference of NO.{idx+1} record '
-                         f'with reference is out of limit '
-                         f'({record_len_diff:.2%} > {len_diff:.2%}).')
+            log.warning(f'Length of NO.{idx+1} record: {record_len} bp')
+            log.warning(f'Length of reference: {ref_len} bp')
+            log.critical(f'The difference is out of limit'
+                         f'({record_len_diff:.4%} > {len_diff:.4%}).')
             skip = True
         SeqIO.write(record, filename, 'fasta')
         if not skip:

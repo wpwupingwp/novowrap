@@ -354,11 +354,11 @@ def main():
     for i in divided:
         if divided[i]['success']:
             log.info(f"\t{divided[i]['fasta']}")
-    reference_info = output / f'{output.name}-Reference.csv'
     output_info = output / f'{output.name}-Results.csv'
     with open(output_info, 'w') as out:
         out.write('Raw,Success,Skip,gb,fasta,Length,LSC,IRa,'
-                  'SSC,IRb,Missing,Incomplete,RC_region,Figure,Figure_after\n')
+                  'SSC,IRb,Missing,Incomplete,RC_region,Figure,Figure_after,'
+                  'Reference,Taxonomy,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n')
         for record in divided:
             # format is easier than f-string for dict
             simple = divided[record]
@@ -371,15 +371,12 @@ def main():
             out.write('{},'.format(record))
             out.write('{success},{skip},{gb},{fasta},{length},{LSC},{IRa},'
                       '{SSC},{IRb},{missing},{incomplete},{rc},{figure},'
-                      '{figure_after}\n'.format(**simple))
-    with open(reference_info, 'w') as out:
-        out.write('Reference,Taxon,Length,LSC,IRa,SSC,IRb\n')
-        out.write('{},{},{},{},{},{},{}\n'.format(
-            ref_fasta.name, arg.taxon, ref_len, len(ref_regions['LSC']),
-            len(ref_regions['IRa']), len(ref_regions['SSC']),
-            len(ref_regions['IRb'])))
-    log.info(f'Validation result was written into {output_info}')
-    log.info(f'Reference information was written into {reference_info}')
+                      '{figure_after},'.format(**simple))
+            out.write('{},{},{},{},{},{},{}\n'.format(
+                ref_fasta.name, arg.taxon, ref_len, len(ref_regions['LSC']),
+                len(ref_regions['IRa']), len(ref_regions['SSC']),
+                len(ref_regions['IRb'])))
+    log.info(f'Results was written into {output_info}')
     log.info('Bye.')
     return
 

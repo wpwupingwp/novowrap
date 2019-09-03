@@ -34,7 +34,7 @@ def parse_args():
                      default=0.7,
                      help='minimum percentage of identity of BLAST, 0-100')
     arg.add_argument('-l', '-len_diff', dest='len_diff', type=float,
-                     default=0.1,
+                     default=0.2,
                      help='maximum percentage of length differnce of query to'
                      'reference, 0-100')
     return arg.parse_args()

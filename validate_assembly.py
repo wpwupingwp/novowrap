@@ -303,9 +303,10 @@ def main():
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])
         compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
-        fig_title = str(output / f'{i_fasta.stem}|{ref_gb.stem}')
+        fig_title = f'{i_fasta.stem}|{ref_gb.stem}'
         pdf = draw(fig_title, ref_regions, option_regions,
                    compare_result)
+        pdf = move(pdf, output/pdf)
         divided[i]['figure'] = pdf
         log.info('Detecting reverse complement region.')
         option_len = divided[i]['length']

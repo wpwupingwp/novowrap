@@ -66,7 +66,6 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
         info(list): file info
     """
     options = list(SeqIO.parse(fasta, 'fasta'))
-    fasta = Path(fasta)
     divided = {}
     keys = ('skip,gb,fasta,length,LSC,IRa,SSC,IRb,missing,incomplete,rc,'
             'figure,figure_after').split(',')
@@ -84,6 +83,7 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
             log.warning(f'Length of reference: {ref_len} bp')
             log.critical(f'The difference is out of limit'
                          f'({record_len_diff:.4%} > {len_diff:.4%}).')
+            divided[filename]['length'] = record_len
             skip = True
         SeqIO.write(record, filename, 'fasta')
         if not skip:

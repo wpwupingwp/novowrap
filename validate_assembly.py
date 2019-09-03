@@ -158,8 +158,7 @@ def draw(title, ref_regions, option_regions, data):
     ignore_offset = len(ref_regions['IRa'])*2 + len(ref_regions['SSC'])
     plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
-    plt.title(f"The validation result of {title.replace('-', ' and ')}",
-              pad=10)
+    plt.title(f"Validation of {title.replace('|', ' and ')}", pad=10)
     plt.xlabel('Base')
     for key, value in ref_regions.items():
         plt.plot([value.location.start, value.location.end], [0.8, 0.8],
@@ -304,7 +303,7 @@ def main():
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])
         compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
-        fig_title = str(output / f'{i_fasta.stem}-{ref_gb.stem}')
+        fig_title = str(output / f'{i_fasta.stem}|{ref_gb.stem}')
         pdf = draw(fig_title, ref_regions, option_regions,
                    compare_result)
         divided[i]['figure'] = pdf

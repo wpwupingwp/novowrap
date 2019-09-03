@@ -278,10 +278,10 @@ def main():
         fmt = 'gb'
     else:
         fmt = get_fmt(arg.ref)
-        ref_gb = move(Path(arg.ref), output/arg.ref)
     ref_len = len(SeqIO.read(ref_gb, fmt))
-    # ref already in output
     new_ref_gb, ref_fasta = rotate_seq(ref_gb)
+    new_ref_gb = move(new_ref_gb, output/new_ref_gb)
+    ref_fasta = move(ref_fasta, output/ref_fasta)
     if new_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')
         log.critical('Please consider to use another reference.')

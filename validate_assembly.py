@@ -89,9 +89,10 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
             r_gb, r_fasta = rotate_seq(filename)
             if r_gb is not None:
                 divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
-                                          'length': record_len, 'skip': skip})
+                                          'length': record_len})
             else:
-                divided[filename]['skip'] = True
+                skip = True
+        divided[filename]['skip'] = skip
     return divided
 
 

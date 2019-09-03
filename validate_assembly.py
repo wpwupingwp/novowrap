@@ -189,7 +189,7 @@ def draw(title, ref_regions, option_regions, data):
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
             plt.fill([send, sstart, qend, qstart], [0.8, 0.8, 0.65, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
-    pdf = Path(title).with_suffix('.pdf')
+    pdf = Path(title.replace('|', '-')).with_suffix('.pdf')
     plt.savefig(pdf)
     plt.close()
     return pdf
@@ -314,12 +314,12 @@ def main():
                                         compare_result, arg.perc_identity)
         for rgn in count:
             if count[rgn]['strand'] == 'missing':
-                divided[i]['missing'] = ','.join([divided[i]['missing'], rgn])
+                divided[i]['missing'] = '-'.join([divided[i]['missing'], rgn])
                 log.critical(f'Region {rgn} of {i_fasta} is missing.')
                 success = False
             elif count[rgn]['strand'] == 'incomplete':
                 log.critical(f'Region {rgn} of {i_fasta} is incomplete.')
-                divided[i]['incomplete'] = ','.join([divided[i]['incomplete'],
+                divided[i]['incomplete'] = '-'.join([divided[i]['incomplete'],
                                                      rgn])
                 success = False
             else:

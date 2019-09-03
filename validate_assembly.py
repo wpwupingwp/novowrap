@@ -87,10 +87,11 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
         SeqIO.write(record, filename, 'fasta')
         if not skip:
             r_gb, r_fasta = rotate_seq(filename)
-        divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
-                                  'length': record_len, 'skip': skip})
-        if r_gb is None:
-            divided[filename]['skip'] = True
+            if r_gb is not None:
+                divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
+                                          'length': record_len, 'skip': skip})
+            else:
+                divided[filename]['skip'] = True
     return divided
 
 

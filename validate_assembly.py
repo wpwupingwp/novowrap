@@ -314,13 +314,18 @@ def main():
                                         compare_result, arg.perc_identity)
         for rgn in count:
             if count[rgn]['strand'] == 'missing':
-                divided[i]['missing'] = '-'.join([divided[i]['missing'], rgn])
+                if divided[i]['missing'] == '':
+                    divided[i]['missing'] = rgn
+                else:
+                    divided[i]['missing'] += f'-{rgn}'
                 log.critical(f'Region {rgn} of {i_fasta} is missing.')
                 success = False
             elif count[rgn]['strand'] == 'incomplete':
+                if divided[i]['incomplete'] == '':
+                    divided[i]['incomplete'] = rgn
+                else:
+                    divided[i]['incomplete'] += f'-{rgn}'
                 log.critical(f'Region {rgn} of {i_fasta} is incomplete.')
-                divided[i]['incomplete'] = '-'.join([divided[i]['incomplete'],
-                                                     rgn])
                 success = False
             else:
                 pass

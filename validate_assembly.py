@@ -240,12 +240,12 @@ def validate_regions(length, regions, compare, perc_identity=0.7):
             count[rgn]['strand'] = 'missing'
         elif u < min_rgn_len:
             count[rgn]['strand'] = 'incomplete'
-        elif p > min_rgn_len:
+        elif p >= min_rgn_len:
             count[rgn]['strand'] = 'plus'
-        elif m > min_rgn_len:
+        elif m >= min_rgn_len:
             count[rgn]['strand'] = 'minus'
         else:
-            count[rgn]['strand'] = 'plus'
+            count[rgn]['strand'] = 'unknown'
     # do not rc IR
     to_rc = None
     if count['LSC']['strand'] == count['SSC']['strand'] == 'minus':

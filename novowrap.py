@@ -179,7 +179,7 @@ def txt_to_fasta(old):
     new = Path(old).with_suffix('.fasta')
     with open(new, 'w') as out:
         for line in clean:
-            out.write(line)
+            out.write(line.replace('*', ''))
     return new
 
 

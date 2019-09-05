@@ -186,38 +186,35 @@ def txt_to_fasta(old):
 def organize_out(source, dest):
     """
     Organize NOVOPlasty output.
-        Contigs*: contigs
-        Merged*: merged contigs, may be circular or empty
-        Option*: merged contigs, circular or incomplete circular
-        Circularized*: circularized sequence
         log*: log file
         contigs_tmp*: temporary files
+        Contigs*: contigs
+        Merged*: merged contigs, may be circular or empty, contains options
+        Option*: merged contigs, circular or incomplete circular
+        Circularized*: circularized sequence
     Return fasta list.
     Arg:
         source(Path): current directory
         dest(Path): directory to move
     Return:
-        assembled(list): assembled fasta
-        fragments(list): contig list
+        contigs(list): contig files
+        merged(list): merged files
+        options(list): options files
+        circularized(list): circularized files
     """
-    contigs = list(source.glob('Contigs_*'))
-    options = list(source.glob('Option_*'))
-    merged = list(source.glob('Merged_contigs_*'))
-    circularized = list(source.glob('Circularized_assembly*'))
-    tmp = list(source.glob('contigs_tmp_*'))
-    log = list(source.glob('log_*.txt'))
-    assembled = []
-    fragments = []
-    for i in (*tmp, *log):
+    for i in source.glob('contigs_tmp_*'):
         i = move(i, dest/i.name)
-    for i in contigs:
+    for i in source.glob('log_*.txt'):
         i = move(i, dest/i.name)
-        fragments.append(i)
-    for i in (*options, *merged, *circularized):
-        i = move(i, dest/i.name)
-        fasta = txt_to_fasta(i)
-        assembled.append(fasta)
-    return assembled, fragments
+    contigs = [txt_to_fasta(move(i, dest/i.name)) for i in
+               source.glob('Contigs_*')]
+    merged = [txt_to_fasta(move(i, dest/i.name)) for i in
+              source.glob('Merged_contigs_*')]
+    options = [txt_to_fasta(move(i, dest/i.name)) for i in
+               source.glob('Option_*')]
+    circularized = [txt_to_fasta(move(i, dest/i.name)) for i in
+                    source.glob('Circularized_assembly*')]
+    return circularized, options, merged, contigs
 
 
 def main():
@@ -261,15 +258,17 @@ def main():
         # use rbcL to detect strand direction
         log.info(f'Organize NOVOPlasty output of {seed.name}.')
         # novoplasty use current folder as output folder
-        assembled, fragments = organize_out(Path().cwd(), folder)
-        if len(assembled) == 0:
+        circularized, options, merged, contigs = organize_out(Path().cwd(),
+                                                              folder)
+        print(circularized, options, merged, contigs)
+        raise SystemExit
+        if len(circularized) == 0 and len(options) == 0 and len(merged) == 0:
             log.warning(f'Assembled with {seed.name} failed.')
             fail += 1
             continue
-        # although rotate only handle the first record, if the first is
-        # success, it is enough to say the assembly is OK
-        rotate_result = [rotate_seq(i) for i in assembled]
-        if any(rotate_result):
+        # to be continued
+        #validated = validate_seq()
+        #if any(rotate_result):
             success = True
             break
         else:

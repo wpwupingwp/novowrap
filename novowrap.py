@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 import argparse
 import logging
 
-from utils import rotate_seq, get_full_taxon
+from utils import rotate_seq, get_full_taxon, move
 
 
 # temporary directory
@@ -183,16 +183,22 @@ def txt_to_fasta(old):
     return new
 
 
-def neaten_out(source, dest):
+def organize_out(source, dest):
     """
     Organize NOVOPlasty output.
-    Return sequence lengths and fasta filename list.
-    According to seed, adjust direction of assembled sequences.
+        Contigs*: contigs
+        Merged*: merged contigs, may be circular or empty
+        Option*: merged contigs, circular or incomplete circular
+        Circularized*: circularized sequence
+        log*: log file
+        contigs_tmp*: temporary files
+    Return fasta list.
     Arg:
         source(Path): current directory
         dest(Path): directory to move
     Return:
         assembled(list): assembled fasta
+        fragments(list): contig list
     """
     contigs = list(source.glob('Contigs_*'))
     options = list(source.glob('Option_*'))
@@ -201,16 +207,17 @@ def neaten_out(source, dest):
     tmp = list(source.glob('contigs_tmp_*'))
     log = list(source.glob('log_*.txt'))
     assembled = []
-    # move to dest folder
-    for i in (*options, *contigs, *tmp, *log):
-        i.replace(dest/i.name)
-    # move to dest folder, generate clean fasta
-    for i in (*merged, *circularized):
-        i.replace(dest/i.name)
-        new_loc = dest / i.name
-        fasta = txt_to_fasta(new_loc)
+    fragments = []
+    for i in (*tmp, *log):
+        i = move(i, dest/i.name)
+    for i in contigs:
+        i = move(i, dest/i.name)
+        fragments.append(i)
+    for i in (*options, *merged, *circularized):
+        i = move(i, dest/i.name)
+        fasta = txt_to_fasta(i)
         assembled.append(fasta)
-    return assembled
+    return assembled, fragments
 
 
 def main():
@@ -254,7 +261,7 @@ def main():
         # use rbcL to detect strand direction
         log.info(f'Organize NOVOPlasty output of {seed.name}.')
         # novoplasty use current folder as output folder
-        assembled = neaten_out(Path().cwd(), folder)
+        assembled, fragments = organize_out(Path().cwd(), folder)
         if len(assembled) == 0:
             log.warning(f'Assembled with {seed.name} failed.')
             fail += 1

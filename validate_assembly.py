@@ -8,7 +8,7 @@ from Bio import SeqIO
 from matplotlib import pyplot as plt
 import numpy as np
 
-from utils import down_ref, blast, parse_blast_tab
+from utils import down_ref, blast, parse_blast_tab, move
 from utils import get_fmt, rotate_seq, get_regions, rc_regions
 
 # define logger
@@ -38,19 +38,6 @@ def parse_args():
                      help='maximum percentage of length differnce of query to'
                      'reference, 0-100')
     return arg.parse_args()
-
-
-def move(source, dest):
-    """
-    Move source to dest and return dest.
-    Args:
-        source(Path): old path
-        dest(Path or str): new path
-    Return:
-        dest(Path): new path
-    """
-    source.rename(dest)
-    return Path(dest)
 
 
 def divide_records(fasta, output, ref_len, len_diff=0.1):

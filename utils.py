@@ -5,7 +5,6 @@ import logging
 from os import devnull
 from pathlib import Path
 from subprocess import run
-from tempfile import TemporaryDirectory
 from time import sleep
 
 from Bio import Entrez, SeqIO
@@ -14,19 +13,21 @@ from Bio.Seq import reverse_complement as rc
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 
-# temporary directory
-TMP = TemporaryDirectory()
 NULL = open(devnull, 'w')
-# define logger
-FMT = '%(asctime)s %(levelname)-8s %(message)s'
-DATEFMT = '%H:%M:%S'
-logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
-try:
-    import coloredlogs
-    coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
-except ImportError:
-    pass
 log = logging.getLogger('__main__')
+
+
+def move(source, dest):
+    """
+    Move source to dest and return dest.
+    Args:
+        source(Path): old path
+        dest(Path or str): new path
+    Return:
+        dest(Path): new path
+    """
+    source.rename(dest)
+    return Path(dest)
 
 
 def get_full_taxon(taxon):

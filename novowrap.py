@@ -47,11 +47,12 @@ def parse_args():
     return arg.parse_args()
 
 
-def get_seq(taxon, output, gene=None):
+def get_seq(ref, output, gene=None):
     """
     Use BarcodeFinder to get seed or reference sequence.
     Arg:
-        taxon(str): given taxon name
+        ref(Path): reference chloroplast genome gb file, only contains one
+        record
         output(Path): output folder
         gene(tuple): gene name
     Yield:
@@ -59,57 +60,28 @@ def get_seq(taxon, output, gene=None):
         out(Path): fasta file's folder
     """
     # strand: +, -, -, -, +
-    candidate_genes = ('rbcL', 'matK', 'psaB', 'psaC', 'rrn23')
-    lineage = get_full_taxon(taxon)
-    if lineage is not None:
-        lineage = list(reversed(lineage))
-    else:
-        log.warning(f'Cannot find {taxon}, use Nicotiana tabacum instead.')
-        lineage = list(reversed(get_full_taxon('Nicotiana tabacum')))
-    if lineage is None:
-        log.critical('Failed to get taxon. Quit.')
-        exit(-2)
+    candidate_genes = ['rbcL', 'matK', 'psaB', 'psaC', 'rrn23']
+    seeds = []
     if gene is None:
         genes = candidate_genes
     else:
         genes = [gene, ]
         genes.extend(candidate_genes)
-    if system() == 'Windows':
-        python = 'python'
-    else:
-        python = 'python3'
-    for gene in genes:
-        last_taxon = ''
-        for taxon in lineage:
-            if taxon == '':
-                continue
-            if ' ' in taxon:
-                taxon = taxon.strip('"')
-                taxon = taxon.replace(' ', '_')
-            out = output / f'{gene}-{taxon}'
-            # Entrez has limitation on query frenquency (3 times per second)
-            # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
-            sleep(0.5)
-            if last_taxon != '':
-                down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
-                           f'{gene} -og cp -out {out} -stop 1 -expand 0 '
-                           f'-rename -seq_n 10 -uniq no '
-                           f'-exclude "{last_taxon}"[organism]',
-                           shell=True, stdout=NULL, stderr=NULL)
-            else:
-                down = run(f'{python} -m BarcodeFinder -taxon {taxon} -gene '
-                           f'{gene} -og cp -out {out} '
-                           f'-stop 1 -expand 0 -rename -seq_n 10 -uniq no ',
-                           shell=True, stdout=NULL, stderr=NULL)
-            if down.returncode == 0:
-                fasta = out / 'by-gene' / f'{gene}.fasta'
-                if fasta.exists:
-                    yield fasta, out, gene, taxon
-                    # if nearest seed fail, higher rank may be useless, too
-                    break
-            else:
-                log.warning(f'Cannot get {gene} of {taxon}. Retry...')
-            last_taxon = taxon
+    gb = SeqIO.read(ref, 'gb')
+    accession = gb.annotations['accessions'][0]
+    organism = gb.annotations['organism'][0].replace(' ', '_')
+    for feature in gb.features:
+        if feature.type == 'gene' and 'gene' in feature.qualifiers:
+            gene_name = feature.qualifiers['gene'][0]
+            print(gene_name)
+            if gene_name in genes:
+                seq = feature.extract(gb)
+                file = output / f'{gene_name}.fasta'
+                with open(file, 'w') as out:
+                    out.write(f'>{gene_name}|{organism}|{accession}\n')
+                    out.write(f'{seq}\n')
+                seeds.append(file)
+    return seeds
 
 
 def config(out, seed, arg):

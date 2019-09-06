@@ -91,8 +91,9 @@ def get_full_taxon(taxon):
     return lineage
 
 
-def down_ref(taxon, output):
+def get_ref(taxon, output):
     """
+    Get reference gb file.
     Arg:
         taxon(str): given taxon name
         output(Path): output folder

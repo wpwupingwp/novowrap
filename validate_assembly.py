@@ -8,7 +8,7 @@ from Bio import SeqIO
 from matplotlib import pyplot as plt
 import numpy as np
 
-from utils import down_ref, blast, parse_blast_tab, move
+from utils import get_ref, blast, parse_blast_tab, move
 from utils import get_fmt, rotate_seq, get_regions, rc_regions
 
 
@@ -265,7 +265,7 @@ def validate_main(arg_str=None):
     log.info(f'Use {output} as output folder.')
     # get ref
     if arg.ref is None:
-        arg.taxon, ref_gb = down_ref(arg.taxon, output)
+        arg.taxon, ref_gb = get_ref(arg.taxon, output)
         fmt = 'gb'
     else:
         fmt = get_fmt(arg.ref)

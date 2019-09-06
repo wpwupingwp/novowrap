@@ -33,7 +33,7 @@ def parse_args():
     inputs.add_argument('-r', required=True, help='reverse fastq/gz file')
     inputs.add_argument('-split', default=0, help='reads to use, set to 0 '
                         'to skip split')
-    options = arg.add_argument('Option')
+    options = arg.add_argument_group('Option')
     options.add_argument('-kmer', choices=range(23, 40, 2), default=39,
                          type=int, help='kmer size')
     options.add_argument('-min', default=100000, type=int,
@@ -78,7 +78,6 @@ def get_seed(ref, output, gene=None):
     for feature in gb.features:
         if feature.type == 'gene' and 'gene' in feature.qualifiers:
             gene_name = feature.qualifiers['gene'][0]
-            print(gene_name)
             if gene_name in genes:
                 seq = feature.extract(gb)
                 file = output / f'{gene_name}.fasta'

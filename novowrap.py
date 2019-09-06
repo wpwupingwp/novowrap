@@ -104,7 +104,7 @@ def get_seq(taxon, output, gene=None):
             if down.returncode == 0:
                 fasta = out / 'by-gene' / f'{gene}.fasta'
                 if fasta.exists:
-                    yield fasta, out
+                    yield fasta, out, gene, taxon
                     # if nearest seed fail, higher rank may be useless, too
                     break
             else:
@@ -243,7 +243,7 @@ def main():
 
     success = False
     fail = 0
-    for seed, folder in get_seq(arg.taxon, out):
+    for seed, folder, gene, taxon in get_seq(arg.taxon, out):
         if fail >= arg.try_n:
             log.critical(f'Too much failure. Quit.')
             break
@@ -261,11 +261,11 @@ def main():
         circularized, options, merged, contigs = organize_out(Path().cwd(),
                                                               folder)
         print(circularized, options, merged, contigs)
-        raise SystemExit
         if len(circularized) == 0 and len(options) == 0 and len(merged) == 0:
             log.warning(f'Assembled with {seed.name} failed.')
             fail += 1
             continue
+        raise SystemExit
         # to be continued
         #validated = validate_seq()
         #if any(rotate_result):

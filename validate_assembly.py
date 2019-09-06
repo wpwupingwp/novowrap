@@ -26,6 +26,8 @@ def parse_args(arg_list=None):
                      default=0.2,
                      help='maximum percentage of length differnce of query to'
                      'reference, 0-100')
+    arg.add_argument('-g', '-gene', dest='gene',
+                     help='gene used as seed, only for caller')
     if arg_list is None:
         return arg.parse_args()
     else:

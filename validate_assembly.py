@@ -11,17 +11,6 @@ import numpy as np
 from utils import down_ref, blast, parse_blast_tab, move
 from utils import get_fmt, rotate_seq, get_regions, rc_regions
 
-# define logger
-FMT = '%(asctime)s %(levelname)-8s %(message)s'
-DATEFMT = '%H:%M:%S'
-logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
-log = logging.getLogger(__name__)
-try:
-    import coloredlogs
-    coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
-except ImportError:
-    pass
-
 
 def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
@@ -254,6 +243,8 @@ def validate_main(arg_str=None):
     Return:
         validated(list): list contains validated rotated fasta files
     """
+    global log
+    log = logging.getLogger()
     if arg_str is None:
         arg = parse_args()
     else:
@@ -392,4 +383,13 @@ def validate_main(arg_str=None):
 
 
 if __name__ == '__main__':
+    # define logger
+    FMT = '%(asctime)s %(levelname)-8s %(message)s'
+    DATEFMT = '%H:%M:%S'
+    logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
+    try:
+        import coloredlogs
+        coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
+    except ImportError:
+        pass
     validate_main()

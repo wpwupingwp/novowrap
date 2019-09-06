@@ -91,15 +91,16 @@ def get_full_taxon(taxon):
     return lineage
 
 
-def get_ref(taxon, output):
+def get_ref(taxon):
     """
     Get reference gb file.
+    Only one record will be retrieved.
     Arg:
         taxon(str): given taxon name
-        output(Path): output folder
     Return:
         taxon(str): taxonomy
         ref(Path): gb file
+        accession(str): accession number of the record
     """
     lineage = get_full_taxon(taxon)
     if lineage is not None:
@@ -132,13 +133,13 @@ def get_ref(taxon, output):
                                            webenv=handle['WebEnv'],
                                            query_key=handle['QueryKey']))
         accession = info[0]['Caption']
-        ref = output / f'{taxon}_{accession}.gb'
+        ref = Path(f'{taxon}_{accession}.gb')
         content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
                                 query_key=handle['QueryKey'], rettype='gb',
                                 retmode='text', retmax=1)
         with open(ref, 'w') as out:
             out.write(content.read())
-        return taxon, ref
+        return taxon, ref, accession
 
 
 def blast(query, target, perc_identity=70):

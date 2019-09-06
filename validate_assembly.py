@@ -265,7 +265,8 @@ def validate_main(arg_str=None):
     log.info(f'Use {output} as output folder.')
     # get ref
     if arg.ref is None:
-        arg.taxon, ref_gb = get_ref(arg.taxon, output)
+        arg.taxon, ref_gb, accession = get_ref(arg.taxon)
+        ref_gb = move(ref_gb, output/ref_gb)
         fmt = 'gb'
     else:
         fmt = get_fmt(arg.ref)

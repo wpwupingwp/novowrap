@@ -9,7 +9,8 @@ from tempfile import TemporaryDirectory
 import argparse
 import logging
 
-from utils import rotate_seq, get_full_taxon, move
+from utils import get_ref, move
+from validate_assembly import validate_main
 
 
 # temporary directory
@@ -30,24 +31,32 @@ except ImportError:
 def parse_args():
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    arg.add_argument('-f', required=True, help='forward fastq file')
-    arg.add_argument('-r', required=True, help='reverse fastq file')
-    arg.add_argument('-kmer', choices=range(23, 40, 2), default=39, type=int,
-                     help='kmer size')
-    arg.add_argument('-min', default=100000, help='minimum genome size (KB)')
-    arg.add_argument('-max', default=200000, help='maximum genome size (KB)')
-    arg.add_argument('-mem', default=30, type=int, help='maximum memory (GB)')
-    arg.add_argument('-reads_len', default=150, help='reads length')
-    arg.add_argument('-taxon', default='Nicotiana tabacum',
+    inputs = arg.add_argument_group('Input')
+    inputs.add_argument('-f', required=True, help='forward fastq/gz file')
+    inputs.add_argument('-r', required=True, help='reverse fastq/gz file')
+    inputs.add_argument('-split', default=0, help='reads to use, set to 0 '
+                        'to skip split')
+    options = arg.add_argument('Option')
+    options.add_argument('-kmer', choices=range(23, 40, 2), default=39,
+                         type=int, help='kmer size')
+    options.add_argument('-min', default=100000, type=int,
+                         help='minimum genome size (KB)')
+    options.add_argument('-max', default=200000, type=int,
+                         help='maximum genome size (KB)')
+    options.add_argument('-mem', default=30, type=int,
+                         help='maximum memory (GB)')
+    options.add_argument('-reads_len', default=150, type=int,
+                         help='reads length')
+    options.add_argument('-gene', help='seed gene')
+    options.add_argument('-try', dest='try_n', type=int,
+                         default=5, help='maximum tried times')
+    ref = arg.add_argument_group('Reference')
+    ref.add_argument('-taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
-    arg.add_argument('-try', dest='try_n', type=int, default=5,
-                     help='maximum tried times')
-    # arg.add_argument('-split', default=1_000_000,
-    #                  help='reads to use (million), set to 0 to skip split')
     return arg.parse_args()
 
 
-def get_seq(ref, output, gene=None):
+def get_seed(ref, output, gene=None):
     """
     Use BarcodeFinder to get seed or reference sequence.
     Arg:
@@ -55,9 +64,8 @@ def get_seq(ref, output, gene=None):
         record
         output(Path): output folder
         gene(tuple): gene name
-    Yield:
-        fasta(Path): fasta file
-        out(Path): fasta file's folder
+    Return:
+        seeds(list): seed files list
     """
     # strand: +, -, -, -, +
     candidate_genes = ['rbcL', 'matK', 'psaB', 'psaC', 'rrn23']
@@ -215,7 +223,13 @@ def main():
 
     success = False
     fail = 0
-    for seed, folder, gene, taxon in get_seq(arg.taxon, out):
+    taxon, ref, accession = get_ref(arg.taxon)
+    ref = move(ref, out/ref)
+    seeds = get_seed(ref, output, arg.gene)
+    if len(seeds) == 0:
+        log.critical('Cannot get seeds!')
+        raise SystemExit
+    for seed in seeds:
         if fail >= arg.try_n:
             log.critical(f'Too much failure. Quit.')
             break
@@ -239,8 +253,8 @@ def main():
             continue
         raise SystemExit
         # to be continued
-        #validated = validate_seq()
-        #if any(rotate_result):
+        # validated = validate_seq()
+        # if any(rotate_result):
             success = True
             break
         else:

@@ -230,6 +230,7 @@ def main():
             log.critical(f'Too much failure. Quit.')
             break
         folder = out / seed.stem
+        folder.mkdir()
         log.info(f'No. {fail+1} try, use {seed.name} as seed file.')
         config_file = config(out, seed, arg)
         log.info('NOVOPlasty version:\t3.6')

@@ -2,19 +2,16 @@
 
 from os import devnull
 from pathlib import Path
-from platform import system
 from subprocess import run
-from time import sleep
-from tempfile import TemporaryDirectory
 import argparse
 import logging
+
+from Bio import SeqIO
 
 from utils import get_ref, move
 from validate_assembly import validate_main
 
 
-# temporary directory
-TMP = TemporaryDirectory()
 NULL = open(devnull, 'w')
 # define logger
 FMT = '%(asctime)s %(levelname)-8s %(message)s'
@@ -225,7 +222,7 @@ def main():
     fail = 0
     taxon, ref, accession = get_ref(arg.taxon)
     ref = move(ref, out/ref)
-    seeds = get_seed(ref, output, arg.gene)
+    seeds = get_seed(ref, out, arg.gene)
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')
         raise SystemExit
@@ -233,6 +230,7 @@ def main():
         if fail >= arg.try_n:
             log.critical(f'Too much failure. Quit.')
             break
+        folder = out / seed.stem
         log.info(f'No. {fail+1} try, use {seed.name} as seed file.')
         config_file = config(out, seed, arg)
         log.info('NOVOPlasty version:\t3.6')
@@ -244,17 +242,17 @@ def main():
         # use rbcL to detect strand direction
         log.info(f'Organize NOVOPlasty output of {seed.name}.')
         # novoplasty use current folder as output folder
-        circularized, options, merged, contigs = organize_out(Path().cwd(),
-                                                              folder)
-        print(circularized, options, merged, contigs)
+        circularized, options, merged, contigs = organize_out(
+            Path().cwd(), folder)
         if len(circularized) == 0 and len(options) == 0 and len(merged) == 0:
             log.warning(f'Assembled with {seed.name} failed.')
             fail += 1
             continue
-        raise SystemExit
-        # to be continued
-        # validated = validate_seq()
-        # if any(rotate_result):
+        validated = []
+        # validate merged or not?
+        for i in (*circularized, *options, *merged):
+            validated.append(validate_main(i))
+        if len(validated) != 0:
             success = True
             break
         else:
@@ -263,7 +261,6 @@ def main():
             fail += 1
     if not success:
         log.critical(f'Failed to assemble {arg.f} and {arg.r}.')
-    TMP.cleanup()
     NULL.close()
     log.info('Bye.')
     return

@@ -23,7 +23,7 @@ except ImportError:
     pass
 
 
-def parse_args():
+def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     arg.add_argument('input', help='input filename')
@@ -37,7 +37,10 @@ def parse_args():
                      default=0.2,
                      help='maximum percentage of length differnce of query to'
                      'reference, 0-100')
-    return arg.parse_args()
+    if arg_list is None:
+        return arg.parse_args()
+    else:
+        return arg.parse_args(arg_list)
 
 
 def divide_records(fasta, output, ref_len, len_diff=0.1):
@@ -243,11 +246,18 @@ def validate_regions(length, regions, compare, perc_identity=0.7):
     return count, to_rc
 
 
-def main():
+def validate_main(arg_str=None):
     """
     Use BLAST to validate assembly result.
+    Args:
+        arg_str(str): arguments string
+    Return:
+        validated(list): list contains validated rotated fasta files
     """
-    arg = parse_args()
+    if arg_str is None:
+        arg = parse_args()
+    else:
+        arg = parse_args(arg_str.split(' '))
     arg.input = Path(arg.input)
     output = Path(arg.input.stem)
     output.mkdir()
@@ -348,9 +358,12 @@ def main():
         divided[i]['success'] = success
 
     log.info('Validated sequences:')
+    validated = []
     for i in divided:
         if divided[i]['success']:
-            log.info(f"\t{divided[i]['fasta']}")
+            file = divided[i]['fasta']
+            log.info(f'\t{file}')
+            validated.append(file)
     output_info = output / f'{output.name}-Results.csv'
     with open(output_info, 'w') as out:
         out.write('Raw,Success,Skip,gb,fasta,Length,LSC,IRa,'
@@ -375,8 +388,8 @@ def main():
                 len(ref_regions['IRb'])))
     log.info(f'Results was written into {output_info}')
     log.info('Bye.')
-    return
+    return validated
 
 
 if __name__ == '__main__':
-    main()
+    validate_main()

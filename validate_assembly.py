@@ -19,15 +19,16 @@ def parse_args(arg_list=None):
     arg.add_argument('-r', '-ref', dest='ref', help='reference gb')
     arg.add_argument('-t', '-taxon', dest='taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
-    arg.add_argument('-i', '-perc_identity', dest='perc_identity', type=float,
-                     default=0.7,
-                     help='minimum percentage of identity of BLAST, 0-100')
-    arg.add_argument('-l', '-len_diff', dest='len_diff', type=float,
-                     default=0.2,
-                     help='maximum percentage of length differnce of query to'
-                     'reference, 0-100')
-    arg.add_argument('-g', '-gene', dest='gene',
-                     help='gene used as seed, only for caller')
+    options = arg.add_argument_group('Option')
+    options.add_argument('-i', '-perc_identity', dest='perc_identity',
+                         type=float, default=0.7,
+                         help='minimum percentage of identity of BLAST, 0-100')
+    options.add_argument('-l', '-len_diff', dest='len_diff', type=float,
+                         default=0.2, help='maximum percentage of length '
+                         'differnce of query to' 'reference, 0-100')
+    options.add_argument('-g', '-gene', dest='gene',
+                         help='gene used as seed, only for caller')
+    options.add_argument('-o', '-out', dest='out', help='output folder')
     if arg_list is None:
         return arg.parse_args()
     else:
@@ -50,12 +51,12 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
     divided = {}
     keys = ('skip,gb,fasta,length,LSC,IRa,SSC,IRb,missing,incomplete,rc,'
             'figure,figure_after').split(',')
-    log.warning(f'Found {len(options)} records in {fasta}.')
+    log.warning(f'Found {len(options)} records in {fasta.name}.')
     log.info('Divide them into different files.')
     for idx, record in enumerate(options):
         skip = False
         r_gb = r_fasta = ''
-        filename = output / f'{idx}_{fasta}'
+        filename = output / f'{idx}_{fasta.name}'
         divided[filename] = dict((key, '') for key in keys)
         record_len = len(record)
         record_len_diff = abs(1-(record_len/ref_len))
@@ -252,11 +253,16 @@ def validate_main(arg_str=None):
     else:
         arg = parse_args(arg_str.split(' '))
     arg.input = Path(arg.input)
-    output = Path(arg.input.stem)
-    output.mkdir()
+    if arg.out is None:
+        output = Path(arg.input.stem)
+    else:
+        output = Path(arg.out)
+    if not output.exists():
+        output.mkdir()
     tmp = output / 'Temporary'
-    tmp.mkdir()
-    log.info(f'Contig:\t{arg.input}')
+    if not tmp.exists():
+        tmp.mkdir()
+    log.info(f'Input:\t{arg.input.name}')
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
         arg.taxon = None
@@ -309,19 +315,19 @@ def validate_main(arg_str=None):
                     divided[i]['missing'] = rgn
                 else:
                     divided[i]['missing'] += f'-{rgn}'
-                log.critical(f'Region {rgn} of {i_fasta} is missing.')
+                log.critical(f'Region {rgn} of {i_fasta.name} is missing.')
                 success = False
             elif count[rgn]['strand'] == 'incomplete':
                 if divided[i]['incomplete'] == '':
                     divided[i]['incomplete'] = rgn
                 else:
                     divided[i]['incomplete'] += f'-{rgn}'
-                log.critical(f'Region {rgn} of {i_fasta} is incomplete.')
+                log.critical(f'Region {rgn} of {i_fasta.name} is incomplete.')
                 success = False
             else:
                 pass
         if to_rc is not None:
-            log.warning(f'Reverse complement the {to_rc} of {i_fasta}.')
+            log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
             rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
             # clean old files
             i_fasta = move(i_fasta, tmp/(i_fasta.name+'.tmp'))
@@ -356,7 +362,7 @@ def validate_main(arg_str=None):
     for i in divided:
         if divided[i]['success']:
             file = divided[i]['fasta']
-            log.info(f'\t{file}')
+            log.info(f'\t{file.name}')
             validated.append(file)
     output_info = output / f'{output.name}-Results.csv'
     with open(output_info, 'w') as out:

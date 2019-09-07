@@ -287,7 +287,7 @@ def get_fmt(filename):
     return fmt
 
 
-def rotate_seq(filename, min_IR=1000):
+def rotate_seq(filename, min_IR=1000, silence=True):
     """
     Rotate genbank or fasta record, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Input file should only contains one record.
@@ -299,6 +299,8 @@ def rotate_seq(filename, min_IR=1000):
     """
     # FMT = 'qseqid sseqid length pident gapopen qstart qend sstart
     # send'
+    if silence:
+        log.setLevel(logging.CRITICAL)
     log.info(f'Rotate {filename}...')
     filename = Path(filename)
     fmt = get_fmt(filename)
@@ -432,6 +434,7 @@ def rotate_seq(filename, min_IR=1000):
     repeat_record.unlink()
     if repeat_fasta.exists():
         repeat_fasta.unlink()
+    log.setLevel(logging.INFO)
     if not success:
         log.critical(f'Failed to rotate {filename}.')
         return None, None

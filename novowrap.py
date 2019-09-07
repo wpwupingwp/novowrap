@@ -251,7 +251,8 @@ def main():
         validated = []
         # validate merged or not?
         for i in (*circularized, *options, *merged):
-            validated.append(validate_main(i))
+            arg_str = f'{i} -r {ref} -o {folder}'
+            validated.append(validate_main(arg_str))
         if len(validated) != 0:
             success = True
             break

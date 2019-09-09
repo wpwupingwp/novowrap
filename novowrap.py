@@ -17,7 +17,7 @@ NULL = open(devnull, 'w')
 FMT = '%(asctime)s %(levelname)-8s %(message)s'
 DATEFMT = '%H:%M:%S'
 logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
-log = logging.getLogger(__name__)
+log = logging.getLogger('novowrap')
 try:
     import coloredlogs
     coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)

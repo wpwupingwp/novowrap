@@ -256,8 +256,10 @@ def validate_main(arg_str=None):
     Return:
         validated(list): list contains validated rotated fasta files
     """
+    # inherit logger from novowrap, if not called by it, doesn't matter to
+    # name the logger 'novowrap'
     global log
-    log = logging.getLogger()
+    log = logging.getLogger('novowrap')
     if arg_str is None:
         arg = parse_args()
     else:

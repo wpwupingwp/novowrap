@@ -367,13 +367,14 @@ def validate_main(arg_str=None):
             divided[i]['figure_after'] = divided[i]['figure']
         divided[i]['success'] = success
 
-    log.info('Validated sequences:')
     validated = []
     for i in divided:
         if divided[i]['success']:
             file = divided[i]['fasta']
             log.info(f'\t{file.name}')
             validated.append(file)
+    if len(validated) != 0:
+        log.info('Validated sequences:')
     output_info = output / f'{output.name}-Results.csv'
     with open(output_info, 'w') as out:
         out.write('Raw,Success,Skip,gb,fasta,Length,LSC,IRa,'

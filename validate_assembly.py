@@ -378,10 +378,13 @@ def validate_main(arg_str=None):
     if len(validated) != 0:
         log.info('Validated sequences:')
     output_info = output / f'{output.name}-Results.csv'
-    with open(output_info, 'w') as out:
-        out.write('Raw,Success,Skip,gb,fasta,Length,LSC,IRa,'
-                  'SSC,IRb,Missing,Incomplete,RC_region,Figure,Figure_after,'
-                  'Reference,Taxonomy,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n')
+    output_info_exist = output_info.exists()
+    with open(output_info, 'a') as out:
+        if not output_info_exist:
+            out.write('Raw,Success,Skip,gb,fasta,Length,LSC,IRa,SSC,IRb,'
+                      'Missing,Incomplete,RC_region,Figure,Figure_after,'
+                      'Reference,Taxonomy,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n'
+                      )
         for record in divided:
             # format is easier than f-string for dict
             simple = divided[record]

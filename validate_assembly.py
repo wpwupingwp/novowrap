@@ -47,24 +47,34 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
         option_files(list(Path)):  list of divided files
         info(list): file info
     """
+    def _insert_suffix(old, suffix):
+        """
+        Insert suffix before old's suffix
+        old.old_suffix -> old.suffix.old_suffix
+        """
+        old_suffix = old.suffix
+        new = old.with_suffix(suffix)
+        new = Path(str(new)+old_suffix)
+        return new
+
     options = list(SeqIO.parse(fasta, 'fasta'))
     divided = {}
     keys = ('skip,gb,fasta,length,LSC,IRa,SSC,IRb,missing,incomplete,rc,'
             'figure,figure_after').split(',')
     log.warning(f'Found {len(options)} records in {fasta.name}.')
     log.info('Divide them into different files.')
+    log.info(f"Check record's length (reference: {ref_len} bp, "
+             f"difference limit {len_diff:.4%}).")
     for idx, record in enumerate(options):
         skip = False
         r_gb = r_fasta = ''
-        filename = output / f'{idx}_{fasta.name}'
+        filename = output / _insert_suffix(fasta, f'.{idx}')
         divided[filename] = dict((key, '') for key in keys)
         record_len = len(record)
         record_len_diff = abs(1-(record_len/ref_len))
         if record_len_diff > len_diff:
-            log.warning(f'Length of NO.{idx+1} record: {record_len} bp')
-            log.warning(f'Length of reference: {ref_len} bp')
-            log.critical(f'The difference is out of limit'
-                         f'({record_len_diff:.4%} > {len_diff:.4%}).')
+            log.warning(f'\tSkip NO.{idx+1} record ({record_len} bp, '
+                        f'length difference {record_len_diff:.4%}).')
             divided[filename]['length'] = record_len
             skip = True
         SeqIO.write(record, filename, 'fasta')
@@ -268,7 +278,7 @@ def validate_main(arg_str=None):
         arg.taxon = None
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')
-    log.info(f'Use {output} as output folder.')
+    log.debug(f'Use {output} as output folder.')
     # get ref
     if arg.ref is None:
         arg.taxon, ref_gb, accession = get_ref(arg.taxon)
@@ -387,7 +397,6 @@ def validate_main(arg_str=None):
                 len(ref_regions['IRa']), len(ref_regions['SSC']),
                 len(ref_regions['IRb'])))
     log.info(f'Results was written into {output_info}')
-    log.info('Bye.')
     return validated
 
 

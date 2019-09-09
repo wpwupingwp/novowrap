@@ -250,6 +250,7 @@ def main():
             continue
         validated = []
         # validate merged or not?
+        log.info('Validate assembly results.')
         for i in (*circularized, *options, *merged):
             arg_str = f'{i} -r {ref} -o {folder}'
             validated.append(validate_main(arg_str))

@@ -40,9 +40,10 @@ def get_full_taxon(taxon):
         taxon(str): given taxon name, could be common name, use quotation mark
         if necessary
     Return:
-        lineage(list): lineage list, from higher to lower rank
+        lineage(list): lineage list, from lower rank to higher
     """
     split = taxon.split(' ')
+    # "Genus species var. blabla"
     if len(split) >= 2 and split[0][0].isupper() and split[0][1].islower():
         name = ' '.join(split[0:2])
     else:
@@ -79,16 +80,16 @@ def get_full_taxon(taxon):
         phylum = full_lineage.get('phylum', None)
         if last_phyta != phylum:
             full_lineage['class'] = last_phyta
-    target = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus',
-              'species']
+    target = ['species', 'genus', 'family', 'order', 'class', 'phylum',
+              'kingdom']
     lineage = []
     for i in target:
-        lineage.append(full_lineage.get(i, ''))
-    if ' ' in lineage[-1]:
-        lineage[-1] = lineage[-1].split(' ')[-1]
+        lineage.append([i, full_lineage.get(i, '')])
+    # if ' ' in lineage['species']:
+    #     lineage['species'] = lineage['species'].split(' ')[-1]
     # species name contains genus
-    if lineage[-1] != '' and lineage[-2] != '':
-        lineage[-1] = f'"{lineage[-2]} {lineage[-1]}"'
+    # if lineage[-1] != '' and lineage[-2] != '':
+    #     lineage[-1] = f'"{lineage[-2]} {lineage[-1]}"'
     return lineage
 
 
@@ -99,26 +100,28 @@ def get_ref(taxon):
     Arg:
         taxon(str): given taxon name
     Return:
-        taxon(str): taxonomy
+        rank(str): taxonomy rank
+        taxon(str): taxonomy name
         ref(Path): gb file
         accession(str): accession number of the record
     """
     lineage = get_full_taxon(taxon)
-    if lineage is not None:
-        lineage = list(reversed(lineage))
-    else:
-        log.warning(f'Cannot find {taxon}, use Nicotiana tabacum instead.')
-        lineage = list(reversed(get_full_taxon('Nicotiana tabacum')))
     if lineage is None:
-        log.critical('Failed to get taxon. Please check your internet.')
-        log.info('Quit.')
+        log.warning(f'Cannot find {taxon} in NCBI taxonomy database.')
+        log.warning("Please check the taxon name's spell or the Internet "
+                    "connection.")
         return None, None, None
     for taxon in lineage:
-        if taxon == '':
+        rank, taxon_name = taxon
+        if taxon_name == '':
             continue
-        if ' ' in taxon:
-            taxon = taxon.strip('"')
-            taxon = taxon.replace(' ', '_')
+        if rank == 'class':
+            log.critical('Cannot find close related reference.')
+            log.critical('The result may be incorrect.')
+        # use underscore to replace space
+        if ' ' in taxon_name:
+            taxon = taxon_name.strip('"')
+            taxon = taxon_name.replace(' ', '_')
         # Entrez has limitation on query frenquency (3 times per second)
         # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
         sleep(0.5)
@@ -134,13 +137,13 @@ def get_ref(taxon):
                                            webenv=handle['WebEnv'],
                                            query_key=handle['QueryKey']))
         accession = info[0]['Caption']
-        ref = Path(f'{taxon}_{accession}.gb')
+        ref = Path(f'{taxon_name}_{accession}.gb')
         content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
                                 query_key=handle['QueryKey'], rettype='gb',
                                 retmode='text', retmax=1)
         with open(ref, 'w') as out:
             out.write(content.read())
-        return taxon, ref, accession
+        return rank, taxon_name, ref, accession
 
 
 def blast(query, target, perc_identity=70):

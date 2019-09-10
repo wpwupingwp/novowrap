@@ -13,6 +13,6 @@
 #13. fewer files
 14. merge contigs from various seed
 15. novowrap pass assembly info to validate
-16. split reads
-17. auto detect reads len
+#16. split reads
+#17. auto detect reads len
 17. auto detect mem

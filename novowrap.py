@@ -43,8 +43,6 @@ def parse_args():
                          help='maximum genome size (KB)')
     options.add_argument('-mem', default=30, type=int,
                          help='maximum memory (GB)')
-    options.add_argument('-reads_len', default=150, type=int,
-                         help='reads length')
     options.add_argument('-gene', help='seed gene')
     options.add_argument('-try', dest='try_n', type=int,
                          default=5, help='maximum tried times')
@@ -101,6 +99,23 @@ def split(forward, reverse, number, output):
     new_f = move(new_f, new_f.with_suffix(f'.{count}'))
     new_r = move(new_r, new_r.with_suffix(f'.{count}'))
     return new_f, new_r, count
+
+
+def get_reads_length(filename):
+    """
+    Get reads length of fastq
+    """
+    fmt = get_fmt(filename)
+    if fmt == 'gz':
+        handle = gzip.open(filename)
+    else:
+        handle = open(filename, 'rb')
+    handle.readline()
+    seq = handle.readline()
+    seq = seq.decode('utf-8').strip()
+    length = len(seq)
+    handle.close()
+    return length
 
 
 def get_seed(ref, output, gene=None):
@@ -262,7 +277,6 @@ def main():
     log.info(f'K-mer:\t{arg.kmer}')
     log.info(f'Minimum genome size:\t{arg.min}')
     log.info(f'Maximum genome size:\t{arg.max}')
-    log.info(f'Reads length:\t{arg.reads_len}')
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Maximum tried times:\t{arg.try_n}')
     log.info(f'Use {out} as output folder.')
@@ -271,6 +285,7 @@ def main():
         arg.f, arg.r, splitted = split(arg.f, arg.r, arg.split, out)
         if splitted < arg.split:
             log.warning(f'Want {arg.split} reads, acutally got {splitted}.')
+    arg.reads_len = get_reads_length(arg.f)
     success = False
     fail = 0
     taxon, ref, accession = get_ref(arg.taxon)

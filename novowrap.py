@@ -133,7 +133,7 @@ def get_seed(ref, output, gene=None):
                 file = output / f'{gene_name}.fasta'
                 with open(file, 'w') as out:
                     out.write(f'>{gene_name}|{organism}|{accession}\n')
-                    out.write(f'{seq}\n')
+                    out.write(f'{seq.seq}\n')
                 seeds.append(file)
     return seeds
 
@@ -270,7 +270,7 @@ def main():
         log.info(f'Split {arg.split} pairs of reads for assembly')
         arg.f, arg.r, splitted = split(arg.f, arg.r, arg.split, out)
         if splitted < arg.split:
-            log.waring(f'Want {arg.split} reads, acutally got {splitted}.')
+            log.warning(f'Want {arg.split} reads, acutally got {splitted}.')
     success = False
     fail = 0
     taxon, ref, accession = get_ref(arg.taxon)

@@ -44,9 +44,12 @@ def parse_args():
     options.add_argument('-gene', help='seed gene')
     options.add_argument('-try', dest='try_n', type=int,
                          default=5, help='maximum tried times')
-    ref = arg.add_argument_group('Reference')
-    ref.add_argument('-taxon', default='Nicotiana tabacum',
-                     help='Taxonomy name')
+    reference = arg.add_argument_group('Reference')
+    reference.add_argument('-ref',
+                           help='reference file, should be "gb" format with '
+                           'only one record')
+    reference.add_argument('-taxon', default='Nicotiana tabacum',
+                           help='Taxonomy name')
     return arg.parse_args()
 
 
@@ -286,11 +289,17 @@ def main():
     arg.reads_len = get_reads_length(arg.f)
     success = False
     fail = 0
-    ref = get_ref(arg.taxon)
-    if ref is None:
-        log.critical('Cannot get reference.')
-        exit(-1)
-    ref = move(ref, out/ref)
+    # get ref
+    if arg.ref is not None:
+        ref = Path(arg.ref)
+        ref = move(ref, out/ref, copy=True)
+    else:
+        ref = get_ref(arg.taxon)
+        if ref is None:
+            log.critical('Cannot get reference.')
+            exit(-1)
+        else:
+            ref = move(ref, out/ref)
     seeds = get_seed(ref, out, arg.gene)
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')

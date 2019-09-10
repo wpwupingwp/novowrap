@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+import gzip
 import logging
 from os import devnull
 from pathlib import Path
@@ -272,18 +273,26 @@ def slice_gb(seq, location):
 def get_fmt(filename):
     """
     Detect file format.
-    Only support fasta and gb.
+    Support gz, fasta and gb.
     Args:
         filename(Path or str): filename
     Return:
-        fmt(str): 'fasta' or 'gb'
+        fmt(str): 'fasta', 'gz', 'gb' or 'txt' (others)
     """
+    with gzip.open(filename) as _:
+        try:
+            _.readline()
+            return 'gz'
+        except OSError:
+            pass
     with open(filename, 'r') as _:
-        start = _.readline()
-        if start.startswith('>'):
+        peek = _.readline()
+        if peek.startswith('>'):
             fmt = 'fasta'
-        else:
+        elif peek.upper().startswtih('LOCUS'):
             fmt = 'gb'
+        else:
+            fmt = 'txt'
     return fmt
 
 

@@ -125,8 +125,8 @@ def get_ref(taxon):
             log.critical('The result may be incorrect.')
         # use underscore to replace space
         if ' ' in taxon_name:
-            taxon = taxon_name.strip('"')
-            taxon = taxon_name.replace(' ', '_')
+            taxon_name = taxon_name.strip('"')
+            taxon_name = taxon_name.replace(' ', '_')
         # Entrez has limitation on query frenquency (3 times per second)
         # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
         sleep(0.5)

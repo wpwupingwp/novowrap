@@ -68,8 +68,8 @@ def split(forward, reverse, number, output):
         count(n): number of reads got, may smaller than target number
     """
     fmt = get_fmt(forward)
-    new_f = output / Path(forward).with_suffix(f'.{number}')
-    new_r = output / Path(reverse).with_suffix(f'.{number}')
+    new_f = output / Path(Path(forward).name).with_suffix(f'.{number}')
+    new_r = output / Path(Path(reverse).name).with_suffix(f'.{number}')
     new_f_handle = open(new_f, 'wb')
     new_r_handle = open(new_r, 'wb')
     if fmt == 'gz':
@@ -81,21 +81,26 @@ def split(forward, reverse, number, output):
     f = iter(f_handle)
     r = iter(r_handle)
     count = 0
-    while count <= number:
+    while count < number:
         # four line one record
-        new_f_handle.write(next(f))
-        new_f_handle.write(next(f))
-        new_f_handle.write(next(f))
-        new_f_handle.write(next(f))
-        new_r_handle.write(next(r))
-        new_r_handle.write(next(r))
-        new_r_handle.write(next(r))
-        new_r_handle.write(next(r))
+        try:
+            new_f_handle.write(next(f))
+            new_f_handle.write(next(f))
+            new_f_handle.write(next(f))
+            new_f_handle.write(next(f))
+            new_r_handle.write(next(r))
+            new_r_handle.write(next(r))
+            new_r_handle.write(next(r))
+            new_r_handle.write(next(r))
+        except StopIteration:
+            break
         count += 1
     f_handle.close()
     r_handle.close()
     new_f_handle.close()
     new_r_handle.close()
+    new_f = move(new_f, new_f.with_suffix(f'.{count}'))
+    new_r = move(new_r, new_r.with_suffix(f'.{count}'))
     return new_f, new_r, count
 
 

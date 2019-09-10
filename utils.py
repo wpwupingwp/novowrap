@@ -486,10 +486,7 @@ def rc_regions(gb, choice='whole'):
         n_gb(Path): gb file after reverse-complement and rotate
         n_fasta(Path): fasta file after reverse-complement and rotate
     """
-    choices = ('LSC', 'IRa', 'SSC', 'IRb', 'whole')
-    if choice not in choices:
-        log.critical(f'Region must be in {choices}.')
-        exit(-1)
+    # choices = ('LSC', 'IRa', 'SSC', 'IRb', 'whole')
     raw = SeqIO.read(gb, 'gb')
     data = {}
     new_seq = ''

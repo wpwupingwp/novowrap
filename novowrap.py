@@ -220,11 +220,13 @@ def main():
     success = False
     fail = 0
     taxon, ref, accession = get_ref(arg.taxon)
+    if taxon is None:
+        exit(-1)
     ref = move(ref, out/ref)
     seeds = get_seed(ref, out, arg.gene)
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')
-        raise SystemExit
+        exit(-1)
     for seed in seeds:
         if fail >= arg.try_n:
             log.critical(f'Too much failure. Quit.')

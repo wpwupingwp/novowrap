@@ -101,6 +101,8 @@ def compare(query, reference, perc_identity):
     """
     results = []
     blast_result = blast(Path(query), reference, perc_identity*100)
+    if blast_result is None:
+        exit(-1)
     # only one record in file, loop is for unpack
     for query in parse_blast_tab(blast_result):
         record = []
@@ -284,6 +286,8 @@ def validate_main(arg_str=None):
     # get ref
     if arg.ref is None:
         arg.taxon, ref_gb, accession = get_ref(arg.taxon)
+        if arg.taxon is None:
+            exit(-1)
         ref_gb = move(ref_gb, output/ref_gb)
         fmt = 'gb'
     else:
@@ -296,7 +300,7 @@ def validate_main(arg_str=None):
     if new_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')
         log.critical('Please consider to use another reference.')
-        raise SystemExit
+        exit(-1)
     ref_regions = get_regions(new_ref_gb)
     divided = divide_records(arg.input, output, ref_len, arg.len_diff)
     for i in divided:

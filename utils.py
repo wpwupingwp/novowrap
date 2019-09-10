@@ -111,7 +111,7 @@ def get_ref(taxon):
     if lineage is None:
         log.critical('Failed to get taxon. Please check your internet.')
         log.info('Quit.')
-        raise SystemExit
+        return None, None, None
     for taxon in lineage:
         if taxon == '':
             continue
@@ -163,7 +163,7 @@ def blast(query, target, perc_identity=70):
     # remove makeblastdb result
     if blast.returncode != 0:
         log.critical('Cannot run BLAST.')
-        raise SystemExit(-1)
+        return None
     return blast_out
 
 
@@ -471,7 +471,8 @@ def rc_regions(gb, choice='whole'):
     """
     choices = ('LSC', 'IRa', 'SSC', 'IRb', 'whole')
     if choice not in choices:
-        raise ValueError(f'Region must be in {choices}.')
+        log.critical(f'Region must be in {choices}.')
+        exit(-1)
     raw = SeqIO.read(gb, 'gb')
     data = {}
     new_seq = ''

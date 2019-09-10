@@ -2,6 +2,9 @@
 
 from pathlib import Path
 from subprocess import run
+from urllib.error import HTTPError
+from urllib.request import urlopen
+from zipfile import ZipFile
 import argparse
 import gzip
 import logging
@@ -51,6 +54,29 @@ def parse_args():
     reference.add_argument('-taxon', default='Nicotiana tabacum',
                            help='Taxonomy name')
     return arg.parse_args()
+
+
+def get_novoplasty():
+    pl = list(Path('.').glob('NOVOPlasty*.pl'))
+    if len(pl) != 0:
+        return pl[0]
+    _URL = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
+    log.info('Try to download NOVOPlasty.')
+    try:
+        down = urlopen(_URL)
+    except HTTPError:
+        log.critical('Cannot download NOVOPlasty.')
+        log.critical('Please manually download it from '
+                     'http://github.com/ndierckx/NOVOPlasty')
+        return None
+    zip_file = Path('.') / 'NOVOPlasty3.6.zip'
+    with open(zip_file, 'wb') as out:
+        out.write(down.read())
+    with ZipFile(zip_file, 'r') as z:
+        # windows and linux both use "/"
+        novoplasty = z.extract('NOVOPlasty-NOVOPlasty3.6/NOVOPlasty3.6.pl')
+    zip_file.unlink()
+    return Path(novoplasty)
 
 
 def split(forward, reverse, number, output):
@@ -260,6 +286,7 @@ def organize_out(source, dest):
 
 
 def main():
+    novoplasty = get_novoplasty()
     arg = parse_args()
     out = Path(Path(arg.f).stem+'-out').absolute()
     try:
@@ -312,8 +339,7 @@ def main():
         folder.mkdir()
         log.info(f'No. {fail+1} try, use {seed.name} as seed file.')
         config_file = config(out, seed, arg)
-        log.info('NOVOPlasty version:\t3.6')
-        run_novo = run(f'perl NOVOPlasty3.6.pl -c {config_file}', shell=True)
+        run_novo = run(f'perl {novoplasty} -c {config_file}', shell=True)
         if run_novo.returncode != 0:
             log.critical('Failed to run NOVOPlasty. Quit.')
             exit(-1)

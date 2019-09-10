@@ -16,4 +16,6 @@
 #16. split reads
 #17. auto detect reads len
 #17. auto detect mem
-18. add tabacum's cp as default
+# 18. add tabacum's cp as default
+19. if cannot find close related species, use whole cp as novoplasy's author recommended
+20. novoplasty didn't use GPL, download it when run

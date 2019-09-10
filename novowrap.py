@@ -32,8 +32,8 @@ def parse_args():
     inputs = arg.add_argument_group('Input')
     inputs.add_argument('-f', required=True, help='forward fastq/gz file')
     inputs.add_argument('-r', required=True, help='reverse fastq/gz file')
-    inputs.add_argument('-split', default=0, help='reads to use, set to 0 '
-                        'to skip split')
+    inputs.add_argument('-split', default=0, type=int,
+                        help='reads to use, set to 0 to skip split')
     options = arg.add_argument_group('Option')
     options.add_argument('-kmer', choices=range(23, 40, 2), default=39,
                          type=int, help='kmer size')
@@ -65,7 +65,6 @@ def split(forward, reverse, number, output):
     Return:
         new_f(Path): new forward file
         new_r(Path): new reverse file
-        count(n): number of reads got, may smaller than target number
     """
     fmt = get_fmt(forward)
     new_f = output / Path(Path(forward).name).with_suffix(f'.{number}')
@@ -269,7 +268,9 @@ def main():
     log.info(f'Use {out} as output folder.')
     if arg.split != 0:
         log.info(f'Split {arg.split} pairs of reads for assembly')
-        arg.f, arg.r = split(arg.f, arg.r, arg.split, out)
+        arg.f, arg.r, splitted = split(arg.f, arg.r, arg.split, out)
+        if splitted < arg.split:
+            log.waring(f'Want {arg.split} reads, acutally got {splitted}.')
     success = False
     fail = 0
     taxon, ref, accession = get_ref(arg.taxon)

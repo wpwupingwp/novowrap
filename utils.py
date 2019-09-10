@@ -114,7 +114,7 @@ def get_ref(taxon):
     if lineage is None:
         log.warning(f'Cannot find {taxon} in NCBI taxonomy database.')
         log.warning("Please check the taxon name's spell or the Internet "
-                    "connection.")
+                    "connection or NCBI server's status.")
         return None
     for taxon in lineage:
         rank, taxon_name = taxon
@@ -130,7 +130,7 @@ def get_ref(taxon):
         # Entrez has limitation on query frenquency (3 times per second)
         # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
         sleep(0.5)
-        query = (f'''{taxon}[Organism] AND refseq[filter] '''
+        query = (f'''{taxon_name}[Organism] AND refseq[filter] '''
                  f'''AND (chloroplast[filter] OR plastid[filter])''')
         log.info(f'Query:\t{query}')
         handle = Entrez.read(Entrez.esearch(db='nuccore', term=query,

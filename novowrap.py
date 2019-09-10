@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-from os import devnull
 from pathlib import Path
 from subprocess import run
 import argparse
@@ -13,7 +12,6 @@ from utils import get_fmt, get_ref, move
 from validate_assembly import validate_main
 
 
-NULL = open(devnull, 'w')
 # define logger
 FMT = '%(asctime)s %(levelname)-8s %(message)s'
 DATEFMT = '%H:%M:%S'
@@ -298,7 +296,7 @@ def main():
         exit(-1)
     for seed in seeds:
         if fail >= arg.try_n:
-            log.critical(f'Too much failure. Quit.')
+            log.critical(f'Too much failure ({fail} times). Quit.')
             break
         folder = out / seed.stem
         folder.mkdir()
@@ -329,12 +327,10 @@ def main():
             success = True
             break
         else:
-            log.warning('Cannot find correct conformation for all assembly of '
-                        f'{seed.name}.')
+            log.warning('Validation failed.')
             fail += 1
-    if not success:
-        log.critical(f'Failed to assemble {arg.f} and {arg.r}.')
-    NULL.close()
+        if not success:
+            log.critical(f'Assembly with {seed} failed.')
     log.info('Bye.')
     return
 

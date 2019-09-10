@@ -317,8 +317,6 @@ def main():
         if run_novo.returncode != 0:
             log.critical('Failed to run NOVOPlasty. Quit.')
             exit(-1)
-        # novoplasty generates outputs in current folder
-        # use rbcL to detect strand direction
         log.info(f'Organize NOVOPlasty output of {seed.name}.')
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(

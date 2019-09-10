@@ -102,7 +102,7 @@ def compare(query, reference, perc_identity):
     results = []
     blast_result = blast(Path(query), reference, perc_identity*100)
     if blast_result is None:
-        exit(-1)
+        return None
     # only one record in file, loop is for unpack
     for query in parse_blast_tab(blast_result):
         record = []
@@ -283,10 +283,14 @@ def validate_main(arg_str=None):
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')
     log.debug(f'Use {output} as output folder.')
+    # for debug
+    _handle = open('VALIDATION_FAILED.txt', 'a')
     # get ref
     if arg.ref is None:
-        arg.taxon, ref_gb, accession = get_ref(arg.taxon)
-        if arg.taxon is None:
+        ref_gb = get_ref(arg.taxon)
+        if ref_gb is None:
+            log.critical('Failed to get reference.')
+            _handle.write(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')
             exit(-1)
         ref_gb = move(ref_gb, output/ref_gb)
         fmt = 'gb'
@@ -300,6 +304,7 @@ def validate_main(arg_str=None):
     if new_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')
         log.critical('Please consider to use another reference.')
+        _handle.write(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
         exit(-1)
     ref_regions = get_regions(new_ref_gb)
     divided = divide_records(arg.input, output, ref_len, arg.len_diff)
@@ -316,6 +321,10 @@ def validate_main(arg_str=None):
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])
         compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
+        if compare_result is None:
+            log.critical('Cannot run BLAST.')
+            _handle.write(f'{arg.input} {arg.ref} BLAST_FAIL\n')
+            exit(-1)
         fig_title = f'{i_fasta.stem}|{ref_gb.stem}'
         pdf = draw(fig_title, ref_regions, option_regions,
                    compare_result)

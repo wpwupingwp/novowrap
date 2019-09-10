@@ -4,11 +4,12 @@ from os import devnull
 from pathlib import Path
 from subprocess import run
 import argparse
+import gzip
 import logging
 
 from Bio import SeqIO
 
-from utils import get_ref, move
+from utils import get_fmt, get_ref, move
 from validate_assembly import validate_main
 
 
@@ -51,6 +52,51 @@ def parse_args():
     ref.add_argument('-taxon', default='Nicotiana tabacum',
                      help='Taxonomy name')
     return arg.parse_args()
+
+
+def split(forward, reverse, number, output):
+    """
+    Split reads of original file from the beginning.
+    Args:
+        forward(str or Path): forward file, could be fastq or gz
+        reverse(str or Path): reverse file, could be fastq or gz
+        number(int): number of reads to split
+        output(Path): output folder
+    Return:
+        new_f(Path): new forward file
+        new_r(Path): new reverse file
+        count(n): number of reads got, may smaller than target number
+    """
+    fmt = get_fmt(forward)
+    new_f = output / Path(forward).with_suffix(f'.{number}')
+    new_r = output / Path(reverse).with_suffix(f'.{number}')
+    new_f_handle = open(new_f, 'wb')
+    new_r_handle = open(new_r, 'wb')
+    if fmt == 'gz':
+        f_handle = gzip.open(forward)
+        r_handle = gzip.open(reverse)
+    else:
+        f_handle = open(forward, 'rb')
+        r_handle = open(reverse, 'rb')
+    f = iter(f_handle)
+    r = iter(r_handle)
+    count = 0
+    while count <= number:
+        # four line one record
+        new_f_handle.write(next(f))
+        new_f_handle.write(next(f))
+        new_f_handle.write(next(f))
+        new_f_handle.write(next(f))
+        new_r_handle.write(next(r))
+        new_r_handle.write(next(r))
+        new_r_handle.write(next(r))
+        new_r_handle.write(next(r))
+        count += 1
+    f_handle.close()
+    r_handle.close()
+    new_f_handle.close()
+    new_r_handle.close()
+    return new_f, new_r, count
 
 
 def get_seed(ref, output, gene=None):
@@ -216,7 +262,9 @@ def main():
     log.info(f'Taxonomy:\t{arg.taxon}')
     log.info(f'Maximum tried times:\t{arg.try_n}')
     log.info(f'Use {out} as output folder.')
-
+    if arg.split != 0:
+        log.info(f'Split {arg.split} pairs of reads for assembly')
+        arg.f, arg.r = split(arg.f, arg.r, arg.split, out)
     success = False
     fail = 0
     taxon, ref, accession = get_ref(arg.taxon)

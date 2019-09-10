@@ -15,20 +15,27 @@ from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 
 NULL = open(devnull, 'w')
-log = logging.getLogger('__main__')
+log = logging.getLogger('novowrap')
 
 
-def move(source, dest):
+def move(source, dest, copy=False):
     """
     Move source to dest and return dest.
+    If set "copy", copy source to dest instead of move.
     Args:
         source(Path): old path
         dest(Path or str): new path
+        copy(bool): copy or move
     Return:
         dest(Path): new path
     """
-    source.rename(dest)
-    return Path(dest)
+    if not copy:
+        source.rename(dest)
+        return Path(dest)
+    else:
+        with open(source, 'r') as a, open(dest, 'w') as b:
+            b.write(a.read())
+        return Path(dest)
 
 
 def get_full_taxon(taxon):
@@ -502,10 +509,8 @@ def rc_regions(gb, choice='whole'):
         out.write(f'>{new_name}\n')
         out.write(f'{new_seq}\n')
     # hide rotate log
-    log.setLevel(logging.CRITICAL)
     n_gb, n_fasta = rotate_seq(new_file)
     new_file.unlink()
-    log.setLevel(logging.INFO)
     return n_gb, n_fasta
 
 
@@ -521,9 +526,8 @@ def parse_args():
 
 def main():
     """
-    Rotate genbank or fasta file.
-    Only handle the first record in file.
-    Also contains other utilities.
+    Utilities for novowrap.
+    If run directly, rotate input file.
     """
     arg = parse_args()
     new_gb, new_fasta = rotate_seq(arg.filename, arg.min_ir)

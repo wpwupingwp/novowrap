@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from os import devnull
 from pathlib import Path
 from subprocess import run
 from urllib.error import HTTPError
@@ -287,6 +288,12 @@ def organize_out(source, dest):
 
 def main():
     novoplasty = get_novoplasty()
+    if novoplasty is None:
+        exit(-1)
+    perl = run('perl -v', shell=True, stdout=open(devnull, 'w'))
+    if perl.returncode != 0:
+        log.critical('Please install Perl to run NOVOPlasty.')
+        exit(-1)
     arg = parse_args()
     out = Path(Path(arg.f).stem+'-out').absolute()
     try:

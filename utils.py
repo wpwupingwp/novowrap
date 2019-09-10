@@ -289,7 +289,7 @@ def get_fmt(filename):
         peek = _.readline()
         if peek.startswith('>'):
             fmt = 'fasta'
-        elif peek.upper().startswtih('LOCUS'):
+        elif peek.upper().startswith('LOCUS'):
             fmt = 'gb'
         else:
             fmt = 'txt'

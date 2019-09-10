@@ -100,8 +100,6 @@ def get_ref(taxon):
     Arg:
         taxon(str): given taxon name
     Return:
-        rank(str): taxonomy rank
-        taxon(str): taxonomy name
         ref(Path): gb file
         accession(str): accession number of the record
     """
@@ -110,7 +108,7 @@ def get_ref(taxon):
         log.warning(f'Cannot find {taxon} in NCBI taxonomy database.')
         log.warning("Please check the taxon name's spell or the Internet "
                     "connection.")
-        return None, None, None
+        return None
     for taxon in lineage:
         rank, taxon_name = taxon
         if taxon_name == '':
@@ -143,7 +141,7 @@ def get_ref(taxon):
                                 retmode='text', retmax=1)
         with open(ref, 'w') as out:
             out.write(content.read())
-        return rank, taxon_name, ref, accession
+        return ref
 
 
 def blast(query, target, perc_identity=70):

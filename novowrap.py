@@ -286,8 +286,9 @@ def main():
     arg.reads_len = get_reads_length(arg.f)
     success = False
     fail = 0
-    taxon, ref, accession = get_ref(arg.taxon)
-    if taxon is None:
+    ref = get_ref(arg.taxon)
+    if ref is None:
+        log.critical('Cannot get reference.')
         exit(-1)
     ref = move(ref, out/ref)
     seeds = get_seed(ref, out, arg.gene)

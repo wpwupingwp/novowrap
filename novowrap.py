@@ -328,11 +328,13 @@ def main():
         ref = Path(arg.ref)
         ref = move(ref, out/ref, copy=True)
     else:
+        log.info('Try to get reference from NCBI Genbank.')
         ref = get_ref(arg.taxon)
         if ref is None:
             log.critical('Cannot get reference.')
             exit(-1)
         else:
+            log.info(f'Got {ref.stem}.')
             ref = move(ref, out/ref)
     seeds = get_seed(ref, out, arg.gene)
     if len(seeds) == 0:
@@ -344,18 +346,18 @@ def main():
             break
         folder = out / seed.stem
         folder.mkdir()
-        log.info(f'No. {fail+1} try, use {seed.name} as seed file.')
+        log.info(f'No. {fail+1} try, use {seed.stem} as seed.')
         config_file = config(out, seed, arg)
         run_novo = run(f'perl {novoplasty} -c {config_file}', shell=True)
         if run_novo.returncode != 0:
             log.critical('Failed to run NOVOPlasty. Quit.')
             exit(-1)
-        log.info(f'Organize NOVOPlasty output of {seed.name}.')
+        # log.info(f'Organize NOVOPlasty output of {seed.name}.')
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(
             Path().cwd(), folder)
         if len(circularized) == 0 and len(options) == 0 and len(merged) == 0:
-            log.warning(f'Assembled with {seed.name} failed.')
+            log.warning(f'Assembled with {seed.stem} failed.')
             fail += 1
             continue
         validated = []

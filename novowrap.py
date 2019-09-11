@@ -62,7 +62,7 @@ def get_novoplasty():
     if len(pl) != 0:
         return pl[0]
     _URL = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
-    log.info('Try to download NOVOPlasty.')
+    log.critical('Cannot find NOVOPlasty, try to download.')
     try:
         down = urlopen(_URL)
     except HTTPError:
@@ -77,7 +77,9 @@ def get_novoplasty():
         # windows and linux both use "/"
         novoplasty = z.extract('NOVOPlasty-NOVOPlasty3.6/NOVOPlasty3.6.pl')
     zip_file.unlink()
-    return Path(novoplasty)
+    novoplasty = Path(novoplasty)
+    log.info(f'Got {novoplasty.stem}.')
+    return novoplasty
 
 
 def split(forward, reverse, number, output):

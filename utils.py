@@ -132,7 +132,7 @@ def get_ref(taxon):
         sleep(0.5)
         query = (f'''{taxon_name}[Organism] AND refseq[filter] '''
                  f'''AND (chloroplast[filter] OR plastid[filter])''')
-        log.info(f'Query:\t{query}')
+        log.info(f'Query from NCBI Genbank:\t{query}')
         handle = Entrez.read(Entrez.esearch(db='nuccore', term=query,
                                             usehistory='y'))
         count = int(handle['Count'])

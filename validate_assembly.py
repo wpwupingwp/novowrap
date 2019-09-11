@@ -61,10 +61,11 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
     divided = {}
     keys = ('gb,fasta,length,LSC,IRa,SSC,IRb,missing,incomplete,'
             'rc,figure,figure_after,skip').split(',')
-    log.warning(f'Found {len(options)} records in {fasta.name}.')
-    log.info('Divide them into different files.')
+    log.info(f'Found {len(options)} records in {fasta.name}.')
+    if len(options) > 1:
+        log.info('Divide them into different files.')
     log.info(f"Check record's length (reference: {ref_len} bp, "
-             f"difference limit {len_diff:.4%}).")
+             f"difference limit {len_diff:.2%}).")
     for idx, record in enumerate(options):
         skip = False
         r_gb = r_fasta = ''
@@ -73,8 +74,8 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
         record_len = len(record)
         record_len_diff = (record_len/ref_len) - 1
         if abs(record_len_diff) > len_diff:
-            log.warning(f'\tSkip NO.{idx+1} record ({record_len} bp, '
-                        f'length difference {record_len_diff:.4%}).')
+            log.warning(f'Skip NO.{idx+1} record ({record_len} bp, '
+                        f'length difference {record_len_diff:.2%}).')
             divided[filename]['length'] = record_len
             divided[filename]['length_diff'] = record_len_diff
             skip = 'undersize' if record_len_diff < 0 else 'oversize'
@@ -277,7 +278,7 @@ def validate_main(arg_str=None):
     tmp = output / 'Temporary'
     if not tmp.exists():
         tmp.mkdir()
-    log.info(f'Input:\t{arg.input.name}')
+    log.info(f'Input:\t{arg.input}')
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
         arg.taxon = None
@@ -387,10 +388,11 @@ def validate_main(arg_str=None):
     for i in divided:
         if divided[i]['success']:
             file = divided[i]['fasta']
-            log.info(f'\t{file.name}')
             validated.append(file)
     if len(validated) != 0:
         log.info('Validated sequences:')
+        for i in validated:
+            log.info(f'\t{i.name}')
     output_info = output / f'{output.name}-Results.csv'
     output_info_exist = output_info.exists()
     with open(output_info, 'a') as out:

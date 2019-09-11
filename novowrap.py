@@ -362,7 +362,7 @@ def main():
         # validate merged or not?
         log.info('Validate assembly results.')
         for i in (*circularized, *options, *merged):
-            arg_str = f'{i} -r {ref} -o {folder}'
+            arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {folder}'
             validated.append(validate_main(arg_str))
         if len(validated) != 0:
             success = True

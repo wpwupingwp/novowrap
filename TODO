@@ -21,3 +21,5 @@
 #20. novoplasty didn't use GPL, download it when run
 21. better name, novowrap only for cp
 22. what special for cp
+23. hide warning from matplotlib
+24. simple filename

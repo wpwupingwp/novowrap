@@ -26,8 +26,8 @@ def parse_args(arg_list=None):
     options.add_argument('-l', '-len_diff', dest='len_diff', type=float,
                          default=0.2, help='maximum percentage of length '
                          'differnce of query to' 'reference, 0-100')
-    options.add_argument('-g', '-gene', dest='gene',
-                         help='gene used as seed, only for caller')
+    options.add_argument('-s', '-seed', dest='seed',
+                         help='seed used in assembly, only for caller')
     options.add_argument('-o', '-out', dest='out', help='output folder')
     if arg_list is None:
         return arg.parse_args()
@@ -59,8 +59,8 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
 
     options = list(SeqIO.parse(fasta, 'fasta'))
     divided = {}
-    keys = ('skip,gb,fasta,length,LSC,IRa,SSC,IRb,missing,incomplete,rc,'
-            'figure,figure_after').split(',')
+    keys = ('gb,fasta,length,LSC,IRa,SSC,IRb,missing,incomplete,'
+            'rc,figure,figure_after,skip').split(',')
     log.warning(f'Found {len(options)} records in {fasta.name}.')
     log.info('Divide them into different files.')
     log.info(f"Check record's length (reference: {ref_len} bp, "
@@ -71,12 +71,13 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
         filename = output / _insert_suffix(fasta, f'.{idx}').name
         divided[filename] = dict((key, '') for key in keys)
         record_len = len(record)
-        record_len_diff = abs(1-(record_len/ref_len))
-        if record_len_diff > len_diff:
+        record_len_diff = (record_len/ref_len) - 1
+        if abs(record_len_diff) > len_diff:
             log.warning(f'\tSkip NO.{idx+1} record ({record_len} bp, '
                         f'length difference {record_len_diff:.4%}).')
             divided[filename]['length'] = record_len
-            skip = True
+            divided[filename]['length_diff'] = record_len_diff
+            skip = 'undersize' if record_len_diff < 0 else 'oversize'
         SeqIO.write(record, filename, 'fasta')
         if not skip:
             r_gb, r_fasta = rotate_seq(filename)
@@ -84,7 +85,7 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
                 divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
                                           'length': record_len})
             else:
-                skip = True
+                skip = 'structure_unusual'
         divided[filename]['skip'] = skip
     return divided
 
@@ -394,13 +395,15 @@ def validate_main(arg_str=None):
     output_info_exist = output_info.exists()
     with open(output_info, 'a') as out:
         if not output_info_exist:
-            out.write('Raw,Success,Skip,gb,fasta,Length,LSC,IRa,SSC,IRb,'
+            out.write('Raw,Success,Skip,Seed,gb,fasta,Length,LSC,IRa,SSC,IRb,'
                       'Missing,Incomplete,RC_region,Figure,Figure_after,'
                       'Reference,Taxonomy,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n'
                       )
         for record in divided:
             # format is easier than f-string for dict
             simple = divided[record]
+            # add seed info
+            simple['seed'] = str(arg.seed)
             if simple['gb'] != '':
                 simple['gb'] = simple['gb'].name
                 simple['fasta'] = simple['fasta'].name
@@ -408,8 +411,8 @@ def validate_main(arg_str=None):
                 simple['figure_after'] = simple['figure_after'].name
             record = record.name
             out.write('{},'.format(record))
-            out.write('{success},{skip},{gb},{fasta},{length},{LSC},{IRa},'
-                      '{SSC},{IRb},{missing},{incomplete},{rc},{figure},'
+            out.write('{success},{skip},{seed},{gb},{fasta},{length},{LSC},'
+                      '{IRa},{SSC},{IRb},{missing},{incomplete},{rc},{figure},'
                       '{figure_after},'.format(**simple))
             out.write('{},{},{},{},{},{},{}\n'.format(
                 ref_fasta.name, arg.taxon, ref_len, len(ref_regions['LSC']),

@@ -210,7 +210,7 @@ Chloroplast sequence  =
 Dataset 1:
 -----------------------
 Read Length           = {arg.reads_len}
-Insert size           = 300
+Insert size           = {arg.reads_len*2}
 Platform              = illumina
 Single/Paired         = PE
 Combined reads        =
@@ -220,7 +220,7 @@ Reverse reads         = {arg.r}
 Optional:
 -----------------------
 Insert size auto      = yes
-Insert Range          = 1.8
+Insert Range          = 1.9
 Insert Range strict   = 1.3
 Use Quality Scores    = no
 """
@@ -342,6 +342,7 @@ def main():
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')
         exit(-1)
+    csv_files = []
     for seed in seeds:
         if fail >= arg.try_n:
             log.critical(f'Too much failure ({fail} times). Quit.')
@@ -367,15 +368,26 @@ def main():
         log.info('Validate assembly results.')
         for i in (*circularized, *options, *merged):
             arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {folder}'
-            validated.append(validate_main(arg_str))
+            validate_file, report = validate_main(arg_str)
+            validated.extend(validate_file)
+            if report not in csv_files:
+                csv_files.append(report)
         if len(validated) != 0:
             success = True
             break
         else:
-            log.warning('Validation failed.')
+            log.warning('No records passed validation.')
             fail += 1
         if not success:
-            log.critical(f'Assembly with {seed} failed.')
+            log.critical(f'Assembly with {seed.stem} failed.')
+    if len(csv_files) != 0:
+        merged_csv = move(csv_files[0], out / 'Validation.csv', copy=True)
+        if len(csv_files) > 1:
+            with open(merged_csv, 'a') as h1:
+                for i in csv_files[1:]:
+                    with open(i, 'r') as h2:
+                        h1.write(''.join(h2.readlines()[1:]))
+    log.info(f'Merged validation results were written into {merged_csv.name}')
     log.info('Bye.')
     return
 

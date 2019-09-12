@@ -393,7 +393,7 @@ def validate_main(arg_str=None):
         log.info('Validated sequences:')
         for i in validated:
             log.info(f'\t{i.name}')
-    output_info = output / f'{output.name}-Results.csv'
+    output_info = output / f'{output.name}-results.csv'
     output_info_exist = output_info.exists()
     with open(output_info, 'a') as out:
         if not output_info_exist:
@@ -420,8 +420,8 @@ def validate_main(arg_str=None):
                 ref_fasta.name, arg.taxon, ref_len, len(ref_regions['LSC']),
                 len(ref_regions['IRa']), len(ref_regions['SSC']),
                 len(ref_regions['IRb'])))
-    log.info(f'Results was written into {output_info}')
-    return validated
+    log.info(f'Validation result was written into {output_info}')
+    return validated, output_info
 
 
 if __name__ == '__main__':

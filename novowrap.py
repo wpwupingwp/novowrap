@@ -34,6 +34,11 @@ def parse_args():
     inputs = arg.add_argument_group('Input')
     inputs.add_argument('-f', required=True, help='forward fastq/gz file')
     inputs.add_argument('-r', required=True, help='reverse fastq/gz file')
+    inputs.add_argument('-m', help='merged fastq/gz file')
+    inputs.add_argument('-seed', default='rbcL,matK,psaB,psaC,rrn23',
+                        help='seed gene, separated by comma')
+    inputs.add_argument('-seed_file',
+                        help='seed file, will overwrite "-seed" option')
     inputs.add_argument('-split', default=0, type=int,
                         help='reads to use, set to 0 to skip split')
     options = arg.add_argument_group('Option')
@@ -45,9 +50,6 @@ def parse_args():
                          help='maximum genome size (KB)')
     options.add_argument('-mem', default=30, type=int,
                          help='maximum memory (GB)')
-    options.add_argument('-gene', help='seed gene')
-    options.add_argument('-try', dest='try_n', type=int,
-                         default=5, help='maximum tried times')
     reference = arg.add_argument_group('Reference')
     reference.add_argument('-ref',
                            help='reference file, should be "gb" format with '
@@ -148,25 +150,19 @@ def get_reads_length(filename):
     return length
 
 
-def get_seed(ref, output, gene=None):
+def get_seed(ref, output, gene):
     """
     Use BarcodeFinder to get seed or reference sequence.
     Arg:
         ref(Path): reference chloroplast genome gb file, only contains one
         record
         output(Path): output folder
-        gene(tuple): gene name
+        gene(str): gene names, separated by comma
     Return:
         seeds(list): seed files list
     """
-    # strand: +, -, -, -, +
-    candidate_genes = ['rbcL', 'matK', 'psaB', 'psaC', 'rrn23']
-    seeds = []
-    if gene is None:
-        genes = candidate_genes
-    else:
-        genes = [gene, ]
-        genes.extend(candidate_genes)
+    seeds = {}
+    genes = gene.split(',')
     gb = SeqIO.read(ref, 'gb')
     accession = gb.annotations['accessions'][0]
     organism = gb.annotations['organism'][0].replace(' ', '_')
@@ -175,12 +171,13 @@ def get_seed(ref, output, gene=None):
             gene_name = feature.qualifiers['gene'][0]
             if gene_name in genes:
                 seq = feature.extract(gb)
-                file = output / f'{gene_name}.fasta'
-                with open(file, 'w') as out:
+                seed_file = output / f'{gene_name}.fasta'
+                with open(seed_file, 'w') as out:
                     out.write(f'>{gene_name}|{organism}|{accession}\n')
                     out.write(f'{seq.seq}\n')
-                seeds.append(file)
-    return seeds
+                seeds[gene_name] = seed_file
+    # in newer python version, dict is ordered
+    return seeds.values()
 
 
 def config(out, seed, arg):
@@ -311,11 +308,11 @@ def main():
     log.info('Welcome to novowrap.')
     log.info(f'Forward file:\t{arg.f}')
     log.info(f'Reverse file:\t{arg.r}')
+    log.info(f'Seeds:\t{arg.seed}')
     log.info(f'K-mer:\t{arg.kmer}')
     log.info(f'Minimum genome size:\t{arg.min}')
     log.info(f'Maximum genome size:\t{arg.max}')
     log.info(f'Taxonomy:\t{arg.taxon}')
-    log.info(f'Maximum tried times:\t{arg.try_n}')
     log.info(f'Use {out} as output folder.')
     if arg.split != 0:
         log.info(f'Split {arg.split} pairs of reads for assembly')
@@ -323,8 +320,6 @@ def main():
         if splitted < arg.split:
             log.warning(f'Want {arg.split} reads, acutally got {splitted}.')
     arg.reads_len = get_reads_length(arg.f)
-    success = False
-    fail = 0
     # get ref
     if arg.ref is not None:
         ref = Path(arg.ref)
@@ -338,30 +333,29 @@ def main():
         else:
             log.info(f'Got {ref.stem}.')
             ref = move(ref, out/ref)
-    seeds = get_seed(ref, out, arg.gene)
+    if arg.seed_file is not None:
+        seeds = [Path(arg.seed_file), ]
+    else:
+        seeds = get_seed(ref, out, arg.seed)
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')
         exit(-1)
     csv_files = []
+    success = False
     for seed in seeds:
-        if fail >= arg.try_n:
-            log.critical(f'Too much failure ({fail} times). Quit.')
-            break
         folder = out / seed.stem
         folder.mkdir()
-        log.info(f'No. {fail+1} try, use {seed.stem} as seed.')
+        log.info(f'Use {seed.stem} as seed.')
         config_file = config(out, seed, arg)
         run_novo = run(f'perl {novoplasty} -c {config_file}', shell=True)
-        if run_novo.returncode != 0:
-            log.critical('Failed to run NOVOPlasty. Quit.')
-            exit(-1)
-        # log.info(f'Organize NOVOPlasty output of {seed.name}.')
+        # if run_novo.returncode != 0:
+        #     log.critical('Failed to run NOVOPlasty. Quit.')
+        #    exit(-1)
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(
             Path().cwd(), folder)
         if len(circularized) == 0 and len(options) == 0 and len(merged) == 0:
             log.warning(f'Assembled with {seed.stem} failed.')
-            fail += 1
             continue
         validated = []
         # validate merged or not?
@@ -377,7 +371,6 @@ def main():
             break
         else:
             log.warning('No records passed validation.')
-            fail += 1
         if not success:
             log.critical(f'Assembly with {seed.stem} failed.')
     if len(csv_files) != 0:

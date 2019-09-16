@@ -431,7 +431,8 @@ def main():
         validated = []
         # validate merged or not?
         log.info('Validate assembly results.')
-        for i in (*circularized, *options, *merged):
+        # for i in (*circularized, *options, *merged):
+        for i in (*circularized, *options):
             arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {folder}'
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)

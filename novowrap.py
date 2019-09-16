@@ -97,14 +97,12 @@ def check_arg(arg):
         arg_ok(bool) arg is valid or not
     """
     def _get_name(f, r):
+        out_name = Path('Output').absolute()
         f = Path(f)
         r = Path(r)
-        while True:
-            if f.suffix == r.suffix and f.suffix != '':
-                f = f.with_suffix('')
-                r = r.with_suffix('')
-            else:
-                break
+        while f.suffix == r.suffix and f.suffix != '':
+            f = f.with_suffix('')
+            r = r.with_suffix('')
         same = 0
         idx = 0
         for i, j in zip(str(f), str(r)):
@@ -115,12 +113,12 @@ def check_arg(arg):
             idx += 1
         if same != 0:
             _ = list(str(f))
-            # tricky but useful
-            if _[idx] == _[idx-1] and _[idx] in ('-', '_'):
-                _.pop(idx)
-            return Path(''.join(_)).absolute()
-        else:
-            return Path('Output').absolute()
+            _.pop(idx)
+            strip_ = ''.join(_).rstrip('-_')
+            if len(strip_) != 0:
+                out_name = Path(strip_).absolute()
+        return out_name
+
     if not any([arg.f, arg.r, arg.m, arg.list]):
         log.critical('Input is empty.')
         return arg, False
@@ -351,6 +349,8 @@ def main():
         exit(-1)
     arg = parse_args()
     arg, arg_ok = check_arg(arg)
+    print(arg)
+    exit(-1)
     if not arg_ok:
         log.critical('Quit.')
         exit(-1)

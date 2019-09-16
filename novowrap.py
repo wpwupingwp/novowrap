@@ -57,10 +57,14 @@ def parse_args():
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     inputs = arg.add_argument_group('Input')
-    inputs.add_argument('-f', required=True, help='forward fastq/gz file')
-    inputs.add_argument('-r', required=True, help='reverse fastq/gz file')
+    inputs.add_argument('-f', help='forward fastq/gz file')
+    inputs.add_argument('-r', help='reverse fastq/gz file')
     inputs.add_argument('-m', help='merged fastq/gz file')
     inputs.add_argument('-l', dest='list', help='csv file for batch mode')
+    inputs.add_argument('-p', dest='platform', choices=['illumina', 'ion'],
+                        default='illumina', help='sequencing platform')
+    inputs.add_argument('-insert_size',
+                        help='insert size of sequencing library')
     inputs.add_argument('-seed', default='rbcL,matK,psaB,psaC,rrn23',
                         help='seed gene, separated by comma')
     inputs.add_argument('-seed_file',
@@ -128,7 +132,7 @@ def check_arg(arg):
         elif arg.m is not None:
             out = Path(Path(arg.m).stem+'-out').absolute()
         elif arg.list is not None:
-            out = Path(Path(arg.m).stem+'-out').absolute()
+            out = Path(Path(arg.list).stem+'-out').absolute()
         else:
             out = Path('Output').absolute()
         arg.out = out
@@ -186,7 +190,7 @@ def split(forward, reverse, number, output):
     return new_f, new_r, count
 
 
-def get_reads_length(filename):
+def get_reads_len(filename):
     """
     Get reads length of fastq
     """
@@ -259,13 +263,13 @@ Chloroplast sequence  =
 
 Dataset 1:
 -----------------------
-Read Length           = {arg.reads_len}
-Insert size           = {arg.reads_len*2}
-Platform              = illumina
-Single/Paired         = PE
-Combined reads        =
-Forward reads         = {arg.f}
-Reverse reads         = {arg.r}
+Read Length    = {arg.reads_len}
+Insert size    = {arg.insert_size }
+Platform       = {arg.platform}
+Single/Paired  = {"PE" if arg.f is not None else "SE"}
+Combined reads = {arg.m if arg.m is not None else ""}
+Forward reads  = {arg.f if arg.f is not None else ""}
+Reverse reads  = {arg.r if arg.r is not None else ""}
 
 Optional:
 -----------------------
@@ -349,8 +353,6 @@ def main():
         exit(-1)
     arg = parse_args()
     arg, arg_ok = check_arg(arg)
-    print(arg)
-    exit(-1)
     if not arg_ok:
         log.critical('Quit.')
         exit(-1)
@@ -378,7 +380,16 @@ def main():
         arg.f, arg.r, splitted = split(arg.f, arg.r, arg.split, arg.out)
         if splitted < arg.split:
             log.warning(f'Want {arg.split} reads, acutally got {splitted}.')
-    arg.reads_len = get_reads_length(arg.f)
+    if arg.f is not None:
+        arg.reads_len = get_reads_len(arg.f)
+    elif arg.m is not None:
+        arg.reads_len = get_reads_len(arg.m)
+    else:
+        log.critical('Cannot detect reads length! Please input it manually.')
+        arg.reads_len = int(input('Reads length:\t'))
+    if arg.insert_size is None:
+        arg.insert_size = arg.reads_len * 2 + 50
+        log.info(f'Insert size is missing, use {arg.insert_size}.')
     # get ref
     if arg.ref is not None:
         ref = Path(arg.ref)

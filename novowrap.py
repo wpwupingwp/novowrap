@@ -367,19 +367,14 @@ def main():
     log_file_handler.setFormatter(Formatter)
     log.addHandler(log_file_handler)
     log.info('Welcome to novowrap.')
-    log.info(f'Forward file:\t{arg.f}')
-    log.info(f'Reverse file:\t{arg.r}')
-    log.info(f'Seeds:\t{arg.seed}')
-    log.info(f'K-mer:\t{arg.kmer}')
-    log.info(f'Minimum genome size:\t{arg.min}')
-    log.info(f'Maximum genome size:\t{arg.max}')
-    log.info(f'Taxonomy:\t{arg.taxon}')
-    log.info(f'Use {arg.out} as output folder.')
-    if arg.split != 0:
-        log.info(f'Split {arg.split} pairs of reads for assembly')
-        arg.f, arg.r, splitted = split(arg.f, arg.r, arg.split, arg.out)
-        if splitted < arg.split:
-            log.warning(f'Want {arg.split} reads, acutally got {splitted}.')
+    log.info(f'\tForward file: {arg.f}')
+    log.info(f'\tReverse file: {arg.r}')
+    log.info(f'\tSeeds: {arg.seed}')
+    log.info(f'\tK-mer: {arg.kmer}')
+    log.info(f'\tMinimum genome size: {arg.min}')
+    log.info(f'\tMaximum genome size: {arg.max}')
+    log.info(f'\tTaxonomy: {arg.taxon}')
+    log.info(f'\tOutput folder: {arg.out}')
     if arg.f is not None:
         arg.reads_len = get_reads_len(arg.f)
     elif arg.m is not None:
@@ -387,9 +382,15 @@ def main():
     else:
         log.critical('Cannot detect reads length! Please input it manually.')
         arg.reads_len = int(input('Reads length:\t'))
+    log.info(f'\tReads length: {arg.reads_len}')
     if arg.insert_size is None:
         arg.insert_size = arg.reads_len * 2 + 50
-        log.info(f'Insert size is missing, use {arg.insert_size}.')
+        log.info(f'The insert size is missing, use {arg.insert_size}.')
+    if arg.split != 0:
+        log.info(f'Split {arg.split} pairs of reads for assembly')
+        arg.f, arg.r, splitted = split(arg.f, arg.r, arg.split, arg.out)
+        if splitted < arg.split:
+            log.warning(f'Want {arg.split} reads, acutally got {splitted}.')
     # get ref
     if arg.ref is not None:
         ref = Path(arg.ref)

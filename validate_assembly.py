@@ -332,8 +332,7 @@ def validate_main(arg_str=None):
             _handle.write(f'{arg.input} {arg.ref} BLAST_FAIL\n')
             exit(-1)
         fig_title = f'{i_fasta.stem}|{ref_gb.stem}'
-        pdf = draw(fig_title, ref_regions, option_regions,
-                   compare_result)
+        pdf = draw(fig_title, ref_regions, option_regions, compare_result)
         pdf = move(pdf, output/pdf)
         divided[i]['figure'] = pdf
         log.info('Detecting reverse complement region.')
@@ -368,10 +367,10 @@ def validate_main(arg_str=None):
                 '_RC_', ''))
             new_compare_result = compare(rc_fasta, ref_fasta,
                                          arg.perc_identity)
-            fig_title = str(output / f'_RC_{rc_fasta.stem}-{ref_gb.stem}')
             new_regions = get_regions(rc_gb)
-            pdf = draw(fig_title, ref_regions, new_regions,
-                       new_compare_result)
+            fig_title = f'_RC_{rc_fasta.stem}-{ref_gb.stem}'
+            pdf = draw(fig_title, ref_regions, new_regions, new_compare_result)
+            pdf = move(pdf, output/pdf)
             divided[i]['figure_after'] = pdf
             divided[i]['rc'] = to_rc
             divided[i]['gb'] = rc_gb

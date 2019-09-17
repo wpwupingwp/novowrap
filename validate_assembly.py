@@ -189,7 +189,11 @@ def draw(title, ref_regions, option_regions, data):
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
             plt.fill([send, sstart, qend, qstart], [0.8, 0.8, 0.65, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
-    pdf = Path(title.replace('|', '-')).with_suffix('.pdf')
+    pdf = Path(title.replace('|', '-'))
+    if pdf.suffix.isdigit:
+        pdf = Path(str(pdf)+'.pdf')
+    else:
+        pdf = pdf.with_suffix('.pdf')
     plt.savefig(pdf)
     plt.close()
     return pdf

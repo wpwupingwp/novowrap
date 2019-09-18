@@ -273,14 +273,15 @@ def config(out, seed, arg):
     Return:
         config_file(Path): config file
     """
-    print('f, r, m')
-    if arg.f is not None:
-        arg.reads_len = get_reads_len(arg.f)
-    elif arg.m is not None:
-        arg.reads_len = get_reads_len(arg.m)
+    f, r, m = arg.f, arg.r, arg.m
+    if f is None and r is None:
+        f, r = '', ''
+        arg.reads_len = get_reads_len(f)
+        s_or_p = 'PE'
     else:
-        log.critical('Cannot detect reads length! Please input it manually.')
-        arg.reads_len = int(input('Reads length:\t'))
+        m = ''
+        s_or_p = 'SE'
+        arg.reads_len = get_reads_len(m)
     if arg.insert_size is None:
         arg.insert_size = arg.reads_len * 2 + 50
         log.info(f'The insert size is missing, use {arg.insert_size}.')
@@ -303,10 +304,10 @@ Dataset 1:
 Read Length    = {arg.reads_len}
 Insert size    = {arg.insert_size }
 Platform       = {arg.platform}
-Single/Paired  = {"PE" if arg.f is not None else "SE"}
-Combined reads = {arg.m if arg.m is not None else ""}
-Forward reads  = {arg.f if arg.f is not None else ""}
-Reverse reads  = {arg.r if arg.r is not None else ""}
+Single/Paired  = {s_or_p}
+Combined reads = {m}
+Forward reads  = {f}
+Reverse reads  = {r}
 
 Optional:
 -----------------------
@@ -315,6 +316,8 @@ Insert Range          = 1.9
 Insert Range strict   = 1.3
 Use Quality Scores    = no
 """
+    print(config)
+    exit(-1)
     config_file = out / f'{seed.stem}_config.ini'
     with open(config_file, 'w') as out:
         out.write(config)
@@ -382,8 +385,6 @@ def organize_out(source, dest):
 def assembly(arg, novoplasty):
     log.info('='*80)
     arg.out = get_output(arg)
-    if arg.out is None:
-        return None
     if arg.m is None:
         log.info(f'Forward file: {arg.f}')
         log.info(f'Reverse file: {arg.r}')
@@ -411,6 +412,7 @@ def assembly(arg, novoplasty):
         else:
             log.info(f'Got {ref.stem}.')
             ref = move(ref, arg.out/ref)
+    # get seed
     if arg.seed_file is not None:
         seeds = [Path(arg.seed_file), ]
     else:
@@ -472,6 +474,9 @@ def main():
     if not any([arg.f, arg.r, arg.m, arg.list]):
         log.critical('Input is empty.')
         exit(-1)
+    arg.out = get_output(arg)
+    if arg.out is None:
+        return
     # log to file
     log_file_handler = logging.FileHandler(str(arg.out/'log.txt'))
     log_file_handler.setLevel(logging.DEBUG)

@@ -65,7 +65,7 @@ def parse_args():
                         default='illumina', help='sequencing platform')
     inputs.add_argument('-insert_size',
                         help='insert size of sequencing library')
-    inputs.add_argument('-seed', default='rbcL,matK,psaB,psaC,rrn23,rrn23S',
+    inputs.add_argument('-seed', default='rbcL,psaB,psaC,rrn23,rrn23S',
                         help='seed gene, separated by comma')
     inputs.add_argument('-seed_file',
                         help='seed file, will overwrite "-seed" option')

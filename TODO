@@ -28,3 +28,5 @@
 #27. merge csv
 28. choose new seed
 29. LSC has rbcL, matK, psaB, remove matK
+30. tmp/result/seed folders
+31. split main to make arg.list work

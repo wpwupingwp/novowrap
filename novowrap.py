@@ -65,7 +65,7 @@ def parse_args():
                         default='illumina', help='sequencing platform')
     inputs.add_argument('-insert_size',
                         help='insert size of sequencing library')
-    inputs.add_argument('-seed', default='rbcL,matK,psaB,psaC,rrn23',
+    inputs.add_argument('-seed', default='rbcL,matK,psaB,psaC,rrn23,rrn23S',
                         help='seed gene, separated by comma')
     inputs.add_argument('-seed_file',
                         help='seed file, will overwrite "-seed" option')
@@ -233,8 +233,14 @@ def get_seed(ref, output, gene):
                     out.write(f'>{gene_name}|{organism}|{accession}\n')
                     out.write(f'{seq.seq}\n')
                 seeds[gene_name] = seed_file
-    # in newer python version, dict is ordered
-    return seeds.values()
+    ordered_seeds = []
+    for i in genes:
+        if i in seeds:
+            ordered_seeds.append(seeds[i])
+    whole = ref.parent / 'whole.fasta'
+    SeqIO.convert(ref, 'gb', whole, 'fasta')
+    ordered_seeds.append(whole)
+    return ordered_seeds
 
 
 def config(out, seed, arg):
@@ -418,10 +424,7 @@ def main():
         folder.mkdir()
         log.info(f'Use {seed.stem} as seed.')
         config_file = config(arg.out, seed, arg)
-        run_novo = run(f'perl {novoplasty} -c {config_file}', shell=True)
-        # if run_novo.returncode != 0:
-        #     log.critical('Failed to run NOVOPlasty. Quit.')
-        #    exit(-1)
+        run(f'perl {novoplasty} -c {config_file}', shell=True)
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(
             Path().cwd(), folder)

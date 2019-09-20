@@ -66,9 +66,8 @@ def parse_args():
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     inputs = arg.add_argument_group('Input')
-    inputs.add_argument('-f', help='forward fastq/gz file')
-    inputs.add_argument('-r', help='reverse fastq/gz file')
-    inputs.add_argument('-m', help='merged fastq/gz file')
+    inputs.add_argument('-i', dest='input', nargs='*',
+                        help='single or pair-end input, fastq or gz format')
     inputs.add_argument('-l', dest='list', help='csv file for batch mode')
     inputs.add_argument('-p', dest='platform', choices=['illumina', 'ion'],
                         default='illumina', help='sequencing platform')
@@ -134,17 +133,12 @@ def get_output(arg):
 
         return arg, False
     if arg.out is None:
-        if arg.f is not None and arg.r is not None:
-            out = _get_name(arg.f, arg.r)
-        elif arg.m is not None:
-            out = Path(Path(arg.m).stem+'-out').absolute()
+        if len(arg.input) == 2:
+            out = _get_name(arg.input[0], arg.input[1])
         else:
-            out = Path('Output').absolute()
+            out = Path(arg.input[0]).stem.absolute()
     else:
         out = Path(arg.out).absolute()
-    if out.exists():
-        log.critical(f'Output folder {arg.out.name} exists.')
-        out = None
     return out
 
 
@@ -160,6 +154,7 @@ def read_table(arg):
 
 
 def split(forward, reverse, number, output):
+    print('split one file')
     """
     Split reads of original file from the beginning.
     Args:
@@ -273,15 +268,15 @@ def config(out, seed, arg):
     Return:
         config_file(Path): config file
     """
-    f, r, m = arg.f, arg.r, arg.m
-    if f is None and r is None:
-        f, r = '', ''
-        arg.reads_len = get_reads_len(f)
+    if len(arg.input) == 2:
+        f, r = arg.input
+        m = ''
         s_or_p = 'PE'
     else:
-        m = ''
+        f = r = ''
+        m = arg.input[0]
         s_or_p = 'SE'
-        arg.reads_len = get_reads_len(m)
+    arg.reads_len = get_reads_len(arg.input[0])
     if arg.insert_size is None:
         arg.insert_size = arg.reads_len * 2 + 50
         log.info(f'The insert size is missing, use {arg.insert_size}.')
@@ -316,8 +311,6 @@ Insert Range          = 1.9
 Insert Range strict   = 1.3
 Use Quality Scores    = no
 """
-    print(config)
-    exit(-1)
     config_file = out / f'{seed.stem}_config.ini'
     with open(config_file, 'w') as out:
         out.write(config)
@@ -384,18 +377,15 @@ def organize_out(source, dest):
 
 def assembly(arg, novoplasty):
     log.info('='*80)
-    arg.out = get_output(arg)
-    if arg.m is None:
-        log.info(f'Forward file: {arg.f}')
-        log.info(f'Reverse file: {arg.r}')
-    else:
-        log.info(f'Merged/Combined file: {arg.m}')
+    for i in arg.input:
+        log.info(f'Input file: {i}')
     log.info(f'Minimum genome size: {arg.min}')
     log.info(f'Maximum genome size: {arg.max}')
     log.info(f'Taxonomy: {arg.taxon}')
     log.info(f'Output folder: {arg.out}')
     if arg.split != 0:
         log.info(f'Split {arg.split} pairs of reads for assembly')
+        print()
         arg.f, arg.r, splitted = split(arg.f, arg.r, arg.split, arg.out)
         if splitted < arg.split:
             log.warning(f'Want {arg.split} reads, acutally got {splitted}.')
@@ -465,18 +455,26 @@ def assembly(arg, novoplasty):
 
 def main():
     log.info('Welcome to novowrap.')
-    log.info('='*80)
     # check before run
     novoplasty = get_novoplasty()
     if novoplasty is None:
-        exit(-1)
+        return -1
     arg = parse_args()
-    if not any([arg.f, arg.r, arg.m, arg.list]):
-        log.critical('Input is empty.')
-        exit(-1)
+    if arg.list is None:
+        if arg.input is None:
+            log.critical('Input is empty.')
+            return -1
+        elif len(arg.input) > 2:
+            log.critical('Only accept one or two input file(s).')
+            return -1
     arg.out = get_output(arg)
     if arg.out is None:
-        return
+        return -1
+    elif arg.out.exists():
+        log.critical(f'Output folder {arg.out.name} exists.')
+        return -1
+    else:
+        arg.out.mkdir()
     # log to file
     log_file_handler = logging.FileHandler(str(arg.out/'log.txt'))
     log_file_handler.setLevel(logging.DEBUG)
@@ -490,6 +488,7 @@ def main():
         table = read_table(arg)
         for i in table:
             arg.f, arg.r, arg.min_len, arg.max_len, arg.taxon = i
+            print(arg.out)
             assembly(arg, novoplasty)
 
     log.info('Bye.')

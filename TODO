@@ -17,17 +17,20 @@
 #17. auto detect reads len
 #17. auto detect mem
 # 18. add tabacum's cp as default
-19. if cannot find close related species, use whole cp as novoplasy's author recommended
+#19. if cannot find close related species, use whole cp as novoplasy's author recommended
 #20. novoplasty didn't use GPL, download it when run
 21. better name, novowrap only for cp
 22. what special for cp
 #23. hide warning from matplotlib
 24. simple filename
-25. table for batch
+#25. table for batch
 26. auto correct table's taxon
 #27. merge csv
 28. choose new seed
-29. LSC has rbcL, matK, psaB, remove matK
+#29. LSC has rbcL, matK, psaB, remove matK
 30. tmp/result/seed folders
 31. split main to make arg.list work
 32. reads length/number
+33. divide 1?
+34. out
+35. read_table()

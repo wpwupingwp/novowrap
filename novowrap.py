@@ -136,7 +136,8 @@ def get_output(arg):
         if len(arg.input) == 2:
             out = _get_name(arg.input[0], arg.input[1])
         else:
-            out = Path(arg.input[0]).stem.absolute()
+            # for single file, directly remove all suffixes is dangerous
+            out = Path(Path(arg.input[0]).stem).absolute()
     else:
         out = Path(arg.out).absolute()
     return out
@@ -153,54 +154,40 @@ def read_table(arg):
     return
 
 
-def split(forward, reverse, number, output):
-    print('split one file')
+def split(raw, number, output):
     """
     Split reads of original file from the beginning.
     Args:
-        forward(str or Path): forward file, could be fastq or gz
-        reverse(str or Path): reverse file, could be fastq or gz
+        raw(str or Path): input file, coulde be fastq or gz format
         number(int): number of reads to split
         output(Path): output folder
     Return:
-        new_f(Path): new forward file
-        new_r(Path): new reverse file
+        splitted(Path): splitted file, fastq format
+        count(int): reads actually got
     """
-    fmt = get_fmt(forward)
-    new_f = output / Path(Path(forward).name).with_suffix(f'.{number}')
-    new_r = output / Path(Path(reverse).name).with_suffix(f'.{number}')
-    new_f_handle = open(new_f, 'wb')
-    new_r_handle = open(new_r, 'wb')
+    fmt = get_fmt(raw)
+    splitted = output / Path(Path(raw).name).with_suffix(f'.{number}')
+    splitted_handle = open(splitted, 'wb')
     if fmt == 'gz':
-        f_handle = gzip.open(forward)
-        r_handle = gzip.open(reverse)
+        raw_handle = gzip.open(raw)
     else:
-        f_handle = open(forward, 'rb')
-        r_handle = open(reverse, 'rb')
-    f = iter(f_handle)
-    r = iter(r_handle)
+        raw_handle = open(raw, 'rb')
+    line = iter(raw_handle)
     count = 0
     while count < number:
         # four line one record
         try:
-            new_f_handle.write(next(f))
-            new_f_handle.write(next(f))
-            new_f_handle.write(next(f))
-            new_f_handle.write(next(f))
-            new_r_handle.write(next(r))
-            new_r_handle.write(next(r))
-            new_r_handle.write(next(r))
-            new_r_handle.write(next(r))
+            splitted_handle.write(next(line))
+            splitted_handle.write(next(line))
+            splitted_handle.write(next(line))
+            splitted_handle.write(next(line))
         except StopIteration:
             break
         count += 1
-    f_handle.close()
-    r_handle.close()
-    new_f_handle.close()
-    new_r_handle.close()
-    new_f = move(new_f, new_f.with_suffix(f'.{count}'))
-    new_r = move(new_r, new_r.with_suffix(f'.{count}'))
-    return new_f, new_r, count
+    raw_handle.close()
+    splitted_handle.close()
+    splitted = move(splitted, splitted.with_suffix(f'.{count}'))
+    return splitted, count
 
 
 def get_reads_len(filename):
@@ -385,10 +372,13 @@ def assembly(arg, novoplasty):
     log.info(f'Output folder: {arg.out}')
     if arg.split != 0:
         log.info(f'Split {arg.split} pairs of reads for assembly')
-        print()
-        arg.f, arg.r, splitted = split(arg.f, arg.r, arg.split, arg.out)
-        if splitted < arg.split:
-            log.warning(f'Want {arg.split} reads, acutally got {splitted}.')
+        splitted = []
+        for raw in arg.input:
+            new, count = split(raw, arg.split, arg.out)
+            if count < arg.split:
+                log.warning(f'Want {arg.split} reads, acutally got {count}.')
+            splitted.append(new)
+        arg.input = splitted
     # get ref
     if arg.ref is not None:
         ref = Path(arg.ref)

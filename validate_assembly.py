@@ -307,13 +307,13 @@ def validate_main(arg_str=None):
         ref_gb = Path(arg.ref)
     ref_len = len(SeqIO.read(ref_gb, fmt))
     new_ref_gb, ref_fasta = rotate_seq(ref_gb)
-    new_ref_gb = move(new_ref_gb, output/new_ref_gb.name)
-    ref_fasta = move(ref_fasta, output/ref_fasta.name)
     if new_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
         exit(-1)
+    new_ref_gb = move(new_ref_gb, output/new_ref_gb.name)
+    ref_fasta = move(ref_fasta, output/ref_fasta.name)
     ref_regions = get_regions(new_ref_gb)
     divided = divide_records(arg.input, output, ref_len, arg.len_diff)
     for i in divided:

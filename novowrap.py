@@ -133,25 +133,41 @@ def get_output(arg):
 
         return arg, False
     if arg.out is None:
-        if len(arg.input) == 2:
-            out = _get_name(arg.input[0], arg.input[1])
-        else:
-            # for single file, directly remove all suffixes is dangerous
-            out = Path(Path(arg.input[0]).stem).absolute()
+        if arg.input is not None:
+            if len(arg.input) == 2:
+                out = _get_name(arg.input[0], arg.input[1])
+            else:
+                # for single file, directly remove all suffixes is dangerous
+                out = Path(Path(arg.input[0]).stem).absolute()
+        elif arg.list is not None:
+            out = Path(Path(arg.list).stem).absolute()
     else:
         out = Path(arg.out).absolute()
     return out
 
 
-def read_table(arg):
+def _read_table(arg):
     """
     Read table from given csv file.
+    Columns of table:
+        Input, Input(optional), Taxonomy
     Args:
         arg(NameSpace): arg generated from parse_args
         table(list): list of input items
+    Return:
+        inputs(list): [[f, r], taxon]
     """
+    inputs = []
+    with open(arg.list, 'r') as raw:
+        for line in raw:
+            try:
+                f, r, taxon = line.split(',')
+            except IndexError:
+                log.warning(f'Cannot parse the line : {line}')
+            inputs.append([[f, r], taxon])
+
     print('to be continue')
-    return
+    return inputs
 
 
 def split(raw, number, output):

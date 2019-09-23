@@ -415,13 +415,13 @@ def rotate_seq(filename, min_IR=1000, silence=True):
             log.warning(f'\tOld and new sequences do not have save length.')
             log.info(f'Old: {origin_len}\tNew: {len(new_seq)}')
             if abs(origin_len - len(new_seq)) > ambiguous_base_n:
-                log.critical(f'\tToo much difference. Reject.')
+                log.info(f'\tToo much difference. Reject.')
                 continue
         if len(seq_IRa) != len(seq_IRb):
             log.warning(f'\tIRa ({len(seq_IRa)}) and IRb ({len(seq_IRb)}) do '
                         'not have same length.')
             if abs(len(seq_IRa) - len(seq_IRb)) > ambiguous_base_n:
-                log.critical(f'\tToo much difference. Reject.')
+                log.warning(f'\tToo much difference. Reject.')
                 continue
         # output
         offset = -1

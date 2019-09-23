@@ -161,12 +161,15 @@ def _read_table(arg):
     with open(arg.list, 'r') as raw:
         for line in raw:
             try:
-                f, r, taxon = line.split(',')
+                f, r, taxon = line.strip().split(',')
             except IndexError:
                 log.warning(f'Cannot parse the line : {line}')
-            inputs.append([[f, r], taxon])
-
-    print('to be continue')
+                continue
+            if r == '':
+                f_r = [f, ]
+            else:
+                f_r = [f, r]
+            inputs.append([f_r, taxon])
     return inputs
 
 
@@ -379,9 +382,19 @@ def organize_out(source, dest):
 
 
 def assembly(arg, novoplasty):
+    """
+    Assembly input file by wrapping NOVOPlasty.
+    Return -1 if failed.
+    """
     log.info('='*80)
     for i in arg.input:
-        log.info(f'Input file: {i}')
+        test = Path(i)
+        # arg.list may contains invalid file
+        if not test.exists():
+            log.critical(f'Cannot find input file {i}')
+            return -1
+        else:
+            log.info(f'Input file: {i}')
     log.info(f'Minimum genome size: {arg.min}')
     log.info(f'Maximum genome size: {arg.max}')
     log.info(f'Taxonomy: {arg.taxon}')
@@ -404,7 +417,7 @@ def assembly(arg, novoplasty):
         ref = get_ref(arg.taxon)
         if ref is None:
             log.critical('Cannot get reference.')
-            return None
+            return -1
         else:
             log.info(f'Got {ref.stem}.')
             ref = move(ref, arg.out/ref)
@@ -415,7 +428,7 @@ def assembly(arg, novoplasty):
         seeds = get_seed(ref, arg.out, arg.seed)
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')
-        return None
+        return -1
     csv_files = []
     success = False
     for seed in seeds:
@@ -456,7 +469,7 @@ def assembly(arg, novoplasty):
                         h1.write(''.join(h2.readlines()[1:]))
     log.info(f'Merged validation results were written into {merged_csv.name}')
     log.info('='*80)
-    return
+    return 0
 
 
 def main():
@@ -491,12 +504,10 @@ def main():
     if arg.list is None:
         assembly(arg, novoplasty)
     else:
-        table = read_table(arg)
+        table = _read_table(arg)
         for i in table:
-            arg.f, arg.r, arg.min_len, arg.max_len, arg.taxon = i
-            print(arg.out)
+            arg.input, arg.taxon = i
             assembly(arg, novoplasty)
-
     log.info('Bye.')
     log.info('-'*80)
     return

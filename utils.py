@@ -33,7 +33,7 @@ def move(source, dest, copy=False):
         source.rename(dest)
         return Path(dest)
     else:
-        with open(source, 'r') as a, open(dest, 'w') as b:
+        with open(source, 'rb') as a, open(dest, 'wb') as b:
             b.write(a.read())
         return Path(dest)
 

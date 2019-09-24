@@ -467,7 +467,8 @@ def assembly(arg, novoplasty):
                 for i in csv_files[1:]:
                     with open(i, 'r') as h2:
                         h1.write(''.join(h2.readlines()[1:]))
-    log.info(f'Merged validation results were written into {merged_csv.name}')
+        log.info(
+            f'Merged validation results were written into {merged_csv.name}')
     log.info('='*80)
     return 0
 

@@ -324,6 +324,13 @@ Use Quality Scores    = no
 
 
 def txt_to_fasta(old):
+    """
+    Convert NOVOPlasty-generated txt to standard fasta.
+    Args:
+        old(Path): file to be converted
+    Return:
+        new(Path): converted fasta
+    """
     clean = []
     record = []
     begin = False
@@ -347,7 +354,8 @@ def txt_to_fasta(old):
     return new
 
 
-def organize_out(source, dest):
+def organize_out(pwd, out, seed):
+    print()
     """
     Organize NOVOPlasty output.
         log*: log file
@@ -358,26 +366,45 @@ def organize_out(source, dest):
         Circularized*: circularized sequence
     Return fasta list.
     Arg:
-        source(Path): current directory
-        dest(Path): directory to move
+        pwd(Path): current directory
+        output(Path): output folder, contains "Temp", "Log", "Raw"
+        seed(str): seed gene's name
     Return:
         contigs(list): contig files
         merged(list): merged files
         options(list): options files
         circularized(list): circularized files
     """
-    for i in source.glob('contigs_tmp_*'):
-        i = move(i, dest/i.name)
-    for i in source.glob('log_*.txt'):
-        i = move(i, dest/i.name)
-    contigs = [txt_to_fasta(move(i, dest/i.name)) for i in
-               source.glob('Contigs_*')]
-    merged = [txt_to_fasta(move(i, dest/i.name)) for i in
-              source.glob('Merged_contigs_*')]
-    options = [txt_to_fasta(move(i, dest/i.name)) for i in
-               source.glob('Option_*')]
-    circularized = [txt_to_fasta(move(i, dest/i.name)) for i in
-                    source.glob('Circularized_assembly*')]
+    def _convert_and_move(raw, out, subfolder):
+        # rename
+        raw = move(raw, raw.with_name(f'{raw.stem}-{seed}{raw.suffix}'))
+        folder = out / subfolder
+        if subfolder == 'Temp':
+            move(raw, folder/raw.name)
+            return
+        if raw.suffix != '.fasta':
+            fasta = txt_to_fasta(raw)
+            move(raw, folder/raw.name)
+        else:
+            fasta = move(raw, folder/raw.name, copy=True)
+        return fasta
+
+    for i in pwd.glob('contigs_tmp_*'):
+        _convert_and_move(i, out, 'Temp')
+    for i in pwd.glob('log_*.txt'):
+        _convert_and_move(i, out, 'Temp')
+    contigs = []
+    for i in pwd.glob('Contigs_*'):
+        contigs.append(_convert_and_move(i, out, 'Raw'))
+    merged = []
+    for i in pwd.glob('Merged_contigs_*'):
+        merged.append(_convert_and_move(i, out, 'Raw'))
+    options = []
+    for i in pwd.glob('Option_*'):
+        options.append(_convert_and_move(i, out, 'Raw'))
+    circularized = []
+    for i in pwd.glob('Circularized_assembly*'):
+        circularized.append(_convert_and_move(i, out, 'Raw'))
     return circularized, options, merged, contigs
 
 
@@ -410,6 +437,10 @@ def assembly(arg, novoplasty):
         arg.input = splitted
     # get ref
     if arg.ref is not None:
+        if get_fmt(arg.ref) != 'gb':
+            log.critical('Reference file should be genbank format, '
+                         'but {arg.ref} is not.')
+            return -1
         ref = Path(arg.ref)
         ref = move(ref, arg.out/ref, copy=True)
     else:
@@ -422,24 +453,22 @@ def assembly(arg, novoplasty):
             log.info(f'Got {ref.stem}.')
             ref = move(ref, arg.out/ref)
     # get seed
+    seeds = []
     if arg.seed_file is not None:
-        seeds = [Path(arg.seed_file), ]
-    else:
-        seeds = get_seed(ref, arg.out, arg.seed)
+        seeds.append(Path(arg.seed_file))
+    seeds.extend(get_seed(ref, arg.out, arg.seed))
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')
         return -1
     csv_files = []
     success = False
     for seed in seeds:
-        folder = arg.out / seed.stem
-        folder.mkdir()
         log.info(f'Use {seed.stem} as seed.')
         config_file = config(arg.out, seed, arg)
         run(f'perl {novoplasty} -c {config_file}', shell=True)
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(
-            Path().cwd(), folder)
+            Path().cwd(), arg.out, seed.stem)
         if len(circularized) == 0 and len(options) == 0 and len(merged) == 0:
             log.warning(f'Assembled with {seed.stem} failed.')
             continue
@@ -448,7 +477,7 @@ def assembly(arg, novoplasty):
         log.info('Validate assembly results.')
         # for i in (*circularized, *options, *merged):
         for i in (*circularized, *options):
-            arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {folder}'
+            arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {arg.out}'
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
             if report not in csv_files:
@@ -461,6 +490,7 @@ def assembly(arg, novoplasty):
         if not success:
             log.critical(f'Assembly with {seed.stem} failed.')
     if len(csv_files) != 0:
+        print()
         merged_csv = move(csv_files[0], arg.out / 'Validation.csv', copy=True)
         if len(csv_files) > 1:
             with open(merged_csv, 'a') as h1:
@@ -495,6 +525,13 @@ def main():
         return -1
     else:
         arg.out.mkdir()
+    print()
+    arg.log = arg.out / 'Log'
+    arg.log.mkdir()
+    arg.raw = arg.out / 'Raw'
+    arg.raw.mkdir()
+    arg.tmp = arg.out / 'Temp'
+    arg.tmp.mkdir()
     # log to file
     log_file_handler = logging.FileHandler(str(arg.out/'log.txt'))
     log_file_handler.setLevel(logging.DEBUG)

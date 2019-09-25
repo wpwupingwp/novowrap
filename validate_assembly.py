@@ -283,7 +283,8 @@ def validate_main(arg_str=None):
         output = Path(arg.out)
     if not output.exists():
         output.mkdir()
-    tmp = output / 'Temporary'
+    print()
+    tmp = output / 'Temp'
     if not tmp.exists():
         tmp.mkdir()
     log.info(f'Input:\t{arg.input}')

@@ -184,8 +184,9 @@ def split(raw, number, output):
         splitted(Path): splitted file, fastq format
         count(int): reads actually got
     """
+    raw = Path(raw)
     fmt = get_fmt(raw)
-    splitted = output / Path(Path(raw).name).with_suffix(f'.{number}')
+    splitted = output / raw.with_suffix(f'.{number}').name
     splitted_handle = open(splitted, 'wb')
     if fmt == 'gz':
         raw_handle = gzip.open(raw)
@@ -258,17 +259,16 @@ def get_seed(ref, output, gene):
     for i in genes:
         if i in seeds:
             ordered_seeds.append(seeds[i])
-    whole = ref.parent / 'whole.fasta'
+    whole = output / 'whole.fasta'
     SeqIO.convert(ref, 'gb', whole, 'fasta')
     ordered_seeds.append(whole)
     return ordered_seeds
 
 
-def config(out, seed, arg):
+def config(seed, arg):
     """
     Generate config file for NOVOPlasty.
     Arg:
-        out(Path): output folder
         seed(Path): seed file
         arg(NameSpace): parameters user provided
     Return:
@@ -288,7 +288,7 @@ def config(out, seed, arg):
         log.info(f'The insert size is missing, use {arg.insert_size}.')
     config = f"""Project:
 -----------------------
-Project name          = {out.name}
+Project name          = {arg.out.name}
 Type                  = chloro
 Genome Range          = {arg.min}-{arg.max}
 K-mer                 = {arg.kmer}
@@ -317,7 +317,7 @@ Insert Range          = 1.9
 Insert Range strict   = 1.3
 Use Quality Scores    = no
 """
-    config_file = out / f'{seed.stem}_config.ini'
+    config_file = arg.raw / f'{seed.stem}_config.ini'
     with open(config_file, 'w') as out:
         out.write(config)
     return config_file
@@ -355,7 +355,6 @@ def txt_to_fasta(old):
 
 
 def organize_out(pwd, out, seed):
-    print()
     """
     Organize NOVOPlasty output.
         log*: log file
@@ -392,7 +391,8 @@ def organize_out(pwd, out, seed):
     for i in pwd.glob('contigs_tmp_*'):
         _convert_and_move(i, out, 'Temp')
     for i in pwd.glob('log_*.txt'):
-        _convert_and_move(i, out, 'Temp')
+        i = move(i, i.with_name('NOVOPlasty-'+i.name))
+        _convert_and_move(i, out, 'Log')
     contigs = []
     for i in pwd.glob('Contigs_*'):
         contigs.append(_convert_and_move(i, out, 'Raw'))
@@ -430,7 +430,7 @@ def assembly(arg, novoplasty):
         log.info(f'Split {arg.split} pairs of reads for assembly')
         splitted = []
         for raw in arg.input:
-            new, count = split(raw, arg.split, arg.out)
+            new, count = split(raw, arg.split, arg.tmp)
             if count < arg.split:
                 log.warning(f'Want {arg.split} reads, acutally got {count}.')
             splitted.append(new)
@@ -456,7 +456,7 @@ def assembly(arg, novoplasty):
     seeds = []
     if arg.seed_file is not None:
         seeds.append(Path(arg.seed_file))
-    seeds.extend(get_seed(ref, arg.out, arg.seed))
+    seeds.extend(get_seed(ref, arg.raw, arg.seed))
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')
         return -1
@@ -464,7 +464,7 @@ def assembly(arg, novoplasty):
     success = False
     for seed in seeds:
         log.info(f'Use {seed.stem} as seed.')
-        config_file = config(arg.out, seed, arg)
+        config_file = config(seed, arg)
         run(f'perl {novoplasty} -c {config_file}', shell=True)
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(
@@ -525,7 +525,6 @@ def main():
         return -1
     else:
         arg.out.mkdir()
-    print()
     arg.log = arg.out / 'Log'
     arg.log.mkdir()
     arg.raw = arg.out / 'Raw'
@@ -533,7 +532,7 @@ def main():
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
     # log to file
-    log_file_handler = logging.FileHandler(str(arg.out/'log.txt'))
+    log_file_handler = logging.FileHandler(str(arg.log/'Log.txt'))
     log_file_handler.setLevel(logging.DEBUG)
     Formatter = logging.Formatter(FMT, DATEFMT)
     log_file_handler.setFormatter(Formatter)

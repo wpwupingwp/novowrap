@@ -267,6 +267,7 @@ def validate_main(arg_str=None):
         arg_str(str): arguments string
     Return:
         validated(list): list contains validated rotated fasta files
+        success(int): success or not
     """
     # inherit logger from novowrap, if not called by it, doesn't matter to
     # name the logger 'novowrap'
@@ -283,38 +284,34 @@ def validate_main(arg_str=None):
         output = Path(arg.out)
     if not output.exists():
         output.mkdir()
-    print()
     tmp = output / 'Temp'
     if not tmp.exists():
         tmp.mkdir()
     log.info(f'Input:\t{arg.input}')
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
-        arg.taxon = None
+        fmt = get_fmt(arg.ref)
+        ref_gb = Path(arg.ref)
+        ref_gb = move(ref_gb, tmp/ref_gb.name, copy=True)
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')
-    log.debug(f'Use {output} as output folder.')
-    # get ref
-    if arg.ref is None:
         ref_gb = get_ref(arg.taxon)
         if ref_gb is None:
             log.critical('Failed to get reference.')
             log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')
-            exit(-1)
-        ref_gb = move(ref_gb, output/ref_gb)
+            return -1
+        ref_gb = move(ref_gb, tmp/ref_gb.name)
         fmt = 'gb'
-    else:
-        fmt = get_fmt(arg.ref)
-        ref_gb = Path(arg.ref)
+    log.debug(f'Use {output} as output folder.')
     ref_len = len(SeqIO.read(ref_gb, fmt))
     new_ref_gb, ref_fasta = rotate_seq(ref_gb)
     if new_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
-        exit(-1)
-    new_ref_gb = move(new_ref_gb, output/new_ref_gb.name)
-    ref_fasta = move(ref_fasta, output/ref_fasta.name)
+        return -1
+    # new_ref_gb = move(new_ref_gb, tmp/new_ref_gb.name)
+    # ref_fasta = move(ref_fasta, tmp/ref_fasta.name)
     ref_regions = get_regions(new_ref_gb)
     divided = divide_records(arg.input, output, ref_len, arg.len_diff)
     for i in divided:
@@ -333,7 +330,7 @@ def validate_main(arg_str=None):
         if compare_result is None:
             log.critical('Cannot run BLAST.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
-            exit(-1)
+            return -1
         fig_title = f'{i_fasta.stem}|{ref_gb.stem}'
         pdf = draw(fig_title, ref_regions, option_regions, compare_result)
         pdf = move(pdf, output/pdf)

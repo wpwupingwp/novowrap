@@ -32,6 +32,8 @@ def move(source, dest, copy=False):
     if not copy:
         source.rename(dest)
         return Path(dest)
+    elif source.absolute() == dest.absolute():
+        return Path(dest)
     else:
         with open(source, 'rb') as a, open(dest, 'wb') as b:
             b.write(a.read())

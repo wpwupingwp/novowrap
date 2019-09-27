@@ -250,7 +250,7 @@ def get_seed(ref, output, gene):
             # for rrn23S
             if gene_name in genes or gene_name.lower() in genes:
                 seq = feature.extract(gb)
-                seed_file = output / f'{gene_name}.fasta'
+                seed_file = output / f'{gene_name}.seed'
                 with open(seed_file, 'w') as out:
                     out.write(f'>{gene_name}|{organism}|{accession}\n')
                     out.write(f'{seq.seq}\n')
@@ -259,7 +259,7 @@ def get_seed(ref, output, gene):
     for i in genes:
         if i in seeds:
             ordered_seeds.append(seeds[i])
-    whole = output / 'whole.fasta'
+    whole = output / 'whole.seed'
     SeqIO.convert(ref, 'gb', whole, 'fasta')
     ordered_seeds.append(whole)
     return ordered_seeds
@@ -323,37 +323,6 @@ Use Quality Scores    = no
     return config_file
 
 
-def txt_to_fasta(old):
-    """
-    Convert NOVOPlasty-generated txt to standard fasta.
-    Args:
-        old(Path): file to be converted
-    Return:
-        new(Path): converted fasta
-    """
-    clean = []
-    record = []
-    begin = False
-    with open(old, 'r') as raw:
-        for line in raw:
-            if line.startswith('>'):
-                clean.extend(record)
-                record = []
-                begin = True
-            if line.startswith(' ') or len(line.strip()) == 0:
-                begin = False
-                clean.extend(record)
-                record = []
-            if begin:
-                record.append(line)
-    clean.extend(record)
-    new = Path(old).with_suffix('.fasta')
-    with open(new, 'w') as out:
-        for line in clean:
-            out.write(line.replace('*', ''))
-    return new
-
-
 def organize_out(pwd, out, seed):
     """
     Organize NOVOPlasty output.
@@ -374,37 +343,54 @@ def organize_out(pwd, out, seed):
         options(list): options files
         circularized(list): circularized files
     """
-    def _convert_and_move(raw, out, subfolder):
-        # rename
-        raw = move(raw, raw.with_name(f'{raw.stem}-{seed}{raw.suffix}'))
-        folder = out / subfolder
-        if subfolder == 'Temp':
-            move(raw, folder/raw.name)
-            return
-        if raw.suffix != '.fasta':
-            fasta = txt_to_fasta(raw)
-            move(raw, folder/raw.name)
-        else:
-            fasta = move(raw, folder/raw.name, copy=True)
-        return fasta
+    def txt_to_fasta(old):
+        """
+        Convert NOVOPlasty-generated txt to standard fasta.
+        """
+        clean = []
+        record = []
+        begin = False
+        with open(old, 'r') as raw:
+            for line in raw:
+                if line.startswith('>'):
+                    clean.extend(record)
+                    record = []
+                    begin = True
+                if line.startswith(' ') or len(line.strip()) == 0:
+                    begin = False
+                    clean.extend(record)
+                    record = []
+                if begin:
+                    record.append(line)
+        clean.extend(record)
+        new = Path(old).with_suffix('.fasta')
+        with open(new, 'w') as out:
+            for line in clean:
+                out.write(line.replace('*', ''))
+        return new
 
     for i in pwd.glob('contigs_tmp_*'):
-        _convert_and_move(i, out, 'Temp')
+        move(i, out/'Temp'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
     for i in pwd.glob('log_*.txt'):
-        i = move(i, i.with_name('NOVOPlasty-'+i.name))
-        _convert_and_move(i, out, 'Log')
+        move(i, out/'Log'/i.with_name('NOVOPlasty-'+i.name).name)
     contigs = []
     for i in pwd.glob('Contigs_*'):
-        contigs.append(_convert_and_move(i, out, 'Raw'))
+        i = move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+        contigs.append(i)
     merged = []
     for i in pwd.glob('Merged_contigs_*'):
-        merged.append(_convert_and_move(i, out, 'Raw'))
+        fasta = txt_to_fasta(i)
+        move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+        fasta = move(fasta, out/'Raw'/fasta.name)
+        merged.append(fasta)
     options = []
     for i in pwd.glob('Option_*'):
-        options.append(_convert_and_move(i, out, 'Raw'))
+        i = move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+        options.append(i)
     circularized = []
     for i in pwd.glob('Circularized_assembly*'):
-        circularized.append(_convert_and_move(i, out, 'Raw'))
+        i = move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+        circularized.append(i)
     return circularized, options, merged, contigs
 
 
@@ -442,7 +428,7 @@ def assembly(arg, novoplasty):
                          'but {arg.ref} is not.')
             return -1
         ref = Path(arg.ref)
-        ref = move(ref, arg.out/ref, copy=True)
+        ref = move(ref, arg.tmp/ref, copy=True)
     else:
         log.info('Try to get reference from NCBI Genbank.')
         ref = get_ref(arg.taxon)
@@ -451,7 +437,7 @@ def assembly(arg, novoplasty):
             return -1
         else:
             log.info(f'Got {ref.stem}.')
-            ref = move(ref, arg.out/ref)
+            ref = move(ref, arg.tmp/ref)
     # get seed
     seeds = []
     if arg.seed_file is not None:

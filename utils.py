@@ -331,7 +331,10 @@ def rotate_seq(filename, min_IR=1000, silence=True):
     repeat_seq = SeqIO.read(repeat_record, fmt)
     blast_result = blast(repeat_fasta, repeat_fasta)
     new_fasta = filename.with_suffix('.rotate')
-    new_gb = filename.with_suffix('.new_gb')
+    if filename.suffix == '.gb':
+        new_gb = filename.with_suffix('.gb.gb')
+    else:
+        new_gb = filename.with_suffix('.gb')
     success = False
     # only one record, loop just for for unpack
     for query in parse_blast_tab(blast_result):

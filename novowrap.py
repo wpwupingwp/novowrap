@@ -475,16 +475,6 @@ def assembly(arg, novoplasty):
             log.warning('No records passed validation.')
         if not success:
             log.critical(f'Assembly with {seed.stem} failed.')
-    if len(csv_files) != 0:
-        print()
-        merged_csv = move(csv_files[0], arg.out / 'Validation.csv', copy=True)
-        if len(csv_files) > 1:
-            with open(merged_csv, 'a') as h1:
-                for i in csv_files[1:]:
-                    with open(i, 'r') as h2:
-                        h1.write(''.join(h2.readlines()[1:]))
-        log.info(
-            f'Merged validation results were written into {merged_csv.name}')
     log.info('='*80)
     return 0
 

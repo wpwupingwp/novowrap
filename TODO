@@ -36,5 +36,5 @@
 #35. read_table()
 36. novoplasty print line number instead of reads number
 37. keep un-RC fasta
-38. no new_gb
-39. duplicate csv
+#38. no new_gb
+#39. duplicate csv

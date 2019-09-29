@@ -399,7 +399,7 @@ def assembly(arg, novoplasty):
     Assembly input file by wrapping NOVOPlasty.
     Return -1 if failed.
     """
-    log.info('='*80)
+    log.info('')
     for i in arg.input:
         test = Path(i)
         # arg.list may contains invalid file
@@ -451,6 +451,7 @@ def assembly(arg, novoplasty):
     for seed in seeds:
         log.info(f'Use {seed.stem} as seed.')
         config_file = config(seed, arg)
+        log.info('Call NOVOPlasty.')
         run(f'perl {novoplasty} -c {config_file}', shell=True)
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(
@@ -463,6 +464,7 @@ def assembly(arg, novoplasty):
         log.info('Validate assembly results.')
         # for i in (*circularized, *options, *merged):
         for i in (*circularized, *options):
+            log.info('')
             arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {arg.out}'
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
@@ -475,7 +477,7 @@ def assembly(arg, novoplasty):
             log.warning('No records passed validation.')
         if not success:
             log.critical(f'Assembly with {seed.stem} failed.')
-    log.info('='*80)
+    log.info('')
     return 0
 
 
@@ -522,7 +524,6 @@ def main():
             arg.input, arg.taxon = i
             assembly(arg, novoplasty)
     log.info('Bye.')
-    log.info('-'*80)
     return
 
 

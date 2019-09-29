@@ -403,8 +403,8 @@ def validate_main(arg_str=None):
     output_info_exist = output_info.exists()
     with open(output_info, 'a') as out:
         if not output_info_exist:
-            out.write('Raw,Success,Skip,Seed,gb,fasta,Length,LSC,IRa,SSC,IRb,'
-                      'Missing,Incomplete,RC_region,Figure,Figure_after,'
+            out.write('fasta,Success,Seed,Length,LSC,IRa,SSC,IRb,'
+                      'Missing,Incomplete,RC_region,'
                       'Reference,Taxonomy,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n'
                       )
         for record in divided:
@@ -417,11 +417,9 @@ def validate_main(arg_str=None):
                 simple['fasta'] = simple['fasta'].name
                 simple['figure'] = simple['figure'].name
                 simple['figure_after'] = simple['figure_after'].name
-            record = record.name
-            out.write('{},'.format(record))
-            out.write('{success},{skip},{seed},{gb},{fasta},{length},{LSC},'
-                      '{IRa},{SSC},{IRb},{missing},{incomplete},{rc},{figure},'
-                      '{figure_after},'.format(**simple))
+            out.write('{fasta},{success},{seed},{length},{LSC},'
+                      '{IRa},{SSC},{IRb},{missing},{incomplete},'
+                      '{rc},'.format(**simple))
             out.write('{},{},{},{},{},{},{}\n'.format(
                 ref_fasta.name, arg.taxon, ref_len, len(ref_regions['LSC']),
                 len(ref_regions['IRa']), len(ref_regions['SSC']),

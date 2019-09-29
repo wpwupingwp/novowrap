@@ -243,7 +243,7 @@ def get_seed(ref, output, gene):
     genes = gene.split(',')
     gb = SeqIO.read(ref, 'gb')
     accession = gb.annotations['accessions'][0]
-    organism = gb.annotations['organism'][0].replace(' ', '_')
+    organism = gb.annotations['organism'].replace(' ', '_')
     for feature in gb.features:
         if feature.type == 'gene' and 'gene' in feature.qualifiers:
             gene_name = feature.qualifiers['gene'][0]

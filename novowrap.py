@@ -379,8 +379,8 @@ def organize_out(pwd, out, seed):
         contigs.append(i)
     merged = []
     for i in pwd.glob('Merged_contigs_*'):
+        i = move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         fasta = txt_to_fasta(i)
-        move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         fasta = move(fasta, out/'Raw'/fasta.name)
         merged.append(fasta)
     options = []

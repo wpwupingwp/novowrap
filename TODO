@@ -31,7 +31,7 @@
 #30. tmp/result/seed folders
 #31. split main to make arg.list work
 #32. reads length/number
-33. divide 1?
+#33. divide 1?
 #34. out
 #35. read_table()
 36. novoplasty print line number instead of reads number

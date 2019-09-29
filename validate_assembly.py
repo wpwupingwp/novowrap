@@ -73,7 +73,10 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
     for idx, record in enumerate(options):
         skip = False
         r_gb = r_fasta = ''
-        filename = output / _insert_suffix(fasta, f'.{idx}').name
+        if len(options) > 1:
+            filename = output / _insert_suffix(fasta, f'.{idx+1}').name
+        else:
+            filename = output / fasta.name
         divided[filename] = dict((key, '') for key in keys)
         record_len = len(record)
         record_len_diff = (record_len/ref_len) - 1

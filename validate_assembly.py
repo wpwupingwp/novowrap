@@ -413,10 +413,7 @@ def validate_main(arg_str=None):
             # add seed info
             simple['seed'] = str(arg.seed)
             if simple['gb'] != '':
-                simple['gb'] = simple['gb'].name
                 simple['fasta'] = simple['fasta'].name
-                simple['figure'] = simple['figure'].name
-                simple['figure_after'] = simple['figure_after'].name
             out.write('{fasta},{success},{seed},{length},{LSC},'
                       '{IRa},{SSC},{IRb},{missing},{incomplete},'
                       '{rc},'.format(**simple))

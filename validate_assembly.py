@@ -366,6 +366,9 @@ def validate_main(arg_str=None):
         count, to_rc, strand_info, bad_region = validate_regions(
             option_len, option_regions, compare_result, arg.perc_identity)
         divided[i].update(strand_info)
+        if bad_region:
+            # skip sequences with bad region
+            continue
         if to_rc is not None:
             log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
             rc_fasta = rc_regions(i_gb, to_rc)
@@ -394,9 +397,7 @@ def validate_main(arg_str=None):
             if to_rc_2 is None:
                 success = True
         else:
-            print()
-            i_fasta = move(i_fasta, output/i_fasta.name)
-            i_gb = move(i_fasta, output/i_gb.name)
+            i_fasta = move(i_fasta, i_fasta.with_suffix('.fasta'))
             success = True
         divided[i]['success'] = success
 
@@ -422,7 +423,6 @@ def validate_main(arg_str=None):
             simple = divided[record]
             # add seed info
             simple['seed'] = str(arg.seed)
-            print()
             simple['fasta'] = simple['fasta'].name
             out.write('{fasta},{success},{seed},{length},{LSC},'
                       '{IRa},{SSC},{IRb},{missing},{incomplete},'

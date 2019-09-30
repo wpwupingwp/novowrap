@@ -29,10 +29,10 @@ def move(source, dest, copy=False):
     Return:
         dest(Path): new path
     """
-    if not copy:
-        source.rename(dest)
+    if source.absolute() == dest.absolute():
         return Path(dest)
-    elif source.absolute() == dest.absolute():
+    elif not copy:
+        source.rename(dest)
         return Path(dest)
     else:
         with open(source, 'rb') as a, open(dest, 'wb') as b:

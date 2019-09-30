@@ -488,8 +488,7 @@ def rc_regions(gb, choice='whole'):
         choice(str): region to be processed, must be in 'LSC', 'IRa', 'SSC',
         'IRb', 'whole'.
     Return:
-        n_gb(Path): gb file after reverse-complement and rotate
-        n_fasta(Path): fasta file after reverse-complement and rotate
+        new_file(Path): reverse-complemented fasta
     """
     # choices = ('LSC', 'IRa', 'SSC', 'IRb', 'whole')
     raw = SeqIO.read(gb, 'gb')
@@ -506,14 +505,11 @@ def rc_regions(gb, choice='whole'):
     else:
         new_seq = rc(raw.seq)
     new_name = '_RC_' + raw.name
-    new_file = gb.with_name(gb.stem+'_RC'+'.fasta')
+    new_file = gb.with_suffix('.rc.rc')
     with open(new_file, 'w') as out:
         out.write(f'>{new_name}\n')
         out.write(f'{new_seq}\n')
-    # hide rotate log
-    n_gb, n_fasta = rotate_seq(new_file)
-    new_file.unlink()
-    return n_gb, n_fasta
+    return new_file
 
 
 def parse_args():

@@ -151,26 +151,28 @@ def get_alpha(old):
     return alpha
 
 
-def draw(title, ref_regions, option_regions, data):
+def draw(ref_gb, seq_gb, data):
     """
     Draw figure.
     Args:
-        title(str): figure title
-        ref_regions(dict): reference region information
-        option_regions(dict): option sequence's region information
+        ref_gb(Path): reference genbank file
+        seq_gb(Path): sequence genbank file
         data(list): BLAST result
     Return:
         pdf(Path): figure file
     """
+    ref_regions = get_regions(ref_gb)
+    seq_regions = get_regions(seq_gb)
+    title = f'{seq_gb.stem} and {ref_gb.stem}'
     ignore_offset = len(ref_regions['IRa'])*2 + len(ref_regions['SSC'])
     plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
-    plt.title(f"Validation of {title.replace('|', ' and ')}", pad=10)
+    plt.title(f'Validation of {title}', pad=10)
     plt.xlabel('Base')
     for key, value in ref_regions.items():
         plt.plot([value.location.start, value.location.end], [0.8, 0.8],
                  marker='+', label=key, linewidth=10)
-    for key, value in option_regions.items():
+    for key, value in seq_regions.items():
         plt.plot([value.location.end, value.location.end], [0.93, 0.97],
                  'k--', linewidth=2, alpha=0.3)
         plt.plot([value.location.end, value.location.end], [0.63, 0.67],
@@ -196,11 +198,11 @@ def draw(title, ref_regions, option_regions, data):
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
             plt.fill([send, sstart, qend, qstart], [0.8, 0.8, 0.65, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
-    pdf = Path(title.replace('|', '-'))
-    if pdf.suffix.isdigit:
-        pdf = Path(str(pdf)+'.pdf')
-    else:
-        pdf = pdf.with_suffix('.pdf')
+    pdf = seq_gb.with_name(seq_gb.stem+'.pdf')
+    # if pdf.suffix.isdigit:
+    #     pdf = Path(str(pdf)+'.pdf')
+    # else:
+    #     pdf = pdf.with_suffix('.pdf')
     plt.savefig(pdf)
     plt.close()
     return pdf
@@ -311,15 +313,13 @@ def validate_main(arg_str=None):
         fmt = 'gb'
     log.debug(f'Use {output} as output folder.')
     ref_len = len(SeqIO.read(ref_gb, fmt))
-    new_ref_gb, ref_fasta = rotate_seq(ref_gb)
-    if new_ref_gb is None:
+    r_ref_gb, r_ref_fasta = rotate_seq(ref_gb)
+    ref_regions = get_regions(r_ref_gb)
+    if r_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
         return -1
-    # new_ref_gb = move(new_ref_gb, tmp/new_ref_gb.name)
-    # ref_fasta = move(ref_fasta, tmp/ref_fasta.name)
-    ref_regions = get_regions(new_ref_gb)
     divided = divide_records(arg.input, output, ref_len, arg.len_diff)
     for i in divided:
         success = False
@@ -333,15 +333,13 @@ def validate_main(arg_str=None):
         # add regions info
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])
-        compare_result = compare(i_fasta, ref_fasta, arg.perc_identity)
+        compare_result = compare(i_fasta, r_ref_fasta, arg.perc_identity)
         if compare_result is None:
             log.critical('Cannot run BLAST.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
             return -1
-        fig_title = f'{i_fasta.stem}|{ref_gb.stem}'
-        pdf = draw(fig_title, ref_regions, option_regions, compare_result)
-        pdf = move(pdf, output/pdf)
-        divided[i]['figure'] = pdf
+        pdf = draw(r_ref_gb, i_gb, compare_result)
+        pdf = move(pdf, output/pdf.name)
         log.info('Detecting reverse complement region.')
         option_len = divided[i]['length']
         count, to_rc = validate_regions(option_len, option_regions,
@@ -365,23 +363,26 @@ def validate_main(arg_str=None):
                 pass
         if to_rc is not None:
             log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
-            rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
+            rc_fasta = rc_regions(i_gb, to_rc)
             # clean old files
-            i_fasta = move(i_fasta, (tmp/(i_fasta.stem+'-noRC.fasta')).name)
-            i_gb = move(i_fasta, (tmp/(i_gb.stem+'-noRC.gb')).name)
-            rc_gb = move(rc_gb, rc_gb.with_name(rc_gb.stem+'_RC.gb').name)
-            rc_fasta = move(rc_fasta, rc_fasta.with_name(
-                rc_gb.stem+'_RC.fasta').name)
-            new_compare_result = compare(rc_fasta, ref_fasta,
+            i_fasta = move(i_fasta, tmp/(i_fasta.with_name(
+                i_fasta.stem+'-noRC.fasta')).name)
+            i_gb = move(i_gb, tmp/(i_gb.with_name(i_gb.stem+'-noRC.gb')).name)
+            rc_fasta = move(rc_fasta, rc_fasta.with_suffix(''))
+            r_rc_gb, r_rc_fasta = rotate_seq(rc_fasta)
+            rc_fasta.unlink()
+            r_rc_gb = move(r_rc_gb, output/r_rc_gb.with_name(
+                r_rc_gb.stem+'_RC.gb').name)
+            r_rc_fasta = move(r_rc_fasta, output/r_rc_fasta.with_name(
+                r_rc_fasta.stem+'_RC.fasta').name)
+            new_compare_result = compare(r_rc_fasta, r_ref_fasta,
                                          arg.perc_identity)
-            new_regions = get_regions(rc_gb)
-            fig_title = f'_RC_{rc_fasta.stem}-{ref_gb.stem}'
-            pdf = draw(fig_title, ref_regions, new_regions, new_compare_result)
-            pdf = move(pdf, output/pdf)
-            divided[i]['figure_after'] = pdf
+            pdf = draw(r_ref_gb, r_rc_gb, new_compare_result)
+            pdf = move(pdf, output/pdf.name)
             divided[i]['rc'] = to_rc
-            divided[i]['gb'] = rc_gb
-            divided[i]['fasta'] = rc_fasta
+            divided[i]['gb'] = r_rc_gb
+            divided[i]['fasta'] = r_rc_fasta
+            new_regions = get_regions(r_rc_gb)
             for _ in new_regions:
                 divided[i][_] = len(new_regions[_])
             # validate again
@@ -391,7 +392,9 @@ def validate_main(arg_str=None):
             if to_rc_2 is None:
                 success = True
         else:
-            divided[i]['figure_after'] = divided[i]['figure']
+            print('asdfasdfasdf')
+            i_fasta = move(i_fasta, output/i_fasta.name)
+            i_gb = move(i_fasta, output/i_gb.name)
         divided[i]['success'] = success
 
     validated = []
@@ -422,7 +425,7 @@ def validate_main(arg_str=None):
                       '{IRa},{SSC},{IRb},{missing},{incomplete},'
                       '{rc},'.format(**simple))
             out.write('{},{},{},{},{},{},{}\n'.format(
-                ref_fasta.name, arg.taxon, ref_len, len(ref_regions['LSC']),
+                r_ref_fasta.name, arg.taxon, ref_len, len(ref_regions['LSC']),
                 len(ref_regions['IRa']), len(ref_regions['SSC']),
                 len(ref_regions['IRb'])))
     log.info(f'Validation result was written into {output_info}')

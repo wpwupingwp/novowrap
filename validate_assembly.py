@@ -219,9 +219,11 @@ def validate_regions(length, regions, compare, perc_identity=0.7):
     Returns:
         count(dict): count information
         to_rc(str or None): regions need to reverse-complement
+        strand_info(dict): region's strand information
     """
     count = {}
     to_rc = None
+    bad_region = False
     plus = np.zeros(length, dtype=bool)
     minus = np.zeros(length, dtype=bool)
     for region in regions:
@@ -266,7 +268,25 @@ def validate_regions(length, regions, compare, perc_identity=0.7):
         to_rc = 'LSC'
     elif count['SSC']['strand'] == 'minus':
         to_rc = 'SSC'
-    return count, to_rc
+    strand_info = {}
+    for rgn in count:
+        if count[rgn]['strand'] == 'missing':
+            if strand_info['missing'] == '':
+                strand_info['missing'] = rgn
+            else:
+                strand_info['missing'] += f'-{rgn}'
+            log.critical(f'Region {rgn} is missing.')
+            bad_region = True
+        elif count[rgn]['strand'] == 'incomplete':
+            if strand_info['incomplete'] == '':
+                strand_info['incomplete'] = rgn
+            else:
+                strand_info['incomplete'] += f'-{rgn}'
+            log.critical(f'Region {rgn} is incomplete.')
+            bad_region = True
+        else:
+            pass
+    return count, to_rc, strand_info, bad_region
 
 
 def validate_main(arg_str=None):
@@ -342,25 +362,9 @@ def validate_main(arg_str=None):
         pdf = move(pdf, output/pdf.name)
         log.info('Detecting reverse complement region.')
         option_len = divided[i]['length']
-        count, to_rc = validate_regions(option_len, option_regions,
-                                        compare_result, arg.perc_identity)
-        for rgn in count:
-            if count[rgn]['strand'] == 'missing':
-                if divided[i]['missing'] == '':
-                    divided[i]['missing'] = rgn
-                else:
-                    divided[i]['missing'] += f'-{rgn}'
-                log.critical(f'Region {rgn} of {i_fasta.name} is missing.')
-                success = False
-            elif count[rgn]['strand'] == 'incomplete':
-                if divided[i]['incomplete'] == '':
-                    divided[i]['incomplete'] = rgn
-                else:
-                    divided[i]['incomplete'] += f'-{rgn}'
-                log.critical(f'Region {rgn} of {i_fasta.name} is incomplete.')
-                success = False
-            else:
-                pass
+        count, to_rc, strand_info, bad_region = validate_regions(
+            option_len, option_regions, compare_result, arg.perc_identity)
+        divided[i].update(strand_info)
         if to_rc is not None:
             log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
             rc_fasta = rc_regions(i_gb, to_rc)
@@ -384,15 +388,13 @@ def validate_main(arg_str=None):
             for _ in new_regions:
                 divided[i][_] = len(new_regions[_])
             # validate again
-            count_2, to_rc_2 = validate_regions(option_len, new_regions,
-                                                new_compare_result,
-                                                arg.perc_identity)
+            count_2, to_rc_2, *_ = validate_regions(
+                option_len, new_regions, new_compare_result, arg.perc_identity)
             if to_rc_2 is None:
                 success = True
         else:
-            print(i_fasta)
+            print()
             i_fasta = move(i_fasta, output/i_fasta.name)
-            print(i_fasta)
             i_gb = move(i_fasta, output/i_gb.name)
             success = True
         divided[i]['success'] = success

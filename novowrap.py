@@ -451,7 +451,7 @@ def assembly(arg, novoplasty):
     for seed in seeds:
         log.info(f'Use {seed.stem} as seed.')
         config_file = config(seed, arg)
-        log.info('Call NOVOPlasty.')
+        log.info('Call NOVOPlasty...')
         run(f'perl {novoplasty} -c {config_file}', shell=True)
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(

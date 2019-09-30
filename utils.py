@@ -506,7 +506,7 @@ def rc_regions(gb, choice='whole'):
     else:
         new_seq = rc(raw.seq)
     new_name = '_RC_' + raw.name
-    new_file = Path(gb.parent, '_RC_' + gb.stem + '.fasta')
+    new_file = gb.with_name(gb.stem+'_RC'+'.fasta')
     with open(new_file, 'w') as out:
         out.write(f'>{new_name}\n')
         out.write(f'{new_seq}\n')

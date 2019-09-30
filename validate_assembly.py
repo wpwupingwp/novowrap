@@ -92,9 +92,13 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
             if r_gb is not None:
                 divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
                                           'length': record_len})
+                move(filename,
+                     output/'Temp'/filename.with_suffix('.raw').name)
+                r_fasta = r_fasta.with_suffix('.fasta')
             else:
                 skip = 'structure_unusual'
         divided[filename]['skip'] = skip
+        log.debug(f'{skip}')
     return divided
 
 
@@ -363,11 +367,11 @@ def validate_main(arg_str=None):
             log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
             rc_gb, rc_fasta = rc_regions(i_gb, to_rc)
             # clean old files
-            i_fasta = move(i_fasta, tmp/(i_fasta.name+'.tmp'))
-            i_gb = move(i_gb, tmp/(i_gb.name+'.tmp'))
-            rc_gb = move(rc_gb, rc_gb.parent/rc_gb.name.replace('_RC_', ''))
-            rc_fasta = move(rc_fasta, rc_fasta.parent/rc_fasta.name.replace(
-                '_RC_', ''))
+            i_fasta = move(i_fasta, (tmp/(i_fasta.stem+'-noRC.fasta')).name)
+            i_gb = move(i_fasta, (tmp/(i_gb.stem+'-noRC.gb')).name)
+            rc_gb = move(rc_gb, rc_gb.with_name(rc_gb.stem+'_RC.gb').name)
+            rc_fasta = move(rc_fasta, rc_fasta.with_name(
+                rc_gb.stem+'_RC.fasta').name)
             new_compare_result = compare(rc_fasta, ref_fasta,
                                          arg.perc_identity)
             new_regions = get_regions(rc_gb)

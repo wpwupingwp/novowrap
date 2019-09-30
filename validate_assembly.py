@@ -379,8 +379,6 @@ def validate_main(arg_str=None):
                                          arg.perc_identity)
             pdf = draw(r_ref_gb, r_rc_gb, new_compare_result)
             pdf = move(pdf, output/pdf.name)
-            divided[i]['rc'] = to_rc
-            divided[i]['gb'] = r_rc_gb
             divided[i]['fasta'] = r_rc_fasta
             new_regions = get_regions(r_rc_gb)
             for _ in new_regions:
@@ -392,9 +390,11 @@ def validate_main(arg_str=None):
             if to_rc_2 is None:
                 success = True
         else:
-            print('asdfasdfasdf')
+            print(i_fasta)
             i_fasta = move(i_fasta, output/i_fasta.name)
+            print(i_fasta)
             i_gb = move(i_fasta, output/i_gb.name)
+            success = True
         divided[i]['success'] = success
 
     validated = []

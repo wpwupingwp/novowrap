@@ -83,6 +83,7 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
         if abs(record_len_diff) > len_diff:
             log.warning(f'Skip NO.{idx+1} record ({record_len} bp, '
                         f'length difference {record_len_diff:.2%}).')
+            divided[filename]['fasta'] = filename
             divided[filename]['length'] = record_len
             divided[filename]['length_diff'] = record_len_diff
             skip = 'undersize' if record_len_diff < 0 else 'oversize'
@@ -421,13 +422,13 @@ def validate_main(arg_str=None):
             simple = divided[record]
             # add seed info
             simple['seed'] = str(arg.seed)
-            if simple['gb'] != '':
-                simple['fasta'] = simple['fasta'].name
+            print()
+            simple['fasta'] = simple['fasta'].name
             out.write('{fasta},{success},{seed},{length},{LSC},'
                       '{IRa},{SSC},{IRb},{missing},{incomplete},'
                       '{rc},'.format(**simple))
             out.write('{},{},{},{},{},{},{}\n'.format(
-                r_ref_fasta.name, arg.taxon, ref_len, len(ref_regions['LSC']),
+                r_ref_fasta.stem, arg.taxon, ref_len, len(ref_regions['LSC']),
                 len(ref_regions['IRa']), len(ref_regions['SSC']),
                 len(ref_regions['IRb'])))
     log.info(f'Validation result was written into {output_info}')

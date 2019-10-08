@@ -272,14 +272,14 @@ def validate_regions(length, regions, compare, perc_identity=0.7):
     strand_info = {}
     for rgn in count:
         if count[rgn]['strand'] == 'missing':
-            if strand_info['missing'] == '':
+            if strand_info.get('missing', '') == '':
                 strand_info['missing'] = rgn
             else:
                 strand_info['missing'] += f'-{rgn}'
             log.critical(f'Region {rgn} is missing.')
             bad_region = True
         elif count[rgn]['strand'] == 'incomplete':
-            if strand_info['incomplete'] == '':
+            if strand_info.get('incomplete', '') == '':
                 strand_info['incomplete'] = rgn
             else:
                 strand_info['incomplete'] += f'-{rgn}'

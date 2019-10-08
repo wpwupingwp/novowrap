@@ -335,6 +335,8 @@ def validate_main(arg_str=None):
     log.debug(f'Use {output} as output folder.')
     ref_len = len(SeqIO.read(ref_gb, fmt))
     r_ref_gb, r_ref_fasta = rotate_seq(ref_gb)
+    if r_ref_gb is None:
+        return -1
     ref_regions = get_regions(r_ref_gb)
     if r_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')

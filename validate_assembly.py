@@ -80,12 +80,12 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
         divided[filename] = dict((key, '') for key in keys)
         record_len = len(record)
         record_len_diff = (record_len/ref_len) - 1
+        divided[filename]['fasta'] = filename
+        divided[filename]['length'] = record_len
+        divided[filename]['length_diff'] = record_len_diff
         if abs(record_len_diff) > len_diff:
             log.warning(f'Skip NO.{idx+1} record ({record_len} bp, '
                         f'length difference {record_len_diff:.2%}).')
-            divided[filename]['fasta'] = filename
-            divided[filename]['length'] = record_len
-            divided[filename]['length_diff'] = record_len_diff
             skip = 'undersize' if record_len_diff < 0 else 'oversize'
         SeqIO.write(record, filename, 'fasta')
         if not skip:
@@ -380,6 +380,8 @@ def validate_main(arg_str=None):
             i_gb = move(i_gb, tmp/(i_gb.with_name(i_gb.stem+'-noRC.gb')).name)
             rc_fasta = move(rc_fasta, rc_fasta.with_suffix(''))
             r_rc_gb, r_rc_fasta = rotate_seq(rc_fasta)
+            if r_rc_gb is None:
+                continue
             rc_fasta.unlink()
             r_rc_gb = move(r_rc_gb, output/r_rc_gb.with_name(
                 r_rc_gb.stem+'_RC.gb').name)

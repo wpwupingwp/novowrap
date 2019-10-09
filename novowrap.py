@@ -73,7 +73,7 @@ def parse_args():
                         default='illumina', help='sequencing platform')
     inputs.add_argument('-insert_size',
                         help='insert size of sequencing library')
-    inputs.add_argument('-seed', default='rbcL,psaB,psaC,rrn23,rrn23s',
+    inputs.add_argument('-seed', default='rbcL,psaB,psaC,rrn23',
                         help='seed gene, separated by comma')
     inputs.add_argument('-seed_file',
                         help='seed file, will overwrite "-seed" option')
@@ -247,8 +247,7 @@ def get_seed(ref, output, gene):
     for feature in gb.features:
         if feature.type == 'gene' and 'gene' in feature.qualifiers:
             gene_name = feature.qualifiers['gene'][0]
-            # for rrn23S
-            if gene_name in genes or gene_name.lower() in genes:
+            if gene_name in genes:
                 seq = feature.extract(gb)
                 seed_file = output / f'{gene_name}.seed'
                 with open(seed_file, 'w') as out:

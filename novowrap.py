@@ -439,9 +439,13 @@ def assembly(arg, novoplasty):
             ref = move(ref, arg.tmp/ref)
     # get seed
     seeds = []
+    ordered_seeds = get_seed(ref, arg.raw, arg.seed)
     if arg.seed_file is not None:
         seeds.append(Path(arg.seed_file))
-    seeds.extend(get_seed(ref, arg.raw, arg.seed))
+        # only add whole.seed
+        seeds.append(ordered_seeds[-1])
+    else:
+        seeds.extend(ordered_seeds)
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')
         return -1

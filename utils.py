@@ -42,9 +42,8 @@ def move(source, dest, copy=False):
 
 def get_full_taxon(taxon):
     """
-    Get full lineage of given taxon
-    Return lineage list, only contains Kingdom, Phylum, Class, Order, Family,
-    Genus, Species.
+    Get full lineage of given taxon, return lineage list.
+    Not only contains Kingdom, Phylum, Class, Order, Family, Genus, Species.
     Arg:
         taxon(str): given taxon name, could be common name, use quotation mark
         if necessary
@@ -110,7 +109,6 @@ def get_ref(taxon):
         taxon(str): given taxon name
     Return:
         ref(Path): gb file
-        accession(str): accession number of the record
     """
     lineage = get_full_taxon(taxon)
     if lineage is None:

@@ -19,12 +19,12 @@
 # 18. add tabacum's cp as default
 #19. if cannot find close related species, use whole cp as novoplasy's author recommended
 #20. novoplasty didn't use GPL, download it when run
-21. better name, novowrap only for cp
+#21. better name, novowrap only for cp
 22. what special for cp
 #23. hide warning from matplotlib
 #24. simple filename
 #25. table for batch
-26. auto correct table's taxon
+#26. auto correct table's taxon
 #27. merge csv
 28. choose new seed
 #29. LSC has rbcL, matK, psaB, remove matK

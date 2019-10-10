@@ -72,33 +72,35 @@ def get_full_taxon(taxon):
                 return None
     taxon_id = search['IdList'][0]
     record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
-    names = [i['ScientificName'] for i in record['LineageEx']]
-    full_lineage = {i['Rank']: i['ScientificName'] for i in
-                    record['LineageEx']}
-    full_lineage[record['Rank']] = record['ScientificName']
-    if 'kingdom' not in full_lineage:
-        full_lineage['kingdom'] = full_lineage['superkingdom']
-    if ('class' not in full_lineage and 'order' in full_lineage):
-        last_phyta = ''
-        for i in names[::-1]:
-            if i.endswith('phyta'):
-                last_phyta = i
-                break
-        # virus do not have phylum?
-        phylum = full_lineage.get('phylum', None)
-        if last_phyta != phylum:
-            full_lineage['class'] = last_phyta
-    target = ['species', 'genus', 'family', 'order', 'class', 'phylum',
-              'kingdom']
-    lineage = []
-    for i in target:
-        lineage.append([i, full_lineage.get(i, '')])
-    # if ' ' in lineage['species']:
-    #     lineage['species'] = lineage['species'].split(' ')[-1]
-    # species name contains genus
-    # if lineage[-1] != '' and lineage[-2] != '':
-    #     lineage[-1] = f'"{lineage[-2]} {lineage[-1]}"'
-    return lineage
+    # names = [i['ScientificName'] for i in record['LineageEx']]
+    full_lineage = [(i['Rank'], i['ScientificName']) for i in
+                    record['LineageEx']]
+    full_lineage.append((record['Rank'], record['ScientificName']))
+    return reversed(full_lineage)
+    # full_lineage[record['Rank']] = record['ScientificName']
+    # if 'kingdom' not in full_lineage:
+    #     full_lineage['kingdom'] = full_lineage['superkingdom']
+    # if ('class' not in full_lineage and 'order' in full_lineage):
+    #     last_phyta = ''
+    #     for i in names[::-1]:
+    #         if i.endswith('phyta'):
+    #             last_phyta = i
+    #             break
+    #     # virus do not have phylum?
+    #     phylum = full_lineage.get('phylum', None)
+    #     if last_phyta != phylum:
+    #         full_lineage['class'] = last_phyta
+    # target = ['species', 'genus', 'family', 'order', 'class', 'phylum',
+    #           'kingdom']
+    # lineage = []
+    # for i in target:
+    #     lineage.append([i, full_lineage.get(i, '')])
+    # # if ' ' in lineage['species']:
+    # #     lineage['species'] = lineage['species'].split(' ')[-1]
+    # # species name contains genus
+    # # if lineage[-1] != '' and lineage[-2] != '':
+    # #     lineage[-1] = f'"{lineage[-2]} {lineage[-1]}"'
+    # return lineage
 
 
 def get_ref(taxon):
@@ -120,13 +122,13 @@ def get_ref(taxon):
         rank, taxon_name = taxon
         if taxon_name == '':
             continue
-        if rank == 'class':
-            log.critical('Cannot find close related reference.')
+        if rank == 'order':
+            log.critical('The taxonomy of the reference is not close-related.')
             log.critical('The result may be incorrect.')
         # use underscore to replace space
-        if ' ' in taxon_name:
-            taxon_name = taxon_name.strip('"')
-            taxon_name = taxon_name.replace(' ', '_')
+        # if ' ' in taxon_name:
+        #     taxon_name = taxon_name.strip('"')
+        taxon_name = taxon_name.replace(' ', '_')
         # Entrez has limitation on query frenquency (3 times per second)
         # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
         sleep(0.5)
@@ -148,7 +150,14 @@ def get_ref(taxon):
                                 retmode='text', retmax=1)
         with open(ref, 'w') as out:
             out.write(content.read())
-        return ref
+        r_gb, r_fasta = rotate_seq(ref)
+        if r_gb is None:
+            continue
+        else:
+            r_gb.unlink()
+            r_fasta.unlink()
+            return ref
+    return None
 
 
 def blast(query, target, perc_identity=70):

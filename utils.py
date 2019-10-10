@@ -60,7 +60,9 @@ def get_full_taxon(taxon):
     search = Entrez.read(Entrez.esearch(db='taxonomy', term=f'"{name}"'))
     if search['Count'] == '0':
         if ' ' not in name:
-            log.critical(f'Cannot find {name} in NCBI Taxonomy.')
+            log.critical(f'Cannot find {name} in NCBI Taxonomy database.')
+            log.warning("Please check the taxon name's spell or the Internet "
+                        "connection or NCBI server's status.")
             return None
         if ' ' in name:
             name = split[0]
@@ -77,30 +79,6 @@ def get_full_taxon(taxon):
                     record['LineageEx']]
     full_lineage.append((record['Rank'], record['ScientificName']))
     return reversed(full_lineage)
-    # full_lineage[record['Rank']] = record['ScientificName']
-    # if 'kingdom' not in full_lineage:
-    #     full_lineage['kingdom'] = full_lineage['superkingdom']
-    # if ('class' not in full_lineage and 'order' in full_lineage):
-    #     last_phyta = ''
-    #     for i in names[::-1]:
-    #         if i.endswith('phyta'):
-    #             last_phyta = i
-    #             break
-    #     # virus do not have phylum?
-    #     phylum = full_lineage.get('phylum', None)
-    #     if last_phyta != phylum:
-    #         full_lineage['class'] = last_phyta
-    # target = ['species', 'genus', 'family', 'order', 'class', 'phylum',
-    #           'kingdom']
-    # lineage = []
-    # for i in target:
-    #     lineage.append([i, full_lineage.get(i, '')])
-    # # if ' ' in lineage['species']:
-    # #     lineage['species'] = lineage['species'].split(' ')[-1]
-    # # species name contains genus
-    # # if lineage[-1] != '' and lineage[-2] != '':
-    # #     lineage[-1] = f'"{lineage[-2]} {lineage[-1]}"'
-    # return lineage
 
 
 def get_ref(taxon):
@@ -112,11 +90,9 @@ def get_ref(taxon):
     Return:
         ref(Path): gb file
     """
+    log.info(f'Try to get reference of {taxon} from NCBI Genbank.')
     lineage = get_full_taxon(taxon)
     if lineage is None:
-        log.warning(f'Cannot find {taxon} in NCBI taxonomy database.')
-        log.warning("Please check the taxon name's spell or the Internet "
-                    "connection or NCBI server's status.")
         return None
     for taxon in lineage:
         rank, taxon_name = taxon
@@ -125,9 +101,6 @@ def get_ref(taxon):
         if rank == 'order':
             log.critical('The taxonomy of the reference is not close-related.')
             log.critical('The result may be incorrect.')
-        # use underscore to replace space
-        # if ' ' in taxon_name:
-        #     taxon_name = taxon_name.strip('"')
         taxon_name = taxon_name.replace(' ', '_')
         # Entrez has limitation on query frenquency (3 times per second)
         # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
@@ -156,6 +129,7 @@ def get_ref(taxon):
         else:
             r_gb.unlink()
             r_fasta.unlink()
+            log.info(f'Got {ref.name} as reference.')
             return ref
     return None
 

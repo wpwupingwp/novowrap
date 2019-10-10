@@ -430,7 +430,7 @@ def assembly(arg, novoplasty):
         ref = move(ref, arg.tmp/ref, copy=True)
     else:
         log.info('Try to get reference from NCBI Genbank.')
-        ref = get_ref(arg.taxon)
+        ref, arg.taxon = get_ref(arg.taxon)
         if ref is None:
             log.critical('Cannot get reference.')
             return -1
@@ -468,7 +468,8 @@ def assembly(arg, novoplasty):
         # for i in (*circularized, *options, *merged):
         for i in (*circularized, *options):
             log.info('')
-            arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {arg.out}'
+            arg_str = (f'{i} -ref {ref} -seed {seed.stem} -o {arg.out} '
+                       f'-taxon {arg.taxon}')
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
             if report not in csv_files:

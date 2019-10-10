@@ -89,6 +89,7 @@ def get_ref(taxon):
         taxon(str): given taxon name
     Return:
         ref(Path): gb file
+        ref_taxon(str): taxon of reference's, may not be same with given taxon
     """
     log.info(f'Try to get reference of {taxon} from NCBI Genbank.')
     lineage = get_full_taxon(taxon)
@@ -130,7 +131,7 @@ def get_ref(taxon):
             r_gb.unlink()
             r_fasta.unlink()
             log.info(f'Got {ref.name} as reference.')
-            return ref
+            return ref, taxon_name
     return None
 
 

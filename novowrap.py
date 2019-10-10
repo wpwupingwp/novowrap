@@ -468,8 +468,7 @@ def assembly(arg, novoplasty):
         # for i in (*circularized, *options, *merged):
         for i in (*circularized, *options):
             log.info('')
-            arg_str = (f'{i} -ref {ref} -seed {seed.stem} -o {arg.out} '
-                       f'-taxon {arg.taxon}')
+            arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {arg.out}'
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
             if report not in csv_files:

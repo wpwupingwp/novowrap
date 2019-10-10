@@ -417,7 +417,7 @@ def validate_main(arg_str=None):
         if not output_info_exist:
             out.write('fasta,Success,Seed,Length,LSC,IRa,SSC,IRb,'
                       'Missing,Incomplete,RC_region,'
-                      'Reference,Taxonomy,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n'
+                      'Reference,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n'
                       )
         for record in divided:
             # format is easier than f-string for dict
@@ -428,8 +428,8 @@ def validate_main(arg_str=None):
             out.write('{fasta},{success},{seed},{length},{LSC},'
                       '{IRa},{SSC},{IRb},{missing},{incomplete},'
                       '{rc},'.format(**simple))
-            out.write('{},{},{},{},{},{},{}\n'.format(
-                r_ref_fasta.stem, arg.taxon, ref_len, len(ref_regions['LSC']),
+            out.write('{},{},{},{},{},{}\n'.format(
+                r_ref_fasta.stem, ref_len, len(ref_regions['LSC']),
                 len(ref_regions['IRa']), len(ref_regions['SSC']),
                 len(ref_regions['IRb'])))
     log.info(f'Validation result was written into {output_info}')

@@ -200,10 +200,6 @@ def draw(ref_gb, seq_gb, data):
             plt.fill([send, sstart, qend, qstart], [0.8, 0.8, 0.65, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
     pdf = seq_gb.with_name(seq_gb.stem+'.pdf')
-    # if pdf.suffix.isdigit:
-    #     pdf = Path(str(pdf)+'.pdf')
-    # else:
-    #     pdf = pdf.with_suffix('.pdf')
     plt.savefig(pdf)
     plt.close()
     return pdf

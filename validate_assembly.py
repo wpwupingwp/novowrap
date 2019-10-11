@@ -303,10 +303,9 @@ def validate_main(arg_str=None):
         arg = parse_args()
     else:
         arg = parse_args(arg_str.split(' '))
-    print(arg)
     arg.input = Path(arg.input)
     if arg.out is None:
-        output = Path(arg.input.stem)
+        output = Path(arg.input.stem+'-out')
     else:
         output = Path(arg.out)
     if not output.exists():

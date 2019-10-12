@@ -203,6 +203,8 @@ def _repeat(filename, fmt):
     new_file = filename.with_suffix('.rpt')
     new_fasta = filename.with_suffix('.rpt_fasta')
     raw = SeqIO.read(filename, fmt)
+    # new = raw + raw
+    print('one and half')
     new = raw + raw
     SeqIO.write(new, new_file, fmt)
     if fmt != 'fasta':
@@ -354,6 +356,7 @@ def rotate_seq(filename, min_IR=1000, silence=True):
                 continue
             # mismatch
             location = tuple(sorted([qstart, qend, sstart, send]))
+            print(location)
             # hit across origin and repeat
             if location[-1] - location[0] > origin_len:
                 continue
@@ -364,6 +367,7 @@ def rotate_seq(filename, min_IR=1000, silence=True):
             if length < max_aln_n:
                 continue
             else:
+                print('continue')
                 max_aln_n = length
             locations.add(location)
         if not locations:

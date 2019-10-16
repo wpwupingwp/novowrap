@@ -58,6 +58,7 @@ def get_novoplasty():
         novoplasty = z.extract('NOVOPlasty-NOVOPlasty3.6/NOVOPlasty3.6.pl')
     zip_file.unlink()
     novoplasty = Path(novoplasty)
+    novoplasty = move(novoplasty, Path('.')/novoplasty.name)
     log.info(f'Got {novoplasty.stem}.')
     return novoplasty
 

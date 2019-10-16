@@ -7,7 +7,15 @@ from sys import argv
 from random import shuffle
 
 
-def lianjie(contigs):
+def link(contigs):
+    """
+    Reorder contigs by overlap.
+    Assume there is only one path to link.
+    Args:
+        contigs(list(SeqRecord)): contigs
+    Return:
+        link_info(list(blast_result)): link info of contigs
+    """
     merged = Path('tmp.merged_fasta')
     SeqIO.write(contigs, merged, 'fasta')
     blast_result = blast(merged, merged)
@@ -31,8 +39,7 @@ def lianjie(contigs):
                     print()
                     pass
             overlap.append(hit)
-    print('*'*80)
-    genome = []
+    link_info = []
     scaffold = []
     overlap_dict = {}
     # assume each seq only occurs once
@@ -68,17 +75,26 @@ def lianjie(contigs):
         else:
             scaffold.append([None, None])
         if scaffold[0][0] is None and scaffold[-1][0] is None:
-            genome.append(scaffold)
+            link_info.append(scaffold)
             try:
                 scaffold = overlap_dict.popitem()[0]
             except KeyError:
                 break
-    print('-'*80)
     # remove [None, None]
-    genome = [i[1:-1] for i in genome]
-    for i in genome:
-        print([j[0] for j in i])
-    return genome
+    link_info = [i[1:-1] for i in link_info]
+    return link_info
+
+
+def merge_contigs(contigs, link_info):
+    """
+    Use overlap information of contigs to merge them.
+    Arg:
+        contigs(list(SeqRecord)): contigs
+        link_info(list(blast_result)): link info of contigs
+    Return:
+        merged(list(SeqRecord)): list of merged sequences
+    """
+    pass
 
 
 def main():
@@ -91,9 +107,11 @@ def main():
             record.id = f'{fasta.stem}-{idx}'
             record.description = ''
             contigs.append(record)
-    lianjie(contigs)
+    link_info = link(contigs)
+    merged = merge_contigs(contigs, link_info)
+    print(merged)
     shuffle(contigs)
-    lianjie(contigs)
+    link_info = link(contigs)
 
 
 if __name__ == '__main__':

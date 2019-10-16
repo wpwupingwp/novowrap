@@ -57,6 +57,7 @@ def lianjie(contigs):
                 print(f'{upstream} was used more than once!')
                 pass
         else:
+            # [None, None] as head/tail
             scaffold = [[None, None], *scaffold]
         if down_name is None:
             pass
@@ -73,8 +74,11 @@ def lianjie(contigs):
             except KeyError:
                 break
     print('-'*80)
-    print('genome', *genome, sep='\n')
-    return scaffold
+    # remove [None, None]
+    genome = [i[1:-1] for i in genome]
+    for i in genome:
+        print([j[0] for j in i])
+    return genome
 
 
 def main():

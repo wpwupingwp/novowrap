@@ -32,13 +32,25 @@ def link(contigs):
             if pident < p_ident_min:
                 continue
             # only allow overlapped seq
-            if qend != origin_len or sstart != 1:
+            if qend != origin_len:
+                # print('qend !=origin_len', hit)
+                if origin_len - qend > ambiguous_base_n:
+                    continue
+                else:
+                    print('to be continue')
+                    continue
+            if sstrand == 'plus' and sstart != 1:
+                # consider ambiguous base or not?
                 if sstart > ambiguous_base_n:
                     continue
                 else:
-                    print()
-                    pass
+                    print('to be continue')
+                    continue
+            if sstrand == 'minus':
+                print('minus', hit)
+                continue
             overlap.append(hit)
+    print(*overlap, sep='\n')
     link_info = []
     scaffold = []
     overlap_dict = {}
@@ -99,7 +111,6 @@ def merge_contigs(contigs, link_info):
     for links in link_info:
         seq = contigs_d[links[0][0]]
         for link in links[:-1]:
-            print(len(seq))
             down = contigs_d[link[1]]
             seq += down[link[9]:]
         # tail do not have link after itself
@@ -115,16 +126,15 @@ def main():
     contigs = []
     for f in argv[1:]:
         fasta = Path(f)
-        print(fasta)
         for idx, record in enumerate(SeqIO.parse(fasta, 'fasta')):
             record.id = f'{fasta.stem}-{idx}'
             record.description = ''
             contigs.append(record)
+    # print([i.id for i in contigs])
+    shuffle(contigs)
     link_info = link(contigs)
     merged = merge_contigs(contigs, link_info)
-    print(merged)
     SeqIO.write(merged, Path(argv[1]).with_suffix('.merge'), 'fasta')
-    # shuffle(contigs)
     # link_info = link(contigs)
     # merged = merge_contigs(contigs, link_info)
     # print(merged)

@@ -94,7 +94,20 @@ def merge_contigs(contigs, link_info):
     Return:
         merged(list(SeqRecord)): list of merged sequences
     """
-    pass
+    contigs_d = {i.id: i for i in contigs}
+    merged = []
+    for links in link_info:
+        seq = contigs_d[links[0][0]]
+        for link in links[:-1]:
+            print(len(seq))
+            down = contigs_d[link[1]]
+            seq += down[link[9]:]
+        # tail do not have link after itself
+        tail_seq = contigs_d[links[-1][1]]
+        seq += tail_seq[links[-1][9]:]
+        seq.id = f'Merged_sequence {len(seq)}bp'
+        merged.append(seq)
+    return merged
 
 
 def main():
@@ -110,8 +123,11 @@ def main():
     link_info = link(contigs)
     merged = merge_contigs(contigs, link_info)
     print(merged)
-    shuffle(contigs)
-    link_info = link(contigs)
+    SeqIO.write(merged, Path(argv[1]).with_name('.merge'), 'fasta')
+    # shuffle(contigs)
+    # link_info = link(contigs)
+    # merged = merge_contigs(contigs, link_info)
+    # print(merged)
 
 
 if __name__ == '__main__':

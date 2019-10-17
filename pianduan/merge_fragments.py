@@ -123,7 +123,7 @@ def main():
     link_info = link(contigs)
     merged = merge_contigs(contigs, link_info)
     print(merged)
-    SeqIO.write(merged, Path(argv[1]).with_name('.merge'), 'fasta')
+    SeqIO.write(merged, Path(argv[1]).with_suffix('.merge'), 'fasta')
     # shuffle(contigs)
     # link_info = link(contigs)
     # merged = merge_contigs(contigs, link_info)

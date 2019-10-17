@@ -145,7 +145,7 @@ def blast(query, target, perc_identity=70):
     Return:
         blast_out(Path): blast result filename
     """
-    FMT = ('qseqid sseqid sstrand length pident gapopen qstart qend '
+    FMT = ('qseqid sseqid qseq sseq sstrand length pident gapopen qstart qend '
            'sstart send')
     blast_out = query.with_suffix('.blast')
     # use blastn -subject instead of makeblastdb
@@ -163,7 +163,7 @@ def blast(query, target, perc_identity=70):
 def parse_blast_tab(filename):
     """
     Parse BLAST result (tab format).
-    Return [qseqid, sseqid, sstrand, length, pident, gapopen,
+    Return [qseqid, sseqid, qseq sseq sstrand, length, pident, gapopen,
     qstart, qend, sstart, send]
     Arg:
         filename(Path): blast result file
@@ -182,7 +182,7 @@ def parse_blast_tab(filename):
             else:
                 line = line.strip().split('\t')
                 # last is str
-                line[3:] = [int(float(i)) for i in line[3:]]
+                line[5:] = [int(float(i)) for i in line[5:]]
                 query.append(line)
 
 
@@ -300,8 +300,6 @@ def rotate_seq(filename, min_IR=1000, silence=True):
     Return:
         success(bool): success or not
     """
-    # FMT = 'qseqid sseqid length pident gapopen qstart qend sstart
-    # send'
     if silence:
         log.setLevel(logging.CRITICAL)
     log.info(f'Rotate {filename}...')
@@ -336,8 +334,8 @@ def rotate_seq(filename, min_IR=1000, silence=True):
         else:
             p_ident_min = 100
         for hit in query:
-            (qseqid, sseqid, sstrand, length, pident, gapopen, qstart, qend,
-             sstart, send) = hit
+            (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
+             qstart, qend, sstart, send) = hit
             # name = seq.name
             # only self
             if qseqid != sseqid:
@@ -356,7 +354,6 @@ def rotate_seq(filename, min_IR=1000, silence=True):
                 continue
             # mismatch
             location = tuple(sorted([qstart, qend, sstart, send]))
-            print(location)
             # hit across origin and repeat
             if location[-1] - location[0] > origin_len:
                 continue
@@ -365,9 +362,9 @@ def rotate_seq(filename, min_IR=1000, silence=True):
                 continue
             # filter short hit
             if length < max_aln_n:
+                print('longest is IR?')
                 continue
             else:
-                print('continue')
                 max_aln_n = length
             locations.add(location)
         if not locations:

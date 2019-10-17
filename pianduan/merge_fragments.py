@@ -25,8 +25,8 @@ def link(contigs):
         origin_len = len(seq)
         p_ident_min = int((1-(ambiguous_base_n/origin_len))*100)
         for hit in query:
-            (qseqid, sseqid, sstrand, length, pident, gapopen, qstart, qend,
-             sstart, send) = hit
+            (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
+             qstart, qend, sstart, send) = hit
             if qseqid == sseqid:
                 continue
             if pident < p_ident_min:

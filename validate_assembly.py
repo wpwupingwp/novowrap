@@ -121,8 +121,8 @@ def compare(query, reference, perc_identity):
     for query in parse_blast_tab(blast_result):
         record = []
         for i in query:
-            (qseqid, sseqid, sstrand, length, pident, gapopen, qstart, qend,
-             sstart, send) = i
+            (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
+             qstart, qend, sstart, send) = i
             record.append([qstart, qend, sstart, send, sstrand, pident])
         results.append(record)
     assert len(results) == 1
@@ -321,7 +321,7 @@ def validate_main(arg_str=None):
         ref_gb = move(ref_gb, tmp/ref_gb.name, copy=True)
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')
-        ref_gb = get_ref(arg.taxon)
+        ref_gb, ref_taxon = get_ref(arg.taxon)
         if ref_gb is None:
             log.critical('Failed to get reference.')
             log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')

@@ -121,7 +121,7 @@ def compare(query, reference, perc_identity):
     for query in parse_blast_tab(blast_result):
         record = []
         for i in query:
-            (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
+            (qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen,
              qstart, qend, sstart, send) = i
             record.append([qstart, qend, sstart, send, sstrand, pident])
         results.append(record)

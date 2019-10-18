@@ -20,10 +20,12 @@ def link(contigs):
     SeqIO.write(contigs, merged, 'fasta')
     blast_result = blast(merged, merged)
     overlap = []
-    for query, seq in zip(parse_blast_tab(blast_result), contigs):
-        ambiguous_base_n = len(seq.seq.strip('ATCGatcg'))
-        origin_len = len(seq)
-        p_ident_min = int((1-(ambiguous_base_n/origin_len))*100)
+    for query in parse_blast_tab(blast_result):
+        if len(query) == 0:
+            continue
+        query_len = len(query[0][2])
+        ambiguous_base_n = len(query[0][2].strip('ATCGatcg'))
+        p_ident_min = int((1-(ambiguous_base_n/query_len))*100)
         for hit in query:
             (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
              qstart, qend, sstart, send) = hit
@@ -32,9 +34,9 @@ def link(contigs):
             if pident < p_ident_min:
                 continue
             # only allow overlapped seq
-            if qend != origin_len:
+            if qend != query_len:
                 # print('qend !=origin_len', hit)
-                if origin_len - qend > ambiguous_base_n:
+                if query_len - qend > ambiguous_base_n:
                     continue
                 else:
                     print('to be continue')
@@ -46,15 +48,19 @@ def link(contigs):
                 else:
                     print('to be continue')
                     continue
-            if sstrand == 'minus':
-                print('minus', hit)
-                continue
+            if sstrand == 'minus' and sstart != len(sseq):
+                print(sstart, len(sseq), qseqid, sseqid)
+                if sstart + ambiguous_base_n < len(sseq):
+                    continue
+                else:
+                    print('to be continue')
+                    continue
             overlap.append(hit)
-    print(*overlap, sep='\n')
     link_info = []
     scaffold = []
     overlap_dict = {}
     # assume each seq only occurs once
+    print([i[:2] for i in overlap])
     overlap_dict = {i[0]: i for i in overlap}
     up_dict = {i[0]: i for i in overlap}
     down_dict = {i[1]: i for i in overlap}

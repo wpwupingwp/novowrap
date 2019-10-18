@@ -20,47 +20,41 @@ def link(contigs):
     SeqIO.write(contigs, merged, 'fasta')
     blast_result = blast(merged, merged)
     overlap = []
-    for query in parse_blast_tab(blast_result):
+    for query, sequence in zip(parse_blast_tab(blast_result), contigs):
         if len(query) == 0:
             continue
-        query_len = len(query[0][2])
-        ambiguous_base_n = len(query[0][2].strip('ATCGatcg'))
-        p_ident_min = int((1-(ambiguous_base_n/query_len))*100)
+        ambiguous_base_n = len(sequence.seq.strip('ATCGatcg'))
+        # print('p ident min', p_ident_min)
+        p_ident_min = int((1-(ambiguous_base_n/len(sequence)))*100)
         for hit in query:
-            (qseqid, sseqid, qseq, sseq, sstrand, length, pident, gapopen,
+            (qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen,
              qstart, qend, sstart, send) = hit
             if qseqid == sseqid:
                 continue
             if pident < p_ident_min:
                 continue
             # only allow overlapped seq
-            if qend != query_len:
-                # print('qend !=origin_len', hit)
-                if query_len - qend > ambiguous_base_n:
-                    continue
-                else:
-                    print('to be continue')
-                    continue
-            if sstrand == 'plus' and sstart != 1:
+            if sstrand == 'plus' and (qend != qlen or sstart != 1):
                 # consider ambiguous base or not?
                 if sstart > ambiguous_base_n:
                     continue
                 else:
                     print('to be continue')
                     continue
-            if sstrand == 'minus' and sstart != len(sseq):
-                print(sstart, len(sseq), qseqid, sseqid)
-                if sstart + ambiguous_base_n < len(sseq):
-                    continue
+            if sstrand == 'minus':
+                if (qstart == 1 and send == 1) or (
+                        qend == qlen and sstart == slen):
+                    pass
                 else:
-                    print('to be continue')
                     continue
             overlap.append(hit)
     link_info = []
     scaffold = []
     overlap_dict = {}
     # assume each seq only occurs once
-    print([i[:2] for i in overlap])
+    print('qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart, qend, sstart, send')
+    print(*overlap, sep='\n')
+    exit()
     overlap_dict = {i[0]: i for i in overlap}
     up_dict = {i[0]: i for i in overlap}
     down_dict = {i[1]: i for i in overlap}

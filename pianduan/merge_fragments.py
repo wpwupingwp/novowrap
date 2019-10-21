@@ -7,10 +7,9 @@ from sys import argv
 from random import shuffle
 
 
-def link(contigs):
+def get_overlap(contigs):
     """
-    Reorder contigs by overlap.
-    Assume there is only one path to link.
+    Get overlap by BLAST.
     Args:
         contigs(list(SeqRecord)): contigs
     Return:
@@ -51,23 +50,34 @@ def link(contigs):
     # qseqid-sseqid: hit
     # ignore duplicate of plus-plus or minus-minus!
     overlap_d1 = {tuple(sorted(i[:2])): i for i in overlap}
+    return list(overlap_d1.values())
+
+
+def link(contigs):
+    """
+    Reorder contigs by overlap.
+    Assume there is only one path to link.
+    Args:
+        contigs(list(SeqRecord)): contigs
+    Return:
+        link_info(list(blast_result)): link info of contigs
+    """
+    overlap = get_overlap(contigs)
+
+    print('qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart, qend, sstart, send')
     print(*sorted(overlap), sep='\n')
     print('-'*80)
-    print(*sorted(overlap_d1.values()), sep='\n')
-    print('-'*80)
     link_info = []
+    genome = []
     scaffold = []
     # assume each seq only occurs once
-    print('qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart, qend, sstart, send')
-    overlap_dict = {i[0]: i for i in overlap_d1.values()}
-    up_dict = {i[0]: i for i in overlap_d1.values()}
-    down_dict = {i[1]: i for i in overlap_d1.values()}
+    overlap_dict = {i[0]: i for i in overlap}
+    up_dict = {i[0]: i for i in overlap}
+    down_dict = {i[1]: i for i in overlap}
     scaffold.append(overlap_dict.popitem()[1])
     while True:
         try:
-            print(scaffold)
             up_name = scaffold[0][0]
-            print(scaffold)
             down_name = scaffold[-1][1]
         except TypeError:
             pass
@@ -80,6 +90,7 @@ def link(contigs):
                 scaffold = [overlap_dict.pop(upstream), *scaffold]
             else:
                 print(f'{upstream} was used more than once!')
+                exit()
                 pass
         else:
             # [None, None] as head/tail
@@ -95,11 +106,12 @@ def link(contigs):
         if scaffold[0][0] is None and scaffold[-1][0] is None:
             link_info.append(scaffold)
             try:
-                scaffold = overlap_dict.popitem()[0]
+                scaffold = overlap_dict.popitem()[1]
             except KeyError:
                 break
     # remove [None, None]
     link_info = [i[1:-1] for i in link_info]
+    print(*link_info, sep='\n')
     return link_info
 
 
@@ -117,6 +129,7 @@ def merge_contigs(contigs, link_info):
     for links in link_info:
         seq = contigs_d[links[0][0]]
         for link in links[:-1]:
+            print(len(seq))
             down = contigs_d[link[1]]
             seq += down[link[9]:]
         # tail do not have link after itself

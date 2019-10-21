@@ -48,20 +48,26 @@ def link(contigs):
                 else:
                     continue
             overlap.append(hit)
+    # qseqid-sseqid: hit
+    # ignore duplicate of plus-plus or minus-minus!
+    overlap_d1 = {tuple(sorted(i[:2])): i for i in overlap}
+    print(*sorted(overlap), sep='\n')
+    print('-'*80)
+    print(*sorted(overlap_d1.values()), sep='\n')
+    print('-'*80)
     link_info = []
     scaffold = []
-    overlap_dict = {}
     # assume each seq only occurs once
     print('qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart, qend, sstart, send')
-    print(*overlap, sep='\n')
-    exit()
-    overlap_dict = {i[0]: i for i in overlap}
-    up_dict = {i[0]: i for i in overlap}
-    down_dict = {i[1]: i for i in overlap}
+    overlap_dict = {i[0]: i for i in overlap_d1.values()}
+    up_dict = {i[0]: i for i in overlap_d1.values()}
+    down_dict = {i[1]: i for i in overlap_d1.values()}
     scaffold.append(overlap_dict.popitem()[1])
     while True:
         try:
+            print(scaffold)
             up_name = scaffold[0][0]
+            print(scaffold)
             down_name = scaffold[-1][1]
         except TypeError:
             pass

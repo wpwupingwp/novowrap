@@ -53,6 +53,41 @@ def get_overlap(contigs):
     return list(overlap_d1.values())
 
 
+def remove_minus(overlap, contigs):
+    """
+    Use upstream/downstream information to find out contigs that should be
+    reverse-complement (paired minus).
+    Args:
+        overlap(list(blast_result)): link info of contigs
+        contigs(list(SeqRecord)): contigs
+    Return:
+        no_minus(Path): fasta file that reverse-complement those minus contigs
+        minus_contig(list(SeqRecord)): minus contigs (raw)
+    """
+    plus = set()
+    minus = set()
+    minus_contig = []
+    contigs_d = {i.id: i for i in contigs}
+    no_minus = Path('tmp.no_minus')
+    for i in overlap:
+        up, down, strand, *_ = i
+        if strand == 'minus':
+            minus.update([up, down])
+        else:
+            plus.update([up, down])
+    to_rc = minus - plus
+    for i in to_rc:
+        i_rc = contigs_d[i].reverse_complement(id='_RC_'+contigs_d[i].id)
+        minus_contig.append(i_rc)
+        contigs_d[i] = i_rc
+    SeqIO.write(contigs_d.values(), no_minus, 'fasta')
+    return no_minus, minus_contig
+
+
+def clean_link():
+    return
+
+
 def link(contigs):
     """
     Reorder contigs by overlap.
@@ -63,6 +98,8 @@ def link(contigs):
         link_info(list(blast_result)): link info of contigs
     """
     overlap = get_overlap(contigs)
+    contigs_no_minus, minus_contigs = remove_minus(overlap, contigs)
+    exit()
 
     print('qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart, qend, sstart, send')
     print(*sorted(overlap), sep='\n')
@@ -79,6 +116,7 @@ def link(contigs):
         try:
             up_name = scaffold[0][0]
             down_name = scaffold[-1][1]
+        # to be continue
         except TypeError:
             pass
         # if downstream not in overlap_dict:

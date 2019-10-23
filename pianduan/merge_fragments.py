@@ -1,10 +1,22 @@
 #!/usr/bin/python3
 
-from Bio import SeqIO
-from utils import blast, parse_blast_tab
 from pathlib import Path
 from sys import argv
 from random import shuffle
+import argparse
+from Bio import SeqIO
+from utils import blast, parse_blast_tab
+
+
+def parse_args(arg_list=None):
+    arg = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    arg.add_argument('input', nargs='+', help='input filenames')
+    arg.add_argument('-o', '-out', dest='out', help='output filename')
+    if arg_list is None:
+        return arg.parse_args()
+    else:
+        return arg.parse_args(arg_list)
 
 
 def get_overlap(contigs):
@@ -114,7 +126,7 @@ def get_link(contigs):
         try:
             up_name = scaffold[0][0]
             down_name = scaffold[-1][1]
-        # to be continue
+        # name is None
         except TypeError:
             pass
         # if downstream not in overlap_dict:
@@ -137,10 +149,11 @@ def get_link(contigs):
                 scaffold.append(overlap_dict.pop(downstream))
         else:
             scaffold.append([None, None])
+        # print(scaffold)
         if scaffold[0][0] is None and scaffold[-1][0] is None:
             links.append(scaffold)
             try:
-                scaffold = overlap_dict.popitem()[1]
+                scaffold = [overlap_dict.popitem()[1], ]
             except KeyError:
                 break
     # remove [None, None]
@@ -148,7 +161,7 @@ def get_link(contigs):
     return contigs_no_minus, links
 
 
-def merge_contigs(contigs, links):
+def merge_seq(contigs, links):
     """
     Use overlap information of contigs to merge them.
     Assume link_info only contains one kind of link route.
@@ -175,9 +188,15 @@ def merge_contigs(contigs, links):
     return merged
 
 
-def main():
+def merge_contigs(arg_str=None):
+    if arg_str is None:
+        arg = parse_args()
+    else:
+        arg = parse_args(arg_str.split(' '))
+    if arg.out is None:
+        arg.out = Path(arg.input[0]).with_suffix('.merge')
     contigs = []
-    for f in argv[1:]:
+    for f in arg.input:
         fasta = Path(f)
         for idx, record in enumerate(SeqIO.parse(fasta, 'fasta')):
             record.id = f'{fasta.stem}-{idx}'
@@ -185,9 +204,9 @@ def main():
             contigs.append(record)
     shuffle(contigs)
     contigs_no_minus, links = get_link(contigs)
-    merged = merge_contigs(contigs_no_minus, links)
+    merged = merge_seq(contigs_no_minus, links)
     SeqIO.write(merged, Path(argv[1]).with_suffix('.merge'), 'fasta')
 
 
 if __name__ == '__main__':
-    main()
+    merge_contigs()

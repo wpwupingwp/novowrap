@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from collections import defaultdict
 from pathlib import Path
 from sys import argv
 from random import shuffle
@@ -46,6 +47,8 @@ def get_overlap(contigs):
                 continue
             # only allow overlapped seq
             # nested seqs should be omit (short circuit)
+            if qlen == length or slen == length:
+                continue
             if sstrand == 'plus' and (qend != qlen or sstart != 1):
                 # consider ambiguous base or not?
                 if sstart > ambiguous_base_n:
@@ -96,8 +99,27 @@ def remove_minus(overlap, contigs):
     return no_minus, minus_contig
 
 
-def clean_link():
-    return
+def clean_link(overlap):
+    """
+    Ensure each upstream has only one downstream.
+    Remove link that cause short circuit.
+    Arg:
+        overlap(list(blast_result)): link info of contigs
+    Return:
+        cleaned_link(list(blast_result)): clean link
+    """
+    up_dict = defaultdict(list)
+    down_dict = defaultdict(list)
+    cleaned_link = {(i[0], i[1]): i for i in overlap}
+    for i in overlap:
+        up_dict[i[0]].append(i)
+        down_dict[i[1]].append(i)
+    print('two up, two down')
+    print(len([i[1] for i in up_dict.items() if len(i[1]) >1]))
+    print(len([i[1] for i in down_dict.items() if len(i[1]) >1]))
+    raise SystemExit
+    cleaned_link = []
+    return cleaned_link
 
 
 def get_link(contigs):
@@ -112,15 +134,19 @@ def get_link(contigs):
     """
     overlap = get_overlap(contigs)
     contigs_no_minus, minus_contigs = remove_minus(overlap, contigs)
-    overlap_2 = get_overlap(contigs_no_minus)
+    overlap_no_minus = get_overlap(contigs_no_minus)
     # remove orphan minus
-    overlap_2 = [i for i in overlap_2 if i[2] != 'minus']
+    overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
+    a = {i[0]: i for i in overlap_no_minus}
+    print(len(a), len(overlap_no_minus))
+    # remove short circuit
+    overlap_3 = clean_link(overlap_no_minus)
     links = []
     scaffold = []
     # assume each seq only occurs once
-    overlap_dict = {i[0]: i for i in overlap_2}
-    up_dict = {i[0]: i for i in overlap_2}
-    down_dict = {i[1]: i for i in overlap_2}
+    overlap_dict = {i[0]: i for i in overlap_3}
+    up_dict = {i[0]: i for i in overlap_3}
+    down_dict = {i[1]: i for i in overlap_3}
     scaffold.append(overlap_dict.popitem()[1])
     while True:
         try:
@@ -137,7 +163,7 @@ def get_link(contigs):
             if upstream in overlap_dict:
                 scaffold = [overlap_dict.pop(upstream), *scaffold]
             else:
-                pass
+                scaffold = [[None, None], *scaffold]
         else:
             # [None, None] as head/tail
             scaffold = [[None, None], *scaffold]
@@ -147,6 +173,8 @@ def get_link(contigs):
             downstream = up_dict[down_name][0]
             if downstream in overlap_dict:
                 scaffold.append(overlap_dict.pop(downstream))
+            else:
+                scaffold.append([None, None])
         else:
             scaffold.append([None, None])
         # print(scaffold)
@@ -174,6 +202,8 @@ def merge_seq(contigs, links):
     contigs_d = {i.id: i for i in contigs}
     merged = []
     for link in links:
+        if len(link)>15:
+            print(*link, sep='\n')
         # qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart,
         # qend, sstart, send
         seq = contigs_d[link[0][0]]

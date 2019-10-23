@@ -103,10 +103,6 @@ def get_link(contigs):
     overlap_2 = get_overlap(contigs_no_minus)
     # remove orphan minus
     overlap_2 = [i for i in overlap_2 if i[2] != 'minus']
-
-    print('qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart, qend, sstart, send')
-    print(*sorted(overlap_2, key=lambda x:x[0]), sep='\n')
-    print('-'*80)
     links = []
     scaffold = []
     # assume each seq only occurs once
@@ -129,8 +125,6 @@ def get_link(contigs):
             if upstream in overlap_dict:
                 scaffold = [overlap_dict.pop(upstream), *scaffold]
             else:
-                print(f'{upstream} was used more than once!')
-                exit()
                 pass
         else:
             # [None, None] as head/tail
@@ -151,7 +145,6 @@ def get_link(contigs):
                 break
     # remove [None, None]
     links = [i[1:-1] for i in links]
-    print(*links, sep='\n')
     return contigs_no_minus, links
 
 
@@ -172,9 +165,7 @@ def merge_contigs(contigs, links):
         # qend, sstart, send
         seq = contigs_d[link[0][0]]
         for node in link[:-1]:
-            print(len(seq))
             down = contigs_d[node[1]]
-            print(down.id, node[11])
             seq += down[node[11]:]
         # tail do not have link after itself
         tail_seq = contigs_d[link[-1][1]]
@@ -196,9 +187,6 @@ def main():
     contigs_no_minus, links = get_link(contigs)
     merged = merge_contigs(contigs_no_minus, links)
     SeqIO.write(merged, Path(argv[1]).with_suffix('.merge'), 'fasta')
-    # link_info = link(contigs)
-    # merged = merge_contigs(contigs, link_info)
-    # print(merged)
 
 
 if __name__ == '__main__':

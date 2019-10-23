@@ -33,6 +33,7 @@ def get_overlap(contigs):
             if pident < p_ident_min:
                 continue
             # only allow overlapped seq
+            # nested seqs should be omit (short circuit)
             if sstrand == 'plus' and (qend != qlen or sstart != 1):
                 # consider ambiguous base or not?
                 if sstart > ambiguous_base_n:
@@ -61,14 +62,13 @@ def remove_minus(overlap, contigs):
         overlap(list(blast_result)): link info of contigs
         contigs(list(SeqRecord)): contigs
     Return:
-        no_minus(Path): fasta file that reverse-complement those minus contigs
-        minus_contig(list(SeqRecord)): minus contigs (raw)
+        no_minus(list(SeqRecord)): contigs without minus
+        minus_contig(list(SeqRecord)): minus contigs
     """
     plus = set()
     minus = set()
     minus_contig = []
     contigs_d = {i.id: i for i in contigs}
-    no_minus = Path('tmp.no_minus')
     for i in overlap:
         up, down, strand, *_ = i
         if strand == 'minus':
@@ -80,7 +80,7 @@ def remove_minus(overlap, contigs):
         i_rc = contigs_d[i].reverse_complement(id='_RC_'+contigs_d[i].id)
         minus_contig.append(i_rc)
         contigs_d[i] = i_rc
-    SeqIO.write(contigs_d.values(), no_minus, 'fasta')
+    no_minus = list(contigs_d.values())
     return no_minus, minus_contig
 
 
@@ -88,29 +88,31 @@ def clean_link():
     return
 
 
-def link(contigs):
+def get_link(contigs):
     """
     Reorder contigs by overlap.
     Assume there is only one path to link.
     Args:
         contigs(list(SeqRecord)): contigs
     Return:
-        link_info(list(blast_result)): link info of contigs
+        contigs_no_minus(list(SeqRecord)): contigs that remove minus
+        link(list(blast_result)): link info of contigs
     """
     overlap = get_overlap(contigs)
     contigs_no_minus, minus_contigs = remove_minus(overlap, contigs)
-    exit()
+    overlap_2 = get_overlap(contigs_no_minus)
+    # remove orphan minus
+    overlap_2 = [i for i in overlap_2 if i[2] != 'minus']
 
     print('qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart, qend, sstart, send')
-    print(*sorted(overlap), sep='\n')
+    print(*sorted(overlap_2, key=lambda x:x[0]), sep='\n')
     print('-'*80)
-    link_info = []
-    genome = []
+    links = []
     scaffold = []
     # assume each seq only occurs once
-    overlap_dict = {i[0]: i for i in overlap}
-    up_dict = {i[0]: i for i in overlap}
-    down_dict = {i[1]: i for i in overlap}
+    overlap_dict = {i[0]: i for i in overlap_2}
+    up_dict = {i[0]: i for i in overlap_2}
+    down_dict = {i[1]: i for i in overlap_2}
     scaffold.append(overlap_dict.popitem()[1])
     while True:
         try:
@@ -142,44 +144,47 @@ def link(contigs):
         else:
             scaffold.append([None, None])
         if scaffold[0][0] is None and scaffold[-1][0] is None:
-            link_info.append(scaffold)
+            links.append(scaffold)
             try:
                 scaffold = overlap_dict.popitem()[1]
             except KeyError:
                 break
     # remove [None, None]
-    link_info = [i[1:-1] for i in link_info]
-    print(*link_info, sep='\n')
-    return link_info
+    links = [i[1:-1] for i in links]
+    print(*links, sep='\n')
+    return contigs_no_minus, links
 
 
-def merge_contigs(contigs, link_info):
+def merge_contigs(contigs, links):
     """
     Use overlap information of contigs to merge them.
+    Assume link_info only contains one kind of link route.
     Arg:
         contigs(list(SeqRecord)): contigs
-        link_info(list(blast_result)): link info of contigs
+        links(list(blast_result)): link info of contigs
     Return:
         merged(list(SeqRecord)): list of merged sequences
     """
     contigs_d = {i.id: i for i in contigs}
     merged = []
-    for links in link_info:
-        seq = contigs_d[links[0][0]]
-        for link in links[:-1]:
+    for link in links:
+        # qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart,
+        # qend, sstart, send
+        seq = contigs_d[link[0][0]]
+        for node in link[:-1]:
             print(len(seq))
-            down = contigs_d[link[1]]
-            seq += down[link[9]:]
+            down = contigs_d[node[1]]
+            print(down.id, node[11])
+            seq += down[node[11]:]
         # tail do not have link after itself
-        tail_seq = contigs_d[links[-1][1]]
-        seq += tail_seq[links[-1][9]:]
+        tail_seq = contigs_d[link[-1][1]]
+        seq += tail_seq[link[-1][11]:]
         seq.id = f'Merged_sequence {len(seq)}bp'
         merged.append(seq)
     return merged
 
 
 def main():
-    # if contigs cannot be merged, they may be useless
     contigs = []
     for f in argv[1:]:
         fasta = Path(f)
@@ -187,10 +192,9 @@ def main():
             record.id = f'{fasta.stem}-{idx}'
             record.description = ''
             contigs.append(record)
-    # print([i.id for i in contigs])
     shuffle(contigs)
-    link_info = link(contigs)
-    merged = merge_contigs(contigs, link_info)
+    contigs_no_minus, links = get_link(contigs)
+    merged = merge_contigs(contigs_no_minus, links)
     SeqIO.write(merged, Path(argv[1]).with_suffix('.merge'), 'fasta')
     # link_info = link(contigs)
     # merged = merge_contigs(contigs, link_info)

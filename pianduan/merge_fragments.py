@@ -108,15 +108,28 @@ def clean_link(overlap):
     Return:
         cleaned_link(list(blast_result)): clean link
     """
+    # up_id: hit
     up_dict = defaultdict(list)
+    # down_id: hit
     down_dict = defaultdict(list)
     cleaned_link = {(i[0], i[1]): i for i in overlap}
     for i in overlap:
         up_dict[i[0]].append(i)
         down_dict[i[1]].append(i)
-    print('two up, two down')
+    print('all, two up, two down')
+    print(len(overlap))
     print(len([i[1] for i in up_dict.items() if len(i[1]) >1]))
     print(len([i[1] for i in down_dict.items() if len(i[1]) >1]))
+    for up, hit in up_dict.items():
+        if len(hit) > 1:
+            down = {i[1] for i in hit}
+            down_down = set()
+            print(up, down, end=' ')
+            for d in down:
+                dd = {i[1] for i in up_dict[d]}
+                down_down.update(dd)
+            print(down_down, end=' ')
+            print(down_down & down)
     raise SystemExit
     cleaned_link = []
     return cleaned_link
@@ -138,7 +151,6 @@ def get_link(contigs):
     # remove orphan minus
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
     a = {i[0]: i for i in overlap_no_minus}
-    print(len(a), len(overlap_no_minus))
     # remove short circuit
     overlap_3 = clean_link(overlap_no_minus)
     links = []

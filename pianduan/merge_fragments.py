@@ -109,29 +109,31 @@ def clean_link(overlap):
         cleaned_link(list(blast_result)): clean link
     """
     # up_id: hit
-    up_dict = defaultdict(list)
+    up_dict = defaultdict(set)
     # down_id: hit
-    down_dict = defaultdict(list)
-    cleaned_link = {(i[0], i[1]): i for i in overlap}
+    down_dict = defaultdict(set)
+    raw = {(i[0], i[1]): i for i in overlap}
+    bad_link = set()
+    # seems defaultdict(list) cause "RuntimeError: dictionary changed size
+    # during iteration"
     for i in overlap:
-        up_dict[i[0]].append(i)
-        down_dict[i[1]].append(i)
-    print('all, two up, two down')
-    print(len(overlap))
-    print(len([i[1] for i in up_dict.items() if len(i[1]) >1]))
-    print(len([i[1] for i in down_dict.items() if len(i[1]) >1]))
-    for up, hit in up_dict.items():
-        if len(hit) > 1:
-            down = {i[1] for i in hit}
-            down_down = set()
-            print(up, down, end=' ')
-            for d in down:
-                dd = {i[1] for i in up_dict[d]}
-                down_down.update(dd)
-            print(down_down, end=' ')
-            print(down_down & down)
-    raise SystemExit
-    cleaned_link = []
+        up_dict[i[0]].add(i[1])
+        down_dict[i[1]].add(i[0])
+    up_2 = [i[1] for i in up_dict.items() if len(i[1]) >1]
+    for up, down in up_dict.items():
+        if len(down) == 1:
+            continue
+        down_down = set()
+        print(up, down, end=' ')
+        for d in down:
+            if d in up_dict:
+                down_down.update(up_dict[d])
+        print(down_down & down)
+        # one's downstreams should not overlap each other
+        bad_link.update({(up, i) for i in down_down & down})
+    cleaned_link = [raw[i] for i in raw if i not in bad_link]
+    print('all, two up, two, bad, clean ')
+    print(len(overlap), len(up_dict), len(up_2), len(bad_link), len(cleaned_link))
     return cleaned_link
 
 

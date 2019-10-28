@@ -119,21 +119,18 @@ def clean_link(overlap):
     for i in overlap:
         up_dict[i[0]].add(i[1])
         down_dict[i[1]].add(i[0])
-    up_2 = [i[1] for i in up_dict.items() if len(i[1]) >1]
     for up, down in up_dict.items():
         if len(down) == 1:
             continue
         down_down = set()
-        print(up, down, end=' ')
         for d in down:
             if d in up_dict:
                 down_down.update(up_dict[d])
-        print(down_down & down)
         # one's downstreams should not overlap each other
         bad_link.update({(up, i) for i in down_down & down})
     cleaned_link = [raw[i] for i in raw if i not in bad_link]
-    print('all, two up, two, bad, clean ')
-    print(len(overlap), len(up_dict), len(up_2), len(bad_link), len(cleaned_link))
+    print('all, two up, bad, clean ')
+    print(len(overlap), len(up_dict),  len(bad_link), len(cleaned_link))
     return cleaned_link
 
 
@@ -152,7 +149,6 @@ def get_link(contigs):
     overlap_no_minus = get_overlap(contigs_no_minus)
     # remove orphan minus
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
-    a = {i[0]: i for i in overlap_no_minus}
     # remove short circuit
     overlap_3 = clean_link(overlap_no_minus)
     links = []

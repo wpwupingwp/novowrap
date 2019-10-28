@@ -11,7 +11,6 @@ def s(overlap=500, step=5000):
         seq.id = f'{i}-{i+step}'
         result.append(seq)
         i = i + (step-overlap)
-        print(i)
     return result
 
 

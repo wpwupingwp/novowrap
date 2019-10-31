@@ -5,7 +5,10 @@ from pathlib import Path
 from sys import argv
 from random import shuffle
 import argparse
+
 from Bio import SeqIO
+from graphviz import Digraph
+
 from utils import blast, parse_blast_tab
 
 
@@ -65,6 +68,7 @@ def get_overlap(contigs):
             overlap.append(hit)
     # qseqid-sseqid: hit
     # ignore duplicate of plus-plus or minus-minus!
+    print()
     overlap_d1 = {tuple(sorted(i[:2])): i for i in overlap}
     return list(overlap_d1.values())
 
@@ -87,19 +91,33 @@ def remove_minus(overlap, contigs):
     for i in overlap:
         up, down, strand, *_ = i
         if strand == 'minus':
+            print()
+            #minus.add(down)
             minus.update([up, down])
         else:
             plus.update([up, down])
     to_rc = minus - plus
+    print('torc', *to_rc)
     for i in to_rc:
         i_rc = contigs_d[i].reverse_complement(id='_RC_'+contigs_d[i].id)
         minus_contig.append(i_rc)
         contigs_d[i] = i_rc
     no_minus = list(contigs_d.values())
+    return contigs, contigs
+    print('remove or not')
     return no_minus, minus_contig
 
 
+def cut_circle(overlap):
+    """
+    Find circle, cut.
+    """
+    no_circle = []
+    return no_circle
+
+
 def clean_link(overlap):
+    # seems useless
     """
     Ensure each upstream has only one downstream.
     Remove link that cause short circuit.
@@ -128,6 +146,12 @@ def clean_link(overlap):
                 down_down.update(up_dict[d])
         # one's downstreams should not overlap each other
         bad_link.update({(up, i) for i in down_down & down})
+        good_down = down - down_down
+        if len(good_down) == 1:
+            continue
+        for i in good_down:
+            continue
+            print(raw[(up, i)])
     cleaned_link = [raw[i] for i in raw if i not in bad_link]
     print('all, two up, bad, clean ')
     print(len(overlap), len(up_dict),  len(bad_link), len(cleaned_link))
@@ -144,20 +168,52 @@ def get_link(contigs):
         contigs_no_minus(list(SeqRecord)): contigs that remove minus
         link(list(blast_result)): link info of contigs
     """
+    global dot
+    dot = Digraph(engine='dot', node_attr={'shape': 'box'})
     overlap = get_overlap(contigs)
+    print(*overlap, sep='\n')
     contigs_no_minus, minus_contigs = remove_minus(overlap, contigs)
     overlap_no_minus = get_overlap(contigs_no_minus)
     # remove orphan minus
+    up_dict = defaultdict(set)
+    # down_id: hit
+    down_dict = defaultdict(set)
+    for i in overlap_no_minus:
+        up_dict[i[0]].add(i[1])
+        down_dict[i[1]].add(i[0])
+    degree = {}
+    for up in up_dict:
+        print(up, up_dict[up])
+        degree[up] = [0, len(up_dict[up])]
+    for down in down_dict:
+        if down in degree:
+            degree[down] = [len(down_dict[down]), degree[down][1]]
+        else:
+            degree[down] = [len(down_dict[down]), 0]
+    for i in degree:
+        dot.node(i, xlabel=str(degree[i]))
+    for i in overlap_no_minus:
+        dot.node(i[0])
+        dot.node(i[1])
+        if i[2] == 'plus':
+            dot.edge(i[0], i[1], color='#999999')
+        else:
+            dot.edge(i[0], i[1], color='#999999', style='dashed')
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
     # remove short circuit
-    overlap_3 = clean_link(overlap_no_minus)
+    overlap_clean = clean_link(overlap_no_minus)
+    # for i in overlap_clean:
+    #    dot.edge(i[0], i[1], color='green')
     links = []
     scaffold = []
     # assume each seq only occurs once
-    overlap_dict = {i[0]: i for i in overlap_3}
-    up_dict = {i[0]: i for i in overlap_3}
-    down_dict = {i[1]: i for i in overlap_3}
-    scaffold.append(overlap_dict.popitem()[1])
+    overlap_dict = {i[0]: i for i in overlap_clean}
+    up_dict = {i[0]: i for i in overlap_clean}
+    down_dict = {i[1]: i for i in overlap_clean}
+    try:
+        scaffold.append(overlap_dict.popitem()[1])
+    except KeyError:
+        raise Exception
     while True:
         try:
             up_name = scaffold[0][0]
@@ -187,7 +243,6 @@ def get_link(contigs):
                 scaffold.append([None, None])
         else:
             scaffold.append([None, None])
-        # print(scaffold)
         if scaffold[0][0] is None and scaffold[-1][0] is None:
             links.append(scaffold)
             try:
@@ -196,6 +251,10 @@ def get_link(contigs):
                 break
     # remove [None, None]
     links = [i[1:-1] for i in links]
+    for i in links:
+        for j in i:
+            dot.edge(j[0], j[1], color='blue')
+    dot.render('graph')
     return contigs_no_minus, links
 
 
@@ -212,8 +271,6 @@ def merge_seq(contigs, links):
     contigs_d = {i.id: i for i in contigs}
     merged = []
     for link in links:
-        if len(link)>15:
-            print(*link, sep='\n')
         # qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart,
         # qend, sstart, send
         seq = contigs_d[link[0][0]]

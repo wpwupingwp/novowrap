@@ -3,7 +3,8 @@
 from Bio import SeqIO
 
 
-def s(overlap=500, step=5000):
+# oryza sativa cp's IR 20k
+def s(overlap=500, step=40000):
     result = []
     i = 0
     while i < len(a):
@@ -15,9 +16,8 @@ def s(overlap=500, step=5000):
 
 
 a = SeqIO.read('./Option_1_SRR1328237-rbcL.fasta', 'fasta')
-a500b = s(overlap=100)
-SeqIO.write(a500b, 'Oryza_sativa_100bp.fasta', 'fasta')
-a1k = s(overlap=1000)
-SeqIO.write(a1k, 'Oryza_sativa_1k.fasta', 'fasta')
-a5k = s(overlap=2000)
-SeqIO.write(a5k, 'Oryza_sativa_2k.fasta', 'fasta')
+#a = a+a
+Short = s(overlap=100)
+SeqIO.write(Short, 'Short.fasta', 'fasta')
+Long = s(overlap=2000)
+SeqIO.write(Long, 'Long.fasta', 'fasta')

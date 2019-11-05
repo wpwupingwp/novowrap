@@ -49,16 +49,17 @@ def get_overlap(contigs):
             if pident < p_ident_min:
                 continue
             # only allow overlapped seq
-            # nested seqs should be omit (short circuit)
+            # nested seqs should be omit
             if qlen == length or slen == length:
                 continue
-            if sstrand == 'plus' and (qend != qlen or sstart != 1):
-                # consider ambiguous base or not?
-                if sstart > ambiguous_base_n:
-                    continue
+            # subject must be object's downstream
+            if sstrand == 'plus':
+                if (qend == qlen and sstart == 1):
+                    pass
                 else:
-                    print('to be continue')
+                    # consider ambiguous base or not?
                     continue
+                    print('to be continue')
             if sstrand == 'minus':
                 if (qstart == 1 and send == 1) or (
                         qend == qlen and sstart == slen):
@@ -68,9 +69,52 @@ def get_overlap(contigs):
             overlap.append(hit)
     # qseqid-sseqid: hit
     # ignore duplicate of plus-plus or minus-minus!
-    print()
     overlap_d1 = {tuple(sorted(i[:2])): i for i in overlap}
+    raw = {tuple([i[0], i[1], i[2]]): i for i in overlap}
+    left = {tuple([i[0], i[1], i[2]]): i for i in overlap_d1.values()}
+    print('omit')
+    for i in raw.keys()-left.keys():
+        print(raw[i])
+    print('left')
+    print(*list(left.values()), sep='\n')
+    print('all, left, left2', len(overlap), len(overlap_d1), len(left))
     return list(overlap_d1.values())
+
+
+def remove_minus2(overlap, contigs):
+    """
+    Use upstream/downstream information to find out contigs that should be
+    reverse-complement (paired minus).
+    Args:
+        overlap(list(blast_result)): link info of contigs
+        contigs(list(SeqRecord)): contigs
+    Return:
+        no_minus(list(SeqRecord)): contigs without minus
+        minus_contig(list(SeqRecord)): minus contigs
+    """
+    minus = {}
+    minus_contig = []
+    contigs_d = {i.id: i for i in contigs}
+    for i in overlap:
+        up, down, strand, *_ = i
+        if strand == 'minus':
+            print()
+            for _ in up, down:
+                if _ not in minus:
+                    minus[_] = False
+                else:
+                    minus[_] = not minus[_]
+    to_rc = [i for i in minus if minus[i]]
+    print(*minus.items())
+    print('torc', *to_rc)
+    for i in to_rc:
+        i_rc = contigs_d[i].reverse_complement(id='_RC_'+contigs_d[i].id)
+        minus_contig.append(i_rc)
+        contigs_d[i] = i_rc
+    no_minus = list(contigs_d.values())
+    # return contigs, contigs
+    print('remove or not')
+    return no_minus, minus_contig
 
 
 def remove_minus(overlap, contigs):
@@ -84,6 +128,11 @@ def remove_minus(overlap, contigs):
         no_minus(list(SeqRecord)): contigs without minus
         minus_contig(list(SeqRecord)): minus contigs
     """
+    a = []
+    for i in contigs:
+        i_rc = i.reverse_complement(id='_RC_'+i.id)
+        a.extend([i, i_rc])
+    return a, a
     plus = set()
     minus = set()
     minus_contig = []
@@ -92,8 +141,8 @@ def remove_minus(overlap, contigs):
         up, down, strand, *_ = i
         if strand == 'minus':
             print()
-            #minus.add(down)
-            minus.update([up, down])
+            minus.add(down)
+            # minus.update([up, down])
         else:
             plus.update([up, down])
     to_rc = minus - plus
@@ -103,7 +152,7 @@ def remove_minus(overlap, contigs):
         minus_contig.append(i_rc)
         contigs_d[i] = i_rc
     no_minus = list(contigs_d.values())
-    return contigs, contigs
+    # return contigs, contigs
     print('remove or not')
     return no_minus, minus_contig
 
@@ -171,7 +220,6 @@ def get_link(contigs):
     global dot
     dot = Digraph(engine='dot', node_attr={'shape': 'box'})
     overlap = get_overlap(contigs)
-    print(*overlap, sep='\n')
     contigs_no_minus, minus_contigs = remove_minus(overlap, contigs)
     overlap_no_minus = get_overlap(contigs_no_minus)
     # remove orphan minus
@@ -199,6 +247,7 @@ def get_link(contigs):
             dot.edge(i[0], i[1], color='#999999')
         else:
             dot.edge(i[0], i[1], color='#999999', style='dashed')
+            dot.edge(i[1], i[0], color='#999999', style='dashed')
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
     # remove short circuit
     overlap_clean = clean_link(overlap_no_minus)

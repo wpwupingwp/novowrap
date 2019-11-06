@@ -69,6 +69,7 @@ def get_overlap(contigs):
             overlap.append(hit)
     # qseqid-sseqid: hit
     # ignore duplicate of plus-plus or minus-minus!
+    #return overlap
     overlap_d1 = {tuple(sorted(i[:2])): i for i in overlap}
     raw = {tuple([i[0], i[1], i[2]]): i for i in overlap}
     left = {tuple([i[0], i[1], i[2]]): i for i in overlap_d1.values()}
@@ -79,42 +80,6 @@ def get_overlap(contigs):
     print(*list(left.values()), sep='\n')
     print('all, left, left2', len(overlap), len(overlap_d1), len(left))
     return list(overlap_d1.values())
-
-
-def remove_minus2(overlap, contigs):
-    """
-    Use upstream/downstream information to find out contigs that should be
-    reverse-complement (paired minus).
-    Args:
-        overlap(list(blast_result)): link info of contigs
-        contigs(list(SeqRecord)): contigs
-    Return:
-        no_minus(list(SeqRecord)): contigs without minus
-        minus_contig(list(SeqRecord)): minus contigs
-    """
-    minus = {}
-    minus_contig = []
-    contigs_d = {i.id: i for i in contigs}
-    for i in overlap:
-        up, down, strand, *_ = i
-        if strand == 'minus':
-            print()
-            for _ in up, down:
-                if _ not in minus:
-                    minus[_] = False
-                else:
-                    minus[_] = not minus[_]
-    to_rc = [i for i in minus if minus[i]]
-    print(*minus.items())
-    print('torc', *to_rc)
-    for i in to_rc:
-        i_rc = contigs_d[i].reverse_complement(id='_RC_'+contigs_d[i].id)
-        minus_contig.append(i_rc)
-        contigs_d[i] = i_rc
-    no_minus = list(contigs_d.values())
-    # return contigs, contigs
-    print('remove or not')
-    return no_minus, minus_contig
 
 
 def remove_minus(overlap, contigs):
@@ -246,8 +211,7 @@ def get_link(contigs):
         if i[2] == 'plus':
             dot.edge(i[0], i[1], color='#999999')
         else:
-            dot.edge(i[0], i[1], color='#999999', style='dashed')
-            dot.edge(i[1], i[0], color='#999999', style='dashed')
+            dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
     # remove short circuit
     overlap_clean = clean_link(overlap_no_minus)

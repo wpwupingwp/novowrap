@@ -16,7 +16,7 @@ def s(overlap=500, step=40000):
 
 
 a = SeqIO.read('./Option_1_SRR1328237-rbcL.fasta', 'fasta')
-#a = a+a
+a = a+a[:20000]
 Short = s(overlap=100)
 SeqIO.write(Short, 'Short.fasta', 'fasta')
 Long = s(overlap=2000)

@@ -113,12 +113,19 @@ def remove_minus(overlap, contigs):
     return no_minus, minus_contig
 
 
-def cut_circle(overlap):
-    """
-    Find circle, cut.
-    """
-    no_circle = []
-    return no_circle
+def get_degree(up_dict, down_dict):
+    degree = {}
+    for up in up_dict:
+        print(up, up_dict[up])
+        degree[up] = [0, len(up_dict[up])]
+    for down in down_dict:
+        if down in degree:
+            degree[down] = [len(down_dict[down]), degree[down][1]]
+        else:
+            degree[down] = [len(down_dict[down]), 0]
+    for i in degree:
+        dot.node(i, xlabel=str(degree[i]))
+    return degree
 
 
 def clean_link(overlap):
@@ -186,17 +193,6 @@ def get_link(contigs):
     for i in overlap_no_minus:
         up_dict[i[0]].add(i[1])
         down_dict[i[1]].add(i[0])
-    degree = {}
-    for up in up_dict:
-        print(up, up_dict[up])
-        degree[up] = [0, len(up_dict[up])]
-    for down in down_dict:
-        if down in degree:
-            degree[down] = [len(down_dict[down]), degree[down][1]]
-        else:
-            degree[down] = [len(down_dict[down]), 0]
-    for i in degree:
-        dot.node(i, xlabel=str(degree[i]))
     for i in overlap_no_minus:
         dot.node(i[0])
         dot.node(i[1])

@@ -131,10 +131,11 @@ def cut_circle(overlap):
 
 
 def clean_link(overlap):
-    # seems useless
     """
-    Ensure each upstream has only one downstream.
-    Remove link that cause short circuit.
+    Remove transitively-inferrible edges.
+    Remove orphan contigs ("island").
+    Remove non-branching stretches ("tips").
+    Assume "bubble" does not exist.
     Arg:
         overlap(list(blast_result)): link info of contigs
     Return:

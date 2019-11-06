@@ -69,16 +69,7 @@ def get_overlap(contigs):
             overlap.append(hit)
     # qseqid-sseqid: hit
     # ignore duplicate of plus-plus or minus-minus!
-    #return overlap
     overlap_d1 = {tuple(sorted(i[:2])): i for i in overlap}
-    raw = {tuple([i[0], i[1], i[2]]): i for i in overlap}
-    left = {tuple([i[0], i[1], i[2]]): i for i in overlap_d1.values()}
-    print('omit')
-    for i in raw.keys()-left.keys():
-        print(raw[i])
-    print('left')
-    print(*list(left.values()), sep='\n')
-    print('all, left, left2', len(overlap), len(overlap_d1), len(left))
     return list(overlap_d1.values())
 
 

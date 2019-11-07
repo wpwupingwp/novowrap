@@ -161,8 +161,6 @@ def clean_link(overlap):
             else:
                 tips.add((up, d))
         shortcuts.update({(up, i) for i in down_down & down})
-    print('#'*80, 'shortcuts')
-    print(shortcuts, sep='\n')
     for down, up in down_up.items():
         if len(up) == 1:
             continue
@@ -170,9 +168,12 @@ def clean_link(overlap):
             # type II
             if u not in down_up:
                 tips.add((u, down))
-    print(tips)
     cleaned_link = [raw[i] for i in raw if (i not in shortcuts and i not in
                                             tips)]
+    for i in shortcuts:
+        dot.edge(*i, color='red')
+    for i in tips:
+        dot.edge(*i, color='green')
     print('all, shortcuts, tips, clean')
     print(len(overlap), len(shortcuts),  len(tips), len(cleaned_link))
     return cleaned_link
@@ -282,7 +283,6 @@ def merge_seq(contigs, links):
         seq = contigs_d[link[0][0]]
         for node in link[:-1]:
             down = contigs_d[node[1]]
-            print(len(seq), node[1], len(down[node[11]:]))
             seq += down[node[11]:]
         # tail do not have link after itself
         if not circle:
@@ -292,8 +292,12 @@ def merge_seq(contigs, links):
             print(len(seq), slice(0, -link[-1][8]), *link[-1])
             seq = seq[:-link[-1][11]]
         seq.id = f'Merged_sequence {len(seq)}bp'
-        print(134502, seq.id)
-        merged.append(seq)
+        print(circle, 134502, seq.id)
+        # seems circle is ok, non-circle is always bad result
+        if circle:
+            merged.append(seq)
+        else:
+            continue
     return merged
 
 

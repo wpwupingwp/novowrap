@@ -139,35 +139,42 @@ def clean_link(overlap):
     Return:
         cleaned_link(list(blast_result)): clean link
     """
-    # up_id: hit
-    up_dict = defaultdict(set)
-    # down_id: hit
-    down_dict = defaultdict(set)
     raw = {(i[0], i[1]): i for i in overlap}
-    bad_link = set()
-    # seems defaultdict(list) cause "RuntimeError: dictionary changed size
-    # during iteration"
+    up_down = defaultdict(set)
+    down_up = defaultdict(set)
     for i in overlap:
-        up_dict[i[0]].add(i[1])
-        down_dict[i[1]].add(i[0])
-    for up, down in up_dict.items():
+        up_down[i[0]].add(i[1])
+        down_up[i[1]].add(i[0])
+    # Remove transitively-inferible edges that across one contig
+    # Use while loop to remove all that kinds of edges?
+    shortcuts = set()
+    # Remove non-branching stretches
+    # One step is enough, if longer, may be alternative path
+    tips = set()
+    for up, down in up_down.items():
         if len(down) == 1:
             continue
         down_down = set()
         for d in down:
-            if d in up_dict:
-                down_down.update(up_dict[d])
-        # one's downstreams should not overlap each other
-        bad_link.update({(up, i) for i in down_down & down})
-        good_down = down - down_down
-        if len(good_down) == 1:
+            if d in up_down:
+                down_down.update(up_down[d])
+            else:
+                tips.add((up, d))
+        shortcuts.update({(up, i) for i in down_down & down})
+    print('#'*80, 'shortcuts')
+    print(shortcuts, sep='\n')
+    for down, up in down_up.items():
+        if len(up) == 1:
             continue
-        for i in good_down:
-            continue
-            print(raw[(up, i)])
-    cleaned_link = [raw[i] for i in raw if i not in bad_link]
-    print('all, two up, bad, clean ')
-    print(len(overlap), len(up_dict),  len(bad_link), len(cleaned_link))
+        for u in up:
+            # type II
+            if u not in down_up:
+                tips.add((u, down))
+    print(tips)
+    cleaned_link = [raw[i] for i in raw if (i not in shortcuts and i not in
+                                            tips)]
+    print('all, shortcuts, tips, clean')
+    print(len(overlap), len(shortcuts),  len(tips), len(cleaned_link))
     return cleaned_link
 
 
@@ -182,7 +189,7 @@ def get_link(contigs):
         link(list(blast_result)): link info of contigs
     """
     global dot
-    dot = Digraph(engine='dot', node_attr={'shape': 'box'})
+    dot = Digraph(engine='dot', node_attr={'shape': 'cds'})
     overlap = get_overlap(contigs)
     contigs_no_minus, minus_contigs = remove_minus(overlap, contigs)
     overlap_no_minus = get_overlap(contigs_no_minus)
@@ -201,10 +208,7 @@ def get_link(contigs):
         else:
             dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
-    # remove short circuit
     overlap_clean = clean_link(overlap_no_minus)
-    # for i in overlap_clean:
-    #    dot.edge(i[0], i[1], color='green')
     links = []
     scaffold = []
     # assume each seq only occurs once

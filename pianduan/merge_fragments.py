@@ -276,16 +276,23 @@ def merge_seq(contigs, links):
     contigs_d = {i.id: i for i in contigs}
     merged = []
     for link in links:
+        circle = (link[0][0] == link[-1][1])
         # qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart,
         # qend, sstart, send
         seq = contigs_d[link[0][0]]
         for node in link[:-1]:
             down = contigs_d[node[1]]
+            print(len(seq), node[1], len(down[node[11]:]))
             seq += down[node[11]:]
         # tail do not have link after itself
-        tail_seq = contigs_d[link[-1][1]]
-        seq += tail_seq[link[-1][11]:]
+        if not circle:
+            tail_seq = contigs_d[link[-1][1]]
+            seq += tail_seq[link[-1][11]:]
+        else:
+            print(len(seq), slice(0, -link[-1][8]), *link[-1])
+            seq = seq[:-link[-1][11]]
         seq.id = f'Merged_sequence {len(seq)}bp'
+        print(134502, seq.id)
         merged.append(seq)
     return merged
 

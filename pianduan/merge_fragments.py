@@ -141,6 +141,24 @@ def clean_link(overlap):
     for i in overlap:
         up_down[i[0]].add(i[1])
         down_up[i[1]].add(i[0])
+    # Remove transitively-inferible edges that across one contig
+    # Use while loop to remove all that kinds of edges?
+    shortcuts = set()
+    # Remove non-branching stretches
+    # One step is enough, if longer, may be alternative path
+    tips_u_d = set()
+    tips_d_u = set()
+    for up, down in up_down.items():
+        if len(down) == 1:
+            continue
+        down_down = set()
+        for d in down:
+            if d in up_down:
+                # if len(down_up[d]) > 1
+                down_down.update(up_down[d])
+            else:
+                tips_u_d.add((up, d))
+        shortcuts.update({(up, i) for i in down_down & down})
     # shortcuts between two circles
     between = []
     for down, up in down_up.items():
@@ -182,19 +200,22 @@ def clean_link(overlap):
     for up, down in up_down.items():
         if len(down) == 1:
             continue
-        path = [[i, ] for i in down]
-        print(path)
-        depth = 3
         down_down = set()
         for d in down:
             if d in up_down:
                 down_down.update(up_down[d])
         shortcuts.update({(up, i) for i in down_down & down})
     exclude = shortcuts & shortcuts_b
+    print('exclude ', exclude)
     shortcuts = shortcuts - exclude
     shortcuts_b = shortcuts_b - exclude
     cleaned_link = [raw[i] for i in raw if (i not in shortcuts and i not in
                                             tips)]
+    # a-b-c, a-d-c
+    bubble = []
+    dot.node('shortcuts', color='red', style='filled')
+    dot.node('tips', color='green', style='filled')
+    dot.node('shortcuts_b', color='orange', style='filled')
     for i in shortcuts:
         dot.edge(*i, color='red')
     for i in tips:
@@ -239,7 +260,7 @@ def get_link(contigs):
     overlap_clean = clean_link(overlap_no_minus)
     links = []
     scaffold = []
-    # assume each seq only occurs once
+    print()
     overlap_dict = {i[0]: i for i in overlap_clean}
     up_dict = {i[0]: i for i in overlap_clean}
     down_dict = {i[1]: i for i in overlap_clean}

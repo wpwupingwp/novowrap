@@ -146,7 +146,8 @@ def clean_link(overlap):
     shortcuts = set()
     # Remove non-branching stretches
     # One step is enough, if longer, may be alternative path
-    tips = set()
+    tips_u_d = set()
+    tips_d_u = set()
     for up, down in up_down.items():
         if len(down) == 1:
             continue
@@ -155,37 +156,34 @@ def clean_link(overlap):
             if d in up_down:
                 down_down.update(up_down[d])
             else:
-                tips.add((up, d))
+                tips_u_d.add((up, d))
         shortcuts.update({(up, i) for i in down_down & down})
     # shortcuts between two circles
     between = []
     for down, up in down_up.items():
-        n = len(down)
         if len(up) == 1:
             continue
         for u in up:
-            # type II
             if u not in down_up:
-                tips.add((u, down))
-                n -= 1
+                tips_d_u.add((u, down))
             else:
                 between.append([u, down])
-        if n != 1:
-            print('multi', up, down)
+    tips = tips_u_d | tips_d_u
     between_d = {}
     shortcuts_b = set()
     for i in between:
         i2 = [j.replace('_RC_', '') for j in i]
         key = '{}---{}'.format(*sorted(i2))
-        print(i, key)
         if key in between_d:
             shortcuts_b.add(tuple(i))
             shortcuts_b.add(tuple(between_d[key]))
         else:
             between_d[key] = tuple(i)
-    print('between_s', shortcuts_b)
+    exclude = shortcuts & shortcuts_b
+    shortcuts = shortcuts - exclude
+    shortcuts_b = shortcuts_b - exclude
     cleaned_link = [raw[i] for i in raw if (i not in shortcuts and i not in
-                                            tips and i not in shortcuts_b)]
+                                            tips)]
     for i in shortcuts:
         dot.edge(*i, color='red')
     for i in tips:
@@ -225,13 +223,12 @@ def get_link(contigs):
             dot.edge(i[0], i[1], color='#999999')
         else:
             dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
-    # remove orphan minus
+    # remove minus
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
     overlap_clean = clean_link(overlap_no_minus)
     links = []
     scaffold = []
     # assume each seq only occurs once
-    print()
     overlap_dict = {i[0]: i for i in overlap_clean}
     up_dict = {i[0]: i for i in overlap_clean}
     down_dict = {i[1]: i for i in overlap_clean}
@@ -280,6 +277,8 @@ def get_link(contigs):
         for j in i:
             dot.edge(j[0], j[1], color='blue')
     dot.render('graph')
+    for i in links:
+        print('->'.join([str((j[0], j[1])) for j in i]))
     return contigs_no_minus, links
 
 

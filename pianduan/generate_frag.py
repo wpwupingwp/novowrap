@@ -4,7 +4,7 @@ from Bio import SeqIO
 
 
 # oryza sativa cp's IR 20k
-def s(overlap=500, step=18000):
+def s(overlap=500, step=15000):
     result = []
     i = 0
     while i < len(a):
@@ -16,7 +16,7 @@ def s(overlap=500, step=18000):
 
 
 a = SeqIO.read('./Option_1_SRR1328237-rbcL.fasta', 'fasta')
-a = a+a[:10000]
+a = a+a[:18000]
 Short = s(overlap=100)
 SeqIO.write(Short, 'Short.fasta', 'fasta')
 Long = s(overlap=1000)

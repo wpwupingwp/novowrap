@@ -96,27 +96,23 @@ def remove_minus(overlap, contigs):
     for i in overlap:
         up, down, strand, *_ = i
         if strand == 'minus':
-            print()
             minus.add(down)
             # minus.update([up, down])
         else:
             plus.update([up, down])
     to_rc = minus - plus
-    print('torc', *to_rc)
     for i in to_rc:
         i_rc = contigs_d[i].reverse_complement(id='_RC_'+contigs_d[i].id)
         minus_contig.append(i_rc)
         contigs_d[i] = i_rc
     no_minus = list(contigs_d.values())
     # return contigs, contigs
-    print('remove or not')
     return no_minus, minus_contig
 
 
 def get_degree(up_dict, down_dict):
     degree = {}
     for up in up_dict:
-        print(up, up_dict[up])
         degree[up] = [0, len(up_dict[up])]
     for down in down_dict:
         if down in degree:
@@ -161,21 +157,43 @@ def clean_link(overlap):
             else:
                 tips.add((up, d))
         shortcuts.update({(up, i) for i in down_down & down})
+    # shortcuts between two circles
+    between = []
     for down, up in down_up.items():
+        n = len(down)
         if len(up) == 1:
             continue
         for u in up:
             # type II
             if u not in down_up:
                 tips.add((u, down))
+                n -= 1
+            else:
+                between.append([u, down])
+        if n != 1:
+            print('multi', up, down)
+    between_d = {}
+    shortcuts_b = set()
+    for i in between:
+        i2 = [j.replace('_RC_', '') for j in i]
+        key = '{}---{}'.format(*sorted(i2))
+        print(i, key)
+        if key in between_d:
+            shortcuts_b.add(tuple(i))
+            shortcuts_b.add(tuple(between_d[key]))
+        else:
+            between_d[key] = tuple(i)
+    print('between_s', shortcuts_b)
     cleaned_link = [raw[i] for i in raw if (i not in shortcuts and i not in
-                                            tips)]
+                                            tips and i not in shortcuts_b)]
     for i in shortcuts:
         dot.edge(*i, color='red')
     for i in tips:
         dot.edge(*i, color='green')
-    print('all, shortcuts, tips, clean')
-    print(len(overlap), len(shortcuts),  len(tips), len(cleaned_link))
+    for i in shortcuts_b:
+        dot.edge(*i, color='orange')
+    print('all, shortcuts, tips, between_s, clean')
+    print(len(overlap), len(shortcuts),  len(tips), len(shortcuts_b), len(cleaned_link))
     return cleaned_link
 
 
@@ -194,7 +212,6 @@ def get_link(contigs):
     overlap = get_overlap(contigs)
     contigs_no_minus, minus_contigs = remove_minus(overlap, contigs)
     overlap_no_minus = get_overlap(contigs_no_minus)
-    # remove orphan minus
     up_dict = defaultdict(set)
     # down_id: hit
     down_dict = defaultdict(set)
@@ -208,11 +225,13 @@ def get_link(contigs):
             dot.edge(i[0], i[1], color='#999999')
         else:
             dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
+    # remove orphan minus
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
     overlap_clean = clean_link(overlap_no_minus)
     links = []
     scaffold = []
     # assume each seq only occurs once
+    print()
     overlap_dict = {i[0]: i for i in overlap_clean}
     up_dict = {i[0]: i for i in overlap_clean}
     down_dict = {i[1]: i for i in overlap_clean}
@@ -289,7 +308,6 @@ def merge_seq(contigs, links):
             tail_seq = contigs_d[link[-1][1]]
             seq += tail_seq[link[-1][11]:]
         else:
-            print(len(seq), slice(0, -link[-1][8]), *link[-1])
             seq = seq[:-link[-1][11]]
         seq.id = f'Merged_sequence {len(seq)}bp'
         print(circle, 134502, seq.id)

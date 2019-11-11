@@ -154,6 +154,7 @@ def clean_link(overlap):
         down_down = set()
         for d in down:
             if d in up_down:
+                # if len(down_up[d]) > 1
                 down_down.update(up_down[d])
             else:
                 tips_u_d.add((up, d))
@@ -180,10 +181,13 @@ def clean_link(overlap):
         else:
             between_d[key] = tuple(i)
     exclude = shortcuts & shortcuts_b
+    # print('exclude ', exclude)
     shortcuts = shortcuts - exclude
     shortcuts_b = shortcuts_b - exclude
     cleaned_link = [raw[i] for i in raw if (i not in shortcuts and i not in
                                             tips)]
+    # a-b-c, a-d-c
+    bubble = []
     for i in shortcuts:
         dot.edge(*i, color='red')
     for i in tips:
@@ -228,7 +232,7 @@ def get_link(contigs):
     overlap_clean = clean_link(overlap_no_minus)
     links = []
     scaffold = []
-    # assume each seq only occurs once
+    print()
     overlap_dict = {i[0]: i for i in overlap_clean}
     up_dict = {i[0]: i for i in overlap_clean}
     down_dict = {i[1]: i for i in overlap_clean}

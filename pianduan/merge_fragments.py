@@ -141,34 +141,14 @@ def clean_link(overlap):
     for i in overlap:
         up_down[i[0]].add(i[1])
         down_up[i[1]].add(i[0])
-    # Remove transitively-inferible edges that across one contig
-    # Use while loop to remove all that kinds of edges?
-    shortcuts = set()
-    # Remove non-branching stretches
-    # One step is enough, if longer, may be alternative path
-    tips_u_d = set()
-    tips_d_u = set()
-    for up, down in up_down.items():
-        if len(down) == 1:
-            continue
-        down_down = set()
-        for d in down:
-            if d in up_down:
-                down_down.update(up_down[d])
-            else:
-                tips_u_d.add((up, d))
-        shortcuts.update({(up, i) for i in down_down & down})
     # shortcuts between two circles
     between = []
     for down, up in down_up.items():
         if len(up) == 1:
             continue
         for u in up:
-            if u not in down_up:
-                tips_d_u.add((u, down))
-            else:
+            if u in down_up:
                 between.append([u, down])
-    tips = tips_u_d | tips_d_u
     between_d = {}
     shortcuts_b = set()
     for i in between:
@@ -179,6 +159,37 @@ def clean_link(overlap):
             shortcuts_b.add(tuple(between_d[key]))
         else:
             between_d[key] = tuple(i)
+    # non-branching stretches
+    # One step is enough, if longer, may be alternative path
+    tips_u_d = set()
+    tips_d_u = set()
+    for up, down in up_down.items():
+        if len(down) == 1:
+            continue
+        for d in down:
+            if d not in up_down:
+                tips_u_d.add((up, d))
+    for down, up in down_up.items():
+        if len(up) == 1:
+            continue
+        for u in up:
+            if u not in down_up:
+                tips_d_u.add((u, down))
+    tips = tips_u_d | tips_d_u
+    # transitively-inferible edges that across one contig
+    # Use while loop to remove all that kinds of edges?
+    shortcuts = set()
+    for up, down in up_down.items():
+        if len(down) == 1:
+            continue
+        path = [[i, ] for i in down]
+        print(path)
+        depth = 3
+        down_down = set()
+        for d in down:
+            if d in up_down:
+                down_down.update(up_down[d])
+        shortcuts.update({(up, i) for i in down_down & down})
     exclude = shortcuts & shortcuts_b
     shortcuts = shortcuts - exclude
     shortcuts_b = shortcuts_b - exclude

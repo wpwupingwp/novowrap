@@ -86,7 +86,7 @@ def remove_minus(overlap, contigs):
     """
     a = []
     for i in contigs:
-        i_rc = i.reverse_complement(id='_RC_'+i.id)
+        i_rc = i.reverse_complement(id=PREFIX+i.id)
         a.extend([i, i_rc])
     return a, a
     plus = set()
@@ -102,12 +102,23 @@ def remove_minus(overlap, contigs):
             plus.update([up, down])
     to_rc = minus - plus
     for i in to_rc:
-        i_rc = contigs_d[i].reverse_complement(id='_RC_'+contigs_d[i].id)
+        i_rc = contigs_d[i].reverse_complement(id=PREFIX+contigs_d[i].id)
         minus_contig.append(i_rc)
         contigs_d[i] = i_rc
     no_minus = list(contigs_d.values())
     # return contigs, contigs
     return no_minus, minus_contig
+
+
+def reverse_link(link):
+    new = []
+    for i in reversed(link):
+        if i.startswith(PREFIX):
+            i = i.replace(PREFIX, '')
+        else:
+            i = PREFIX + i
+        new.append(i)
+    return tuple(new)
 
 
 def get_degree(up_dict, down_dict):
@@ -173,7 +184,7 @@ def clean_link2(overlap):
     between_d = {}
     shortcuts_b = set()
     for i in between:
-        i2 = [j.replace('_RC_', '') for j in i]
+        i2 = [j.replace(PREFIX, '') for j in i]
         key = '{}---{}'.format(*sorted(i2))
         if key in between_d:
             shortcuts_b.add(tuple(i))
@@ -196,7 +207,7 @@ def clean_link2(overlap):
         for u in up:
             if u not in down_up:
                 tips_d_u.add((u, down))
-    tips = tips_u_d | tips_d_u
+    short_tips = tips_u_d | tips_d_u
     # transitively-inferible edges that across one contig
     # Use while loop to remove all that kinds of edges?
     shortcuts = set()
@@ -209,14 +220,16 @@ def clean_link2(overlap):
                 down_down.update(up_down[d])
         shortcuts.update({(up, i) for i in down_down & down})
     exclude = shortcuts & shortcuts_b
-    print('exclude ', exclude)
+    #print('exclude ', exclude)
     shortcuts = shortcuts - exclude
     shortcuts_b = shortcuts_b - exclude
-    to_remove = shortcuts | tips | shortcuts_b
+    to_remove = shortcuts | short_tips | shortcuts_b
     cleaned_link = [raw[i] for i in raw if i not in to_remove]
     # a-b-c, a-d-c
     # or a-b-c-d, a-e
     bubble_path = []
+    # long tip, a-b-c-d-a, b-d
+    tips = set()
     # other types may ganrao bubble detection
     up_down, down_up = get_dict(cleaned_link)
     print('to be continue')
@@ -229,9 +242,23 @@ def clean_link2(overlap):
             step = 0
             p = [up, d]
             while step <= depth:
+                # more than one upstream
                 if len(down_up[d]) > 1:
                     break
-                if d not in up_down or len(up_down[d]) > 1:
+                # tail of linear
+                if d not in up_down:
+                    break
+                if len(up_down[d]) > 1:
+                    if up in up_down[d]:
+                        t = set(up_down[d])
+                        t.remove(up)
+                        print('t',t)
+                        if t is not None and len(t) != 0:
+                            tips.update(set((d, dd) for dd in t))
+                            r = set((reverse_link((d, dd)) for dd in t))
+                            # tips.update(r)
+                            print('r', r)
+                            print('found tip', tips)
                     break
                 d = up_down[d]
                 d = d.pop()
@@ -250,15 +277,16 @@ def clean_link2(overlap):
                 bubble_path.extend(path[1:])
             else:
                 print('shortcut', path)
-        else:
-            print('tip', path)
-            continue
             # bubble_and_tip.extend(sorted(path, key=len, reverse=True)[1:])
     bubble = set()
     for path in bubble_path:
         for i in range(len(path)-1):
             bubble.add((path[i], path[i+1]))
-    to_remove = to_remove.union(bubble)
+    for path in tips:
+        for i in range(len(path)-1):
+            tips.add((path[i], path[i+1]))
+    print('tips', tips)
+    to_remove = to_remove.union(bubble).union(tips)
     cleaned_link = [raw[i] for i in raw if i not in to_remove]
     dot.node('shortcuts', color='red', style='filled')
     dot.node('tips', color='green', style='filled')
@@ -275,9 +303,9 @@ def clean_link2(overlap):
     print('all, shortcuts, tips, between_s, bubble, clean')
     print(len(overlap), len(shortcuts),  len(tips), len(shortcuts_b),
           len(bubble), len(cleaned_link))
-    print('shortcuts', shortcuts)
+    # print('shortcuts', shortcuts)
     print('tips', tips)
-    print('shortcuts_b', shortcuts_b)
+    # print('shortcuts_b', shortcuts_b)
     print('bubble', bubble)
     return cleaned_link
 
@@ -328,7 +356,7 @@ def clean_link(overlap):
     between_d = {}
     shortcuts_b = set()
     for i in between:
-        i2 = [j.replace('_RC_', '') for j in i]
+        i2 = [j.replace(PREFIX, '') for j in i]
         key = '{}---{}'.format(*sorted(i2))
         if key in between_d:
             shortcuts_b.add(tuple(i))
@@ -514,6 +542,8 @@ def merge_seq(contigs, links):
 
 
 def merge_contigs(arg_str=None):
+    global PREFIX
+    PREFIX = '_RC_'
     if arg_str is None:
         arg = parse_args()
     else:

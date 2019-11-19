@@ -124,6 +124,164 @@ def get_degree(up_dict, down_dict):
     return degree
 
 
+def clean_link2(overlap):
+    """
+    Remove transitively-inferrible edges.
+    Remove orphan contigs ("island").
+    Remove non-branching stretches ("tips").
+    Arg:
+        overlap(list(blast_result)): link info of contigs
+    Return:
+        cleaned_link(list(blast_result)): clean link
+    """
+    def get_dict(overlap_list):
+        up_down = defaultdict(set)
+        down_up = defaultdict(set)
+        for i in overlap_list:
+            up_down[i[0]].add(i[1])
+            down_up[i[1]].add(i[0])
+        return up_down, down_up
+
+    raw = {(i[0], i[1]): i for i in overlap}
+    up_down, down_up = get_dict(overlap)
+    # Remove transitively-inferible edges that across one contig
+    # Use while loop to remove all that kinds of edges?
+    shortcuts = set()
+    # Remove non-branching stretches
+    # One step is enough, if longer, may be alternative path
+    tips_u_d = set()
+    tips_d_u = set()
+    for up, down in up_down.items():
+        if len(down) == 1:
+            continue
+        down_down = set()
+        for d in down:
+            if d in up_down:
+                # if len(down_up[d]) > 1
+                down_down.update(up_down[d])
+            else:
+                tips_u_d.add((up, d))
+        shortcuts.update({(up, i) for i in down_down & down})
+    # shortcuts between two circles
+    between = []
+    for down, up in down_up.items():
+        if len(up) == 1:
+            continue
+        for u in up:
+            if u in down_up:
+                between.append([u, down])
+    between_d = {}
+    shortcuts_b = set()
+    for i in between:
+        i2 = [j.replace('_RC_', '') for j in i]
+        key = '{}---{}'.format(*sorted(i2))
+        if key in between_d:
+            shortcuts_b.add(tuple(i))
+            shortcuts_b.add(tuple(between_d[key]))
+        else:
+            between_d[key] = tuple(i)
+    # non-branching stretches
+    # One step is enough, if longer, may be alternative path
+    tips_u_d = set()
+    tips_d_u = set()
+    for up, down in up_down.items():
+        if len(down) == 1:
+            continue
+        for d in down:
+            if d not in up_down:
+                tips_u_d.add((up, d))
+    for down, up in down_up.items():
+        if len(up) == 1:
+            continue
+        for u in up:
+            if u not in down_up:
+                tips_d_u.add((u, down))
+    tips = tips_u_d | tips_d_u
+    # transitively-inferible edges that across one contig
+    # Use while loop to remove all that kinds of edges?
+    shortcuts = set()
+    for up, down in up_down.items():
+        if len(down) == 1:
+            continue
+        down_down = set()
+        for d in down:
+            if d in up_down:
+                down_down.update(up_down[d])
+        shortcuts.update({(up, i) for i in down_down & down})
+    exclude = shortcuts & shortcuts_b
+    print('exclude ', exclude)
+    shortcuts = shortcuts - exclude
+    shortcuts_b = shortcuts_b - exclude
+    to_remove = shortcuts | tips | shortcuts_b
+    cleaned_link = [raw[i] for i in raw if i not in to_remove]
+    # a-b-c, a-d-c
+    # or a-b-c-d, a-e
+    bubble_path = []
+    # other types may ganrao bubble detection
+    up_down, down_up = get_dict(cleaned_link)
+    print('to be continue')
+    depth = len(up_down) - 1
+    for up, down in up_down.items():
+        if len(down) == 1:
+            continue
+        path = []
+        for d in down:
+            step = 0
+            p = [up, d]
+            while step <= depth:
+                if len(down_up[d]) > 1:
+                    break
+                if d not in up_down or len(up_down[d]) > 1:
+                    break
+                d = up_down[d]
+                d = d.pop()
+                p.append(d)
+                step += 1
+            path.append(p)
+        n_tail = len(set([p[-1] for p in path]))
+        n_length = len(set([len(p) for p in path]))
+        if len(path) == 0:
+            continue
+        if n_tail == 1:
+            if n_length == 1:
+                # same length, same head/tail
+                print('bubble', path)
+                # if bubble, keep the first
+                bubble_path.extend(path[1:])
+            else:
+                print('shortcut', path)
+        else:
+            print('tip', path)
+            continue
+            # bubble_and_tip.extend(sorted(path, key=len, reverse=True)[1:])
+    bubble = set()
+    for path in bubble_path:
+        for i in range(len(path)-1):
+            bubble.add((path[i], path[i+1]))
+    to_remove = to_remove.union(bubble)
+    cleaned_link = [raw[i] for i in raw if i not in to_remove]
+    dot.node('shortcuts', color='red', style='filled')
+    dot.node('tips', color='green', style='filled')
+    dot.node('shortcuts_b', color='orange', style='filled')
+    dot.node('bubble', color='purple', style='filled')
+    for i in shortcuts:
+        dot.edge(*i, color='red')
+    for i in tips:
+        dot.edge(*i, color='green')
+    for i in shortcuts_b:
+        dot.edge(*i, color='orange')
+    for i in bubble:
+        dot.edge(*i, color='purple')
+    print('all, shortcuts, tips, between_s, bubble, clean')
+    print(len(overlap), len(shortcuts),  len(tips), len(shortcuts_b),
+          len(bubble), len(cleaned_link))
+    print('shortcuts', shortcuts)
+    print('tips', tips)
+    print('shortcuts_b', shortcuts_b)
+    print('bubble', bubble)
+    return cleaned_link
+
+
 def clean_link(overlap):
     """
     Remove transitively-inferrible edges.
@@ -242,12 +400,6 @@ def get_link(contigs):
     overlap = get_overlap(contigs)
     contigs_no_minus, minus_contigs = remove_minus(overlap, contigs)
     overlap_no_minus = get_overlap(contigs_no_minus)
-    up_dict = defaultdict(set)
-    # down_id: hit
-    down_dict = defaultdict(set)
-    for i in overlap_no_minus:
-        up_dict[i[0]].add(i[1])
-        down_dict[i[1]].add(i[0])
     for i in overlap_no_minus:
         dot.node(i[0])
         dot.node(i[1])
@@ -257,7 +409,18 @@ def get_link(contigs):
             dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
     # remove minus
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
-    overlap_clean = clean_link(overlap_no_minus)
+    overlap_clean = clean_link2(overlap_no_minus)
+    overlap_clean = clean_link2(overlap_clean)
+    print()
+    up_dict = defaultdict(set)
+    down_dict = defaultdict(set)
+    for i in overlap_clean:
+        up_dict[i[0]].add(i[1])
+        down_dict[i[1]].add(i[0])
+    print('count')
+    print([i for i in up_dict.items() if len(i[1]) !=1])
+    print([i for i in down_dict.items() if len(i[1]) !=1])
+    print('count')
     links = []
     scaffold = []
     print()
@@ -361,7 +524,7 @@ def merge_contigs(arg_str=None):
     for f in arg.input:
         fasta = Path(f)
         for idx, record in enumerate(SeqIO.parse(fasta, 'fasta')):
-            record.id = f'{fasta.stem}-{idx}'
+            record.id = f'{fasta.stem.replace(".fasta", "")}-{idx}'
             record.description = ''
             contigs.append(record)
     shuffle(contigs)

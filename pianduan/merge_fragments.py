@@ -208,6 +208,8 @@ def clean_link2(overlap):
             if u not in down_up:
                 tips_d_u.add((u, down))
     short_tips = tips_u_d | tips_d_u
+    short_tips_r = {reverse_link(i) for i in short_tips}
+    short_tips = short_tips.union(short_tips_r)
     # transitively-inferible edges that across one contig
     # Use while loop to remove all that kinds of edges?
     shortcuts = set()
@@ -220,22 +222,21 @@ def clean_link2(overlap):
                 down_down.update(up_down[d])
         shortcuts.update({(up, i) for i in down_down & down})
     exclude = shortcuts & shortcuts_b
-    #print('exclude ', exclude)
     shortcuts = shortcuts - exclude
     shortcuts_b = shortcuts_b - exclude
-    to_remove = shortcuts | short_tips | shortcuts_b
+    to_remove = shortcuts | short_tips | short_tips_r | shortcuts_b
     cleaned_link = [raw[i] for i in raw if i not in to_remove]
     # a-b-c, a-d-c
     # or a-b-c-d, a-e
     bubble_path = []
     # long tip, a-b-c-d-a, b-d
+    print('shorttip', short_tips)
     tips = set()
     # other types may ganrao bubble detection
     up_down, down_up = get_dict(cleaned_link)
-    print('to be continue')
     depth = len(up_down) - 1
     for up, down in up_down.items():
-        if len(down) == 1:
+        if len(down) <= 1:
             continue
         path = []
         for d in down:
@@ -248,6 +249,13 @@ def clean_link2(overlap):
                 # tail of linear
                 if d not in up_down:
                     break
+                if up == d:
+                    good = tuple(p[:2])
+                    bad = {(up, i) for i in up_down[d]}
+                    bad.remove(good)
+                    r = {reverse_link(i) for i in bad}
+                    tips.update(bad)
+                    tips.update(r)
                 if len(up_down[d]) > 1:
                     if up in up_down[d]:
                         t = set(up_down[d])
@@ -256,7 +264,7 @@ def clean_link2(overlap):
                         if t is not None and len(t) != 0:
                             tips.update(set((d, dd) for dd in t))
                             r = set((reverse_link((d, dd)) for dd in t))
-                            # tips.update(r)
+                            tips.update(r)
                             print('r', r)
                             print('found tip', tips)
                     break
@@ -265,6 +273,7 @@ def clean_link2(overlap):
                 p.append(d)
                 step += 1
             path.append(p)
+        print(*path)
         n_tail = len(set([p[-1] for p in path]))
         n_length = len(set([len(p) for p in path]))
         if len(path) == 0:
@@ -292,10 +301,13 @@ def clean_link2(overlap):
     dot.node('tips', color='green', style='filled')
     dot.node('shortcuts_b', color='orange', style='filled')
     dot.node('bubble', color='purple', style='filled')
+    dot.node('short_tips', color='#00ff88', style='filled')
     for i in shortcuts:
         dot.edge(*i, color='red')
     for i in tips:
         dot.edge(*i, color='green')
+    for i in short_tips:
+        dot.edge(*i, color='#00ff88')
     for i in shortcuts_b:
         dot.edge(*i, color='orange')
     for i in bubble:
@@ -303,10 +315,11 @@ def clean_link2(overlap):
     print('all, shortcuts, tips, between_s, bubble, clean')
     print(len(overlap), len(shortcuts),  len(tips), len(shortcuts_b),
           len(bubble), len(cleaned_link))
-    # print('shortcuts', shortcuts)
-    print('tips', tips)
-    # print('shortcuts_b', shortcuts_b)
-    print('bubble', bubble)
+    #print('exclude ', exclude)
+    #print('shortcuts', shortcuts)
+    #print('tips', tips)
+    #print('shortcuts_b', shortcuts_b)
+    #print('bubble', bubble)
     return cleaned_link
 
 
@@ -434,6 +447,8 @@ def get_link(contigs):
         if i[2] == 'plus':
             dot.edge(i[0], i[1], color='#999999')
         else:
+            continue
+            print()
             dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
     # remove minus
     overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']

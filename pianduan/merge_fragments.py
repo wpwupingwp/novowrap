@@ -291,9 +291,6 @@ def clean_link2(overlap):
     for path in bubble_path:
         for i in range(len(path)-1):
             bubble.add((path[i], path[i+1]))
-    for path in tips:
-        for i in range(len(path)-1):
-            tips.add((path[i], path[i+1]))
     print('tips', tips)
     to_remove = to_remove.union(bubble).union(tips)
     cleaned_link = [raw[i] for i in raw if i not in to_remove]

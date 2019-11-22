@@ -39,7 +39,6 @@ def get_overlap(contigs):
         if len(query) == 0:
             continue
         ambiguous_base_n = len(sequence.seq.strip('ATCGatcg'))
-        # print('p ident min', p_ident_min)
         p_ident_min = int((1-(ambiguous_base_n/len(sequence)))*100)
         for hit in query:
             (qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen,
@@ -73,41 +72,19 @@ def get_overlap(contigs):
     return list(overlap_d1.values())
 
 
-def remove_minus(overlap, contigs):
+def add_rc(contigs):
     """
-    Use upstream/downstream information to find out contigs that should be
-    reverse-complement (paired minus).
+    Add reverse-complement contig
     Args:
-        overlap(list(blast_result)): link info of contigs
         contigs(list(SeqRecord)): contigs
     Return:
-        no_minus(list(SeqRecord)): contigs without minus
-        minus_contig(list(SeqRecord)): minus contigs
+        raw_and_rc(list(SeqRecord)): minus contigs
     """
-    a = []
+    raw_and_rc = []
     for i in contigs:
         i_rc = i.reverse_complement(id=PREFIX+i.id)
-        a.extend([i, i_rc])
-    return a, a
-    plus = set()
-    minus = set()
-    minus_contig = []
-    contigs_d = {i.id: i for i in contigs}
-    for i in overlap:
-        up, down, strand, *_ = i
-        if strand == 'minus':
-            minus.add(down)
-            # minus.update([up, down])
-        else:
-            plus.update([up, down])
-    to_rc = minus - plus
-    for i in to_rc:
-        i_rc = contigs_d[i].reverse_complement(id=PREFIX+contigs_d[i].id)
-        minus_contig.append(i_rc)
-        contigs_d[i] = i_rc
-    no_minus = list(contigs_d.values())
-    # return contigs, contigs
-    return no_minus, minus_contig
+        raw_and_rc.extend([i, i_rc])
+    return raw_and_rc
 
 
 def reverse_link(link):
@@ -121,29 +98,17 @@ def reverse_link(link):
     return tuple(new)
 
 
-def get_degree(up_dict, down_dict):
-    degree = {}
-    for up in up_dict:
-        degree[up] = [0, len(up_dict[up])]
-    for down in down_dict:
-        if down in degree:
-            degree[down] = [len(down_dict[down]), degree[down][1]]
-        else:
-            degree[down] = [len(down_dict[down]), 0]
-    for i in degree:
-        dot.node(i, xlabel=str(degree[i]))
-    return degree
-
-
-def clean_link2(overlap):
+def clean_overlap(overlap):
     """
-    Remove transitively-inferrible edges.
+    Remove transitively-inferrible edges ("shortcuts").
+    Remove edges across two circle ("shortcuts_b").
     Remove orphan contigs ("island").
     Remove non-branching stretches ("tips").
+    Remove alternative path ("bubble").
     Arg:
         overlap(list(blast_result)): link info of contigs
     Return:
-        cleaned_link(list(blast_result)): clean link
+        cleaned_overlap(list(blast_result)): clean link
     """
     def get_dict(overlap_list):
         up_down = defaultdict(set)
@@ -231,14 +196,14 @@ def clean_link2(overlap):
     shortcuts_b = shortcuts_b - exclude
     # to_remove = shortcuts | short_tips | shortcuts_b
     to_remove = shortcuts |  shortcuts_b
-    cleaned_link = [raw[i] for i in raw if i not in to_remove]
+    cleaned_overlap = [raw[i] for i in raw if i not in to_remove]
     # a-b-c, a-d-c
     # or a-b-c-d, a-e
     bubble_path = []
     # long tip, a-b-c-d-a, b-d
     tips = set()
     # other types may ganrao bubble detection
-    up_down, down_up = get_dict(cleaned_link)
+    up_down, down_up = get_dict(cleaned_overlap)
     depth = len(up_down) - 1
     for up, down in up_down.items():
         if len(down) <= 1:
@@ -266,7 +231,7 @@ def clean_link2(overlap):
                     if up in up_down[d]:
                         t = set(up_down[d])
                         t.remove(up)
-                        print('t',t)
+                        print('t', t)
                         if t is not None and len(t) != 0:
                             tips.update(set((d, dd) for dd in t))
                             r = set((reverse_link((d, dd)) for dd in t))
@@ -279,7 +244,6 @@ def clean_link2(overlap):
                 p.append(d)
                 step += 1
             path.append(p)
-        print('path', *path)
         n_tail = len(set([p[-1] for p in path]))
         n_length = len(set([len(p) for p in path]))
         if len(path) == 0:
@@ -324,7 +288,7 @@ def clean_link2(overlap):
     print('tips', tips)
     to_remove = to_remove.union(bubble).union(tips)
     to_remove = to_remove.union(bubble)
-    cleaned_link = [raw[i] for i in raw if i not in to_remove]
+    cleaned_overlap = [raw[i] for i in raw if i not in to_remove]
     for i in shortcuts:
         dot.edge(*i, color='red')
     for i in tips:
@@ -344,31 +308,30 @@ def clean_link2(overlap):
         s.node('short_tips', color='#88ff88', style='filled')
     print('all, shortcuts, tips, between_s, bubble, clean')
     print(len(overlap), len(shortcuts),  len(tips), len(shortcuts_b),
-          len(bubble), len(cleaned_link))
+          len(bubble), len(cleaned_overlap))
     #print('exclude ', exclude)
     #print('shortcuts', shortcuts)
     #print('tips', tips)
     #print('shortcuts_b', shortcuts_b)
     #print('bubble', bubble)
-    return cleaned_link
+    return cleaned_overlap
 
 
 def get_link(contigs):
     """
-    Reorder contigs by overlap.
-    Assume there is only one path to link.
+    Get overlap between contigs.
+    Remove overlap that may cause chaos.
     Args:
         contigs(list(SeqRecord)): contigs
     Return:
-        contigs_no_minus(list(SeqRecord)): contigs that remove minus
+        contigs_and_rc(list(SeqRecord)): contigs with their reverse-complements
         link(list(blast_result)): link info of contigs
     """
     global dot
     dot = Digraph(engine='dot', node_attr={'shape': 'cds'})
-    overlap = get_overlap(contigs)
-    contigs_no_minus, minus_contigs = remove_minus(overlap, contigs)
-    overlap_no_minus = get_overlap(contigs_no_minus)
-    for i in overlap_no_minus:
+    contigs_and_rc = add_rc(contigs)
+    overlap = get_overlap(contigs_and_rc)
+    for i in overlap:
         dot.node(i[0])
         dot.node(i[1])
         if i[2] == 'plus':
@@ -378,22 +341,22 @@ def get_link(contigs):
             print()
             dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
     # remove minus
-    overlap_no_minus = [i for i in overlap_no_minus if i[2] != 'minus']
-    overlap_clean = clean_link2(overlap_no_minus)
-    overlap_clean = clean_link2(overlap_clean)
-    print()
+    overlap_no_minus = [i for i in overlap if i[2] != 'minus']
+    overlap_clean = clean_overlap(overlap_no_minus)
+    # in case of missing bubble
+    # twice is enough
+    overlap_clean = clean_overlap(overlap_clean)
     up_dict = defaultdict(set)
     down_dict = defaultdict(set)
     for i in overlap_clean:
         up_dict[i[0]].add(i[1])
         down_dict[i[1]].add(i[0])
     print('count')
-    print([i for i in up_dict.items() if len(i[1]) !=1])
-    print([i for i in down_dict.items() if len(i[1]) !=1])
+    print('up-down', [i for i in up_dict.items() if len(i[1]) !=1])
+    print('down-up', [i for i in down_dict.items() if len(i[1]) !=1])
     print('count')
     links = []
     scaffold = []
-    print()
     overlap_dict = {i[0]: i for i in overlap_clean}
     up_dict = {i[0]: i for i in overlap_clean}
     down_dict = {i[1]: i for i in overlap_clean}
@@ -444,7 +407,7 @@ def get_link(contigs):
     dot.render('graph')
     for i in links:
         print('->'.join([str((j[0], j[1])) for j in i]))
-    return contigs_no_minus, links
+    return contigs_and_rc, links
 
 
 def merge_seq(contigs, links):

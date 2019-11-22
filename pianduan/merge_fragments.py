@@ -359,7 +359,8 @@ def get_link(contigs):
     scaffold = []
     overlap_dict = {i[0]: i for i in overlap_clean}
     up_dict = {i[0]: i for i in overlap_clean}
-    down_dict = {i[1]: i for i in overlap_clean}
+    # up/down dict should be same
+    down_dict = {i[1]: i for i in up_dict.values()}
     try:
         scaffold.append(overlap_dict.popitem()[1])
     except KeyError:

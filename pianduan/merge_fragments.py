@@ -224,7 +224,8 @@ def clean_link2(overlap):
     exclude = shortcuts & shortcuts_b
     shortcuts = shortcuts - exclude
     shortcuts_b = shortcuts_b - exclude
-    to_remove = shortcuts | short_tips | shortcuts_b
+    #to_remove = shortcuts | short_tips | shortcuts_b
+    to_remove = shortcuts |  shortcuts_b
     cleaned_link = [raw[i] for i in raw if i not in to_remove]
     # a-b-c, a-d-c
     # or a-b-c-d, a-e
@@ -274,7 +275,7 @@ def clean_link2(overlap):
                 p.append(d)
                 step += 1
             path.append(p)
-        print(*path)
+        print('path', *path)
         n_tail = len(set([p[-1] for p in path]))
         n_length = len(set([len(p) for p in path]))
         if len(path) == 0:
@@ -325,6 +326,7 @@ def clean_link2(overlap):
     for i in tips:
         dot.edge(*i, color='green')
     for i in short_tips:
+        continue
         dot.edge(*i, color='#88ff88')
     for i in shortcuts_b:
         dot.edge(*i, color='orange')
@@ -366,7 +368,6 @@ def get_link(contigs):
         dot.node(i[0])
         dot.node(i[1])
         if i[2] == 'plus':
-            continue
             dot.edge(i[0], i[1], color='#999999')
         else:
             continue

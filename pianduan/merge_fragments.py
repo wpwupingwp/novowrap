@@ -174,23 +174,18 @@ def clean_link2(overlap):
                 tips_u_d.add((up, d))
         shortcuts.update({(up, i) for i in down_down & down})
     # shortcuts between two circles
-    between = []
+    between = set()
     for down, up in down_up.items():
         if len(up) == 1:
             continue
         for u in up:
             if u in down_up:
-                between.append([u, down])
-    between_d = {}
+                between.add((u, down))
     shortcuts_b = set()
     for i in between:
-        i2 = [j.replace(PREFIX, '') for j in i]
-        key = '{}---{}'.format(*sorted(i2))
-        if key in between_d:
-            shortcuts_b.add(tuple(i))
-            shortcuts_b.add(tuple(between_d[key]))
-        else:
-            between_d[key] = tuple(i)
+        if reverse_link(i) in between:
+            shortcuts_b.add(i)
+            shortcuts_b.add(reverse_link(i))
     # non-branching stretches
     # One step is enough, if longer, may be alternative path
     tips_u_d = set()

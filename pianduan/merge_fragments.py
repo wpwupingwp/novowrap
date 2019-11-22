@@ -179,32 +179,42 @@ def clean_link2(overlap):
         if len(up) == 1:
             continue
         for u in up:
-            if u in down_up:
-                between.add((u, down))
+            between.add((u, down))
     shortcuts_b = set()
     for i in between:
         if reverse_link(i) in between:
             shortcuts_b.add(i)
             shortcuts_b.add(reverse_link(i))
-    # non-branching stretches
-    # One step is enough, if longer, may be alternative path
-    tips_u_d = set()
-    tips_d_u = set()
+    # another direction
+    between2 = set()
     for up, down in up_down.items():
         if len(down) == 1:
             continue
         for d in down:
-            if d not in up_down:
-                tips_u_d.add((up, d))
-    for down, up in down_up.items():
-        if len(up) == 1:
-            continue
-        for u in up:
-            if u not in down_up:
-                tips_d_u.add((u, down))
-    short_tips = tips_u_d | tips_d_u
-    short_tips_r = {reverse_link(i) for i in short_tips}
-    short_tips = short_tips.union(short_tips_r)
+            between.add((up, d))
+    for i in between2:
+        if reverse_link(i) in between2:
+            shortcuts_b.add(i)
+            shortcuts_b.add(reverse_link(i))
+    # non-branching stretches
+    # One step is enough, if longer, may be alternative path
+    #tips_u_d = set()
+    #tips_d_u = set()
+    #for up, down in up_down.items():
+    #    if len(down) == 1:
+    #        continue
+    #    for d in down:
+    #        if d not in up_down:
+    #            tips_u_d.add((up, d))
+    #for down, up in down_up.items():
+    #    if len(up) == 1:
+    #        continue
+    #    for u in up:
+    #        if u not in down_up:
+    #            tips_d_u.add((u, down))
+    #short_tips = tips_u_d | tips_d_u
+    #short_tips_r = {reverse_link(i) for i in short_tips}
+    #short_tips = short_tips.union(short_tips_r)
     # transitively-inferible edges that across one contig
     # Use while loop to remove all that kinds of edges?
     shortcuts = set()
@@ -219,14 +229,13 @@ def clean_link2(overlap):
     exclude = shortcuts & shortcuts_b
     shortcuts = shortcuts - exclude
     shortcuts_b = shortcuts_b - exclude
-    #to_remove = shortcuts | short_tips | shortcuts_b
+    # to_remove = shortcuts | short_tips | shortcuts_b
     to_remove = shortcuts |  shortcuts_b
     cleaned_link = [raw[i] for i in raw if i not in to_remove]
     # a-b-c, a-d-c
     # or a-b-c-d, a-e
     bubble_path = []
     # long tip, a-b-c-d-a, b-d
-    print('shorttip', short_tips)
     tips = set()
     # other types may ganrao bubble detection
     up_down, down_up = get_dict(cleaned_link)
@@ -320,9 +329,9 @@ def clean_link2(overlap):
         dot.edge(*i, color='red')
     for i in tips:
         dot.edge(*i, color='green')
-    for i in short_tips:
-        continue
-        dot.edge(*i, color='#88ff88')
+    #for i in short_tips:
+    #    continue
+    #    dot.edge(*i, color='#88ff88')
     for i in shortcuts_b:
         dot.edge(*i, color='orange')
     for i in bubble:

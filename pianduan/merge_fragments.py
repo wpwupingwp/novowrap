@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from collections import defaultdict
+from itertools import product as cartesian_product
 from pathlib import Path
 from sys import argv
 from random import shuffle
@@ -317,49 +318,17 @@ def clean_overlap(overlap):
     return cleaned_overlap
 
 
-def get_link(contigs):
+def get_path(overlap):
     """
-    Get overlap between contigs.
-    Remove overlap that may cause chaos.
+    Get path from overlap information.
     Args:
-        contigs(list(SeqRecord)): contigs
-    Return:
-        contigs_and_rc(list(SeqRecord)): contigs with their reverse-complements
-        link(list(blast_result)): link info of contigs
+        overlap(list(blast_result)): overlaps
+    Yield:
+        path(list(blast_result)): ordered path
     """
-    global dot
-    dot = Digraph(engine='dot', node_attr={'shape': 'cds'})
-    contigs_and_rc = add_rc(contigs)
-    overlap = get_overlap(contigs_and_rc)
-    for i in overlap:
-        dot.node(i[0])
-        dot.node(i[1])
-        if i[2] == 'plus':
-            dot.edge(i[0], i[1], color='#999999')
-        else:
-            continue
-            print()
-            dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
-    # remove minus
-    overlap_no_minus = [i for i in overlap if i[2] != 'minus']
-    overlap_clean = clean_overlap(overlap_no_minus)
-    # in case of missing bubble
-    # twice is enough
-    overlap_clean = clean_overlap(overlap_clean)
-    up_dict = defaultdict(set)
-    down_dict = defaultdict(set)
-    for i in overlap_clean:
-        up_dict[i[0]].add(i[1])
-        down_dict[i[1]].add(i[0])
-    print('count')
-    print('up-down', [i for i in up_dict.items() if len(i[1]) !=1])
-    print('down-up', [i for i in down_dict.items() if len(i[1]) !=1])
-    print('count')
-    links = []
     scaffold = []
-    overlap_dict = {i[0]: i for i in overlap_clean}
-    up_dict = {i[0]: i for i in overlap_clean}
-    # up/down dict should be same
+    overlap_dict = {i[0]: i for i in overlap}
+    up_dict = {i[0]: i for i in overlap}
     down_dict = {i[1]: i for i in up_dict.values()}
     try:
         scaffold.append(overlap_dict.popitem()[1])
@@ -395,13 +364,67 @@ def get_link(contigs):
         else:
             scaffold.append([None, None])
         if scaffold[0][0] is None and scaffold[-1][0] is None:
-            links.append(scaffold)
+            yield scaffold
             try:
                 scaffold = [overlap_dict.popitem()[1], ]
             except KeyError:
                 break
-    # remove [None, None]
-    links = [i[1:-1] for i in links]
+
+
+def get_link(contigs):
+    """
+    Get overlap between contigs.
+    Remove overlap that may cause chaos.
+    Args:
+        contigs(list(SeqRecord)): contigs
+    Return:
+        contigs_and_rc(list(SeqRecord)): contigs with their reverse-complements
+        link(list(blast_result)): link info of contigs
+    """
+    global dot
+    dot = Digraph(engine='dot', node_attr={'shape': 'cds'})
+    contigs_and_rc = add_rc(contigs)
+    overlap = get_overlap(contigs_and_rc)
+    for i in overlap:
+        dot.node(i[0])
+        dot.node(i[1])
+        if i[2] == 'plus':
+            dot.edge(i[0], i[1], color='#999999')
+        else:
+            continue
+            print()
+            dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
+    # remove minus
+    overlap_no_minus = [i for i in overlap if i[2] != 'minus']
+    overlap_clean = clean_overlap(overlap_no_minus)
+    # in case of missing bubble
+    # twice is enough
+    overlap_clean = clean_overlap(overlap_clean)
+    overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
+
+    up_dict = defaultdict(set)
+    down_dict = defaultdict(set)
+    for i in overlap_clean:
+        up_dict[i[0]].add(i[1])
+        down_dict[i[1]].add(i[0])
+    print('count')
+    print('up-down', [i for i in up_dict.items() if len(i[1]) !=1])
+    print('down-up', [i for i in down_dict.items() if len(i[1]) !=1])
+    print('count')
+    links = []
+    possible = []
+    up_down_clean = []
+    for up, down in up_dict.items():
+        if len(down) > 1:
+            possible.append([overlap_clean_dict[(up, d)] for d in down])
+        else:
+            up_down_clean.append(overlap_clean_dict[(up, down.pop())])
+    for i in cartesian_product(*possible):
+        combine = up_down_clean + list(i)
+        c = clean_overlap(combine)
+        for i in get_path(c):
+            # remove [None, None]
+            links.append(i[1:-1])
     for i in links:
         for j in i:
             dot.edge(j[0], j[1], color='blue')

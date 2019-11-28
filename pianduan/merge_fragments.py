@@ -55,23 +55,23 @@ def get_overlap(contigs):
             # normally, subject must be object's downstream
             # for tail->head, may be partial match
             if sstrand == 'plus':
-                if (qend == qlen and sstart == 1):
+                if sstart == 1:
+                    pass
+                elif qend == qlen:
+                    continue
                     pass
                 else:
                     # consider ambiguous base or not?
                     continue
                     print('to be continue')
             if sstrand == 'minus':
-                if (qstart == 1 and send == 1) or (
-                        qend == qlen and sstart == slen):
-                    pass
-                else:
-                    continue
+                # skip minus
+                continue
             overlap.append(hit)
     # qseqid-sseqid: hit
-    # ignore duplicate of plus-plus or minus-minus!
-    overlap_d1 = {tuple(sorted(i[:2])): i for i in overlap}
-    return list(overlap_d1.values())
+    # do not ignore duplicate of plus-plus
+    # overlap_d1 = {tuple(sorted(i[:2])): i for i in overlap}
+    return overlap
 
 
 def add_rc(contigs):
@@ -369,12 +369,13 @@ def get_link(contigs):
     for i in overlap:
         dot.node(i[0])
         dot.node(i[1])
-        if i[2] == 'plus':
-            dot.edge(i[0], i[1], color='#999999')
-        else:
-            continue
-            print()
-            dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
+        dot.edge(i[0], i[1], color='#999999')
+        # if i[2] == 'plus':
+        #     dot.edge(i[0], i[1], color='#999999')
+        # else:
+        #     continue
+        #     print()
+        #     dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
     # remove minus
     overlap_no_minus = [i for i in overlap if i[2] != 'minus']
     overlap_clean = clean_overlap(overlap_no_minus)
@@ -463,8 +464,10 @@ def merge_contigs(arg_str=None):
     contigs = []
     for f in arg.input:
         fasta = Path(f)
+        # some id may already use PREFIX
+        fasta_stem = fasta.stem.replace('.fasta', '').replace('_RC_', '-RC-')
         for idx, record in enumerate(SeqIO.parse(fasta, 'fasta')):
-            record.id = f'{fasta.stem.replace(".fasta", "")}-{idx}'
+            record.id = f'{fasta_stem}-{idx}'
             record.description = ''
             contigs.append(record)
     shuffle(contigs)

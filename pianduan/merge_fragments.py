@@ -250,7 +250,7 @@ def clean_overlap(overlap):
     for i in bubble:
         dot.edge(*i, color='purple')
     for i in exclude:
-        dot.edge(*i, color='#991342')
+        dot.edge(*i, color='cyan')
     with dot.subgraph(name='legend', node_attr={'shape': 'box'}) as s:
         s.node('shortcuts', color='red', style='filled')
         s.node('tips', color='green', style='filled')

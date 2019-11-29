@@ -357,9 +357,6 @@ def get_link(contigs):
     # remove minus
     overlap_no_minus = [i for i in overlap if i[2] != 'minus']
     overlap_clean = clean_overlap(overlap_no_minus)
-    # in case of missing bubble
-    # twice is enough
-    # overlap_clean = clean_overlap(overlap_clean)
     overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
 
     up_dict = defaultdict(set)

@@ -55,16 +55,13 @@ def get_overlap(contigs):
             # normally, subject must be object's downstream
             # for tail->head, may be partial match
             if sstrand == 'plus':
-                if sstart == 1:
-                    pass
-                elif qend == qlen:
-                    continue
+                if sstart == 1 and qend == qlen:
                     pass
                 else:
                     # consider ambiguous base or not?
                     continue
                     print('to be continue')
-            if sstrand == 'minus':
+            else:
                 # skip minus
                 continue
             overlap.append(hit)
@@ -104,7 +101,6 @@ def clean_overlap(overlap):
     """
     Remove transitively-inferrible edges ("shortcuts").
     Remove edges across two circle ("shortcuts_b").
-    Remove orphan contigs ("island").
     Remove non-branching stretches ("tips").
     Remove alternative path ("bubble").
     Arg:
@@ -122,24 +118,6 @@ def clean_overlap(overlap):
 
     raw = {(i[0], i[1]): i for i in overlap}
     up_down, down_up = get_dict(overlap)
-    # Remove transitively-inferible edges that across one contig
-    # Use while loop to remove all that kinds of edges?
-    shortcuts = set()
-    # Remove non-branching stretches
-    # One step is enough, if longer, may be alternative path
-    tips_u_d = set()
-    tips_d_u = set()
-    for up, down in up_down.items():
-        if len(down) == 1:
-            continue
-        down_down = set()
-        for d in down:
-            if d in up_down:
-                # if len(down_up[d]) > 1
-                down_down.update(up_down[d])
-            else:
-                tips_u_d.add((up, d))
-        shortcuts.update({(up, i) for i in down_down & down})
     # shortcuts between two circles
     between = set()
     for down, up in down_up.items():
@@ -152,7 +130,7 @@ def clean_overlap(overlap):
         if reverse_link(i) in between:
             shortcuts_b.add(i)
             shortcuts_b.add(reverse_link(i))
-    # another direction
+    # shortcuts_b in another direction
     between2 = set()
     for up, down in up_down.items():
         if len(down) == 1:
@@ -163,6 +141,8 @@ def clean_overlap(overlap):
         if reverse_link(i) in between2:
             shortcuts_b.add(i)
             shortcuts_b.add(reverse_link(i))
+    # Remove transitively-inferible edges that across one contig
+    # One step is enough, if longer, may be alternative path
     shortcuts = set()
     for up, down in up_down.items():
         if len(down) == 1:
@@ -275,19 +255,17 @@ def clean_overlap(overlap):
         dot.edge(*i, color='red')
     for i in tips:
         dot.edge(*i, color='green')
-    #for i in short_tips:
-    #    continue
-    #    dot.edge(*i, color='#88ff88')
     for i in shortcuts_b:
         dot.edge(*i, color='orange')
     for i in bubble:
         dot.edge(*i, color='purple')
+    for i in exclude:
+        dot.edge(*i, color='#995322')
     with dot.subgraph(name='legend', node_attr={'shape': 'box'}) as s:
         s.node('shortcuts', color='red', style='filled')
         s.node('tips', color='green', style='filled')
         s.node('shortcuts_b', color='orange', style='filled')
         s.node('bubble', color='purple', style='filled')
-        s.node('short_tips', color='#88ff88', style='filled')
     print('all, shortcuts, tips, between_s, bubble, clean')
     print(len(overlap), len(shortcuts),  len(tips), len(shortcuts_b),
           len(bubble), len(cleaned_overlap))
@@ -381,7 +359,7 @@ def get_link(contigs):
     overlap_clean = clean_overlap(overlap_no_minus)
     # in case of missing bubble
     # twice is enough
-    overlap_clean = clean_overlap(overlap_clean)
+    # overlap_clean = clean_overlap(overlap_clean)
     overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
 
     up_dict = defaultdict(set)

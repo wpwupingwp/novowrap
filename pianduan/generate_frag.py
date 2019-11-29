@@ -1,24 +1,42 @@
 #!/usr/bin/python3
 
 from Bio import SeqIO
+import argparse
 
 
 # oryza sativa cp's IR 20k
-def s(overlap=500, step=20000):
+
+def parse_args():
+    arg = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    arg.add_argument('-file', default='./Option_1_SRR1328237-rbcL.fasta')
+    arg.add_argument('-step', type=int, default=50000)
+    arg.add_argument('-extend', type=int, default=100000)
+    arg.add_argument('-overlap', type=int, default=1000)
+    arg.add_argument('-o', '--out', default='out',
+                     help='output directory')
+    arg.print_usage()
+    return arg.parse_args()
+
+
+def generate(overlap, step):
     result = []
     i = 0
-    while i < len(a):
-        seq = a[i:i+step]
+    while i < len(raw):
+        seq = raw[i:i+step]
         seq.id = f'{i}-{i+step}'
         result.append(seq)
         i = i + (step-overlap)
     return result
 
 
-a = SeqIO.read('./Option_1_SRR1328237-rbcL.fasta', 'fasta')
-#a = a+a[:100000]
-a = a+a[:90000]
-Short = s(overlap=100)
+arg = parse_args()
+print(arg)
+raw = SeqIO.read(arg.file, 'fasta')
+raw = raw + raw[:arg.extend]
+Short = generate(overlap=arg.overlap//2, step=arg.step)
+print('Short:', len(Short))
 SeqIO.write(Short, 'Short.fasta', 'fasta')
-Long = s(overlap=1000)
+Long = generate(overlap=arg.overlap, step=arg.step)
+print('Long:', len(Long))
 SeqIO.write(Long, 'Long.fasta', 'fasta')

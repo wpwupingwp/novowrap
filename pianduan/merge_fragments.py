@@ -54,13 +54,12 @@ def get_overlap(contigs):
                 continue
             # normally, subject must be object's downstream
             # for tail->head, may be partial match
+            # ambiguous base should not at head/tail
             if sstrand == 'plus':
                 if sstart == 1 and qend == qlen:
                     pass
                 else:
-                    # consider ambiguous base or not?
                     continue
-                    print('to be continue')
             else:
                 # skip minus
                 continue
@@ -192,13 +191,10 @@ def clean_overlap(overlap):
                     if up in up_down[d]:
                         t = set(up_down[d])
                         t.remove(up)
-                        # print('t', t)
                         if t is not None and len(t) != 0:
                             tips.update(set((d, dd) for dd in t))
                             r = set((reverse_link((d, dd)) for dd in t))
                             tips.update(r)
-                            # print('r', r)
-                            # print('found tip', tips)
                     break
                 d = set(up_down[d])
                 d = d.pop()
@@ -209,15 +205,10 @@ def clean_overlap(overlap):
         n_length = len(set([len(p) for p in path]))
         if len(path) == 0:
             continue
-        if n_tail == 1:
-            if n_length == 1:
-                # same length, same head/tail
-                # print('bubble', path)
-                # if bubble, keep the first
-                bubble_path.extend(path[1:])
-            else:
-                pass
-                # print('shortcut', path)
+        # same length, same head/tail
+        if n_tail == 1 and n_length == 1:
+            # if bubble, keep the first
+            bubble_path.extend(path[1:])
     # tips in another direction
     for down, up in down_up.items():
         if len(up) <= 1:
@@ -247,7 +238,6 @@ def clean_overlap(overlap):
     for path in bubble_path:
         for i in range(len(path)-1):
             bubble.add((path[i], path[i+1]))
-    # print('tips', tips)
     to_remove = to_remove.union(bubble).union(tips)
     to_remove = to_remove.union(bubble)
     cleaned_overlap = [raw[i] for i in raw if i not in to_remove]
@@ -260,7 +250,7 @@ def clean_overlap(overlap):
     for i in bubble:
         dot.edge(*i, color='purple')
     for i in exclude:
-        dot.edge(*i, color='#995322')
+        dot.edge(*i, color='#991342')
     with dot.subgraph(name='legend', node_attr={'shape': 'box'}) as s:
         s.node('shortcuts', color='red', style='filled')
         s.node('tips', color='green', style='filled')
@@ -269,11 +259,6 @@ def clean_overlap(overlap):
     print('all, shortcuts, tips, between_s, bubble, clean')
     print(len(overlap), len(shortcuts),  len(tips), len(shortcuts_b),
           len(bubble), len(cleaned_overlap))
-    #print('exclude ', exclude)
-    #print('shortcuts', shortcuts)
-    #print('tips', tips)
-    #print('shortcuts_b', shortcuts_b)
-    #print('bubble', bubble)
     return cleaned_overlap
 
 
@@ -348,15 +333,7 @@ def get_link(contigs):
         dot.node(i[0])
         dot.node(i[1])
         dot.edge(i[0], i[1], color='#999999')
-        # if i[2] == 'plus':
-        #     dot.edge(i[0], i[1], color='#999999')
-        # else:
-        #     continue
-        #     print()
-        #     dot.edge(i[0], i[1], color='#999999', style='dashed', dir='both')
-    # remove minus
-    overlap_no_minus = [i for i in overlap if i[2] != 'minus']
-    overlap_clean = clean_overlap(overlap_no_minus)
+    overlap_clean = clean_overlap(overlap)
     overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
 
     up_dict = defaultdict(set)
@@ -446,8 +423,8 @@ def merge_contigs(arg_str=None):
             record.description = ''
             contigs.append(record)
     shuffle(contigs)
-    contigs_no_minus, links = get_link(contigs)
-    merged = merge_seq(contigs_no_minus, links)
+    contigs_and_rc, links = get_link(contigs)
+    merged = merge_seq(contigs_and_rc, links)
     SeqIO.write(merged, Path(argv[1]).with_suffix('.merge'), 'fasta')
 
 

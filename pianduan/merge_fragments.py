@@ -8,7 +8,11 @@ from random import shuffle
 import argparse
 
 from Bio import SeqIO
-from graphviz import Digraph
+try:
+    from graphviz import Digraph
+    have_dot = True
+except ImportError:
+    have_dot = False
 
 from utils import blast, parse_blast_tab
 
@@ -106,6 +110,7 @@ def clean_overlap(overlap):
         overlap(list(blast_result)): link info of contigs
     Return:
         cleaned_overlap(list(blast_result)): clean link
+        edges(dict(set(dot.edge))): edges of overlap
     """
     def get_dict(overlap_list):
         up_down = defaultdict(set)
@@ -241,25 +246,13 @@ def clean_overlap(overlap):
     to_remove = to_remove.union(bubble).union(tips)
     to_remove = to_remove.union(bubble)
     cleaned_overlap = [raw[i] for i in raw if i not in to_remove]
-    for i in shortcuts:
-        dot.edge(*i, color='red')
-    for i in tips:
-        dot.edge(*i, color='green')
-    for i in shortcuts_b:
-        dot.edge(*i, color='orange')
-    for i in bubble:
-        dot.edge(*i, color='purple')
-    for i in exclude:
-        dot.edge(*i, color='cyan')
-    with dot.subgraph(name='legend', node_attr={'shape': 'box'}) as s:
-        s.node('shortcuts', color='red', style='filled')
-        s.node('tips', color='green', style='filled')
-        s.node('shortcuts_b', color='orange', style='filled')
-        s.node('bubble', color='purple', style='filled')
-    print('all, shortcuts, tips, between_s, bubble, clean')
-    print(len(overlap), len(shortcuts),  len(tips), len(shortcuts_b),
-          len(bubble), len(cleaned_overlap))
-    return cleaned_overlap
+    edges = {}
+    edges['shortcuts'] = shortcuts
+    edges['tips'] = tips
+    edges['shortcuts_b'] = shortcuts_b
+    edges['bubble'] = bubble
+    edges['exclude'] = exclude
+    return cleaned_overlap, edges
 
 
 def get_path(overlap):
@@ -325,15 +318,9 @@ def get_link(contigs):
         contigs_and_rc(list(SeqRecord)): contigs with their reverse-complements
         link(list(blast_result)): link info of contigs
     """
-    global dot
-    dot = Digraph(engine='dot', node_attr={'shape': 'cds'})
     contigs_and_rc = add_rc(contigs)
     overlap = get_overlap(contigs_and_rc)
-    for i in overlap:
-        dot.node(i[0])
-        dot.node(i[1])
-        dot.edge(i[0], i[1], color='#999999')
-    overlap_clean = clean_overlap(overlap)
+    overlap_clean, edges = clean_overlap(overlap)
     overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
 
     up_dict = defaultdict(set)
@@ -355,14 +342,36 @@ def get_link(contigs):
             up_down_clean.append(overlap_clean_dict[(up, down.pop())])
     for i in cartesian_product(*possible):
         combine = up_down_clean + list(i)
-        c = clean_overlap(combine)
-        for i in get_path(c):
+        c, _ = clean_overlap(combine)
+        for i  in get_path(c):
             # remove [None, None]
             links.append(i[1:-1])
+    edges['link'] = set()
     for i in links:
         for j in i:
-            dot.edge(j[0], j[1], color='blue')
-    dot.render('graph')
+            edges['link'].add((j[0], j[1]))
+    # draw
+    if have_dot:
+        dot = Digraph(engine='dot', node_attr={'shape': 'cds'})
+        for i in overlap:
+            dot.node(i[0])
+            dot.node(i[1])
+        # dot.edge(i[0], i[1], color='#999999')
+        for edge in edges['link']:
+            dot.edge(*edge, color='blue')
+        for edge in edges['shortcuts']:
+            dot.edge(*edge, color='red')
+        for edge in edges['tips']:
+            dot.edge(*edge, color='green')
+        for edge in edges['shortcuts_b']:
+            dot.edge(*edge, color='orange')
+        for edge in edges['bubble']:
+            dot.edge(*edge, color='purple')
+        for edge in edges['exclude']:
+            continue
+            dot.edge(*edge, color='blue')
+
+        dot.render('graph.dot')
     for i in links:
         print('->'.join([str((j[0], j[1])) for j in i]))
     return contigs_and_rc, links

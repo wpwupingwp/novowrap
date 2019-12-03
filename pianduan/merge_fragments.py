@@ -368,19 +368,32 @@ def get_link(contigs):
     return contigs_and_rc, links
 
 
-def merge_seq(contigs, links):
+def merge_seq(contigs, links, arg):
     """
     Use overlap information of contigs to merge them.
     Assume link_info only contains one kind of link route.
     Arg:
         contigs(list(SeqRecord)): contigs
         links(list(blast_result)): link info of contigs
+        arg(NameSpace): options (how many results to keep)
     Return:
         merged(list(SeqRecord)): list of merged sequences
     """
+    # give 2 circular result at most
+    _max_circular = 2
+    # break if too much linear
+    _max_linear = 10
     contigs_d = {i.id: i for i in contigs}
-    merged = []
+    circular = []
+    linear = []
+    n = 0
     for link in links:
+        if len(circular) >= _max_circular or n >= _max_linear*10:
+            # collect 10X candidates for linear
+            # keep longest
+            linear.sort(key=lambda x: len(x), reverse=True)
+            linear = linear[:_max_linear]
+            break
         circle = (link[0][0] == link[-1][1])
         # qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart,
         # qend, sstart, send
@@ -398,10 +411,14 @@ def merge_seq(contigs, links):
         print(circle, 134502, seq.id)
         # seems circle is ok, non-circle is always bad result
         if circle:
-            merged.append(seq)
+            circular.append(seq)
         else:
-            continue
-    return merged
+            linear.append(seq)
+        n += 1
+    if len(circular) != 0:
+        return circular
+    else:
+        return linear
 
 
 def merge_contigs(arg_str=None):
@@ -424,8 +441,13 @@ def merge_contigs(arg_str=None):
             contigs.append(record)
     shuffle(contigs)
     contigs_and_rc, links = get_link(contigs)
-    merged = merge_seq(contigs_and_rc, links)
-    SeqIO.write(merged, Path(argv[1]).with_suffix('.merge'), 'fasta')
+    merged = merge_seq(contigs_and_rc, links, arg)
+    print(merged)
+    if len(merged) == 0:
+        print('Failed to merge contigs.')
+    else:
+        SeqIO.write(merged, Path(argv[1]).with_suffix('.merge'), 'fasta')
+    return len(merged)
 
 
 if __name__ == '__main__':

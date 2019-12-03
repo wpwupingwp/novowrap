@@ -9,13 +9,13 @@ import argparse
 def parse_args():
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    arg.add_argument('-file', default='./Option_1_SRR1328237-rbcL.fasta')
-    arg.add_argument('-step', type=int, default=50000)
-    arg.add_argument('-extend', type=int, default=100000)
-    arg.add_argument('-overlap', type=int, default=1000)
+    arg.add_argument('-file', default='./Option_1_SRR1328237-rbcL.fasta',
+                     help='input file')
+    arg.add_argument('-step', type=int, default=50000, help='step length')
+    arg.add_argument('-extend', type=int, default=80000, help='extend length')
+    arg.add_argument('-overlap', type=int, default=1000, help='overlap length')
     arg.add_argument('-o', '--out', default='out',
                      help='output directory')
-    arg.print_usage()
     return arg.parse_args()
 
 

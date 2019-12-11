@@ -255,13 +255,17 @@ def clean_overlap(overlap):
     return cleaned_overlap, edges
 
 
-def get_path(overlap):
+def get_path(overlap, shortcuts_b_dict):
     """
     Get path from overlap information.
     Args:
         overlap(list(blast_result)): overlaps
+        shortcuts_b(dict): overlaps that was removed as shortcuts between two
+        circle, may be used to fix broken link
     Yield:
         path(list(blast_result)): ordered path
+        is_circle(bool): is circle or not (linear)
+        is_amend(bool): used shortcuts_b or not
     """
     scaffold = []
     overlap_dict = {i[0]: i for i in overlap}
@@ -301,7 +305,19 @@ def get_path(overlap):
         else:
             scaffold.append([None, None])
         if scaffold[0][0] is None and scaffold[-1][0] is None:
-            yield scaffold
+            clean_scaffold = scaffold[1:-1]
+            is_circle = (clean_scaffold[0][0] == clean_scaffold[-1][1])
+            if is_circle:
+                is_amend = False
+            else:
+                tail_to_head = shortcuts_b_dict.get(
+                    (clean_scaffold[-1][1], clean_scaffold[0][0]), None)
+                if tail_to_head is None:
+                    is_amend = False
+                else:
+                    clean_scaffold.append(tail_to_head)
+                    is_amend = True
+            yield clean_scaffold, is_circle, is_amend
             try:
                 scaffold = [overlap_dict.popitem()[1], ]
             except KeyError:
@@ -328,10 +344,8 @@ def get_link(contigs):
     for i in overlap_clean:
         up_dict[i[0]].add(i[1])
         down_dict[i[1]].add(i[0])
-    print('count')
     print('up-down', [i for i in up_dict.items() if len(i[1]) !=1])
     print('down-up', [i for i in down_dict.items() if len(i[1]) !=1])
-    print('count')
     links = []
     possible = []
     up_down_clean = []
@@ -340,15 +354,15 @@ def get_link(contigs):
             possible.append([overlap_clean_dict[(up, d)] for d in down])
         else:
             up_down_clean.append(overlap_clean_dict[(up, down.pop())])
+    shortcuts_b_dict = {(i[0], i[1]): i for i in edges['shortcuts_b']}
     for i in cartesian_product(*possible):
         combine = up_down_clean + list(i)
         c, _ = clean_overlap(combine)
-        for i  in get_path(c):
-            # remove [None, None]
-            links.append(i[1:-1])
+        for link in get_path(c, shortcuts_b_dict):
+            links.append(link)
     edges['link'] = set()
     for i in links:
-        for j in i:
+        for j in i[0]:
             edges['link'].add((j[0], j[1]))
     # draw
     if have_dot:
@@ -370,10 +384,9 @@ def get_link(contigs):
         for edge in edges['exclude']:
             continue
             dot.edge(*edge, color='blue')
-
         dot.render('graph.dot')
     for i in links:
-        print('->'.join([str((j[0], j[1])) for j in i]))
+        print('->'.join([str((j[0], j[1])) for j in i[0]]))
     return contigs_and_rc, links
 
 
@@ -383,27 +396,23 @@ def merge_seq(contigs, links, arg):
     Assume link_info only contains one kind of link route.
     Arg:
         contigs(list(SeqRecord)): contigs
-        links(list(blast_result)): link info of contigs
+        links(list(blast_result, is_circle, is_amend)): link info of contigs
         arg(NameSpace): options (how many results to keep)
     Return:
         merged(list(SeqRecord)): list of merged sequences
     """
     # give 2 circular result at most
-    _max_circular = 2
+    MAX_CIRCLE = 2
     # break if too much linear
-    _max_linear = 10
+    MAX_LINEAR = 10
     contigs_d = {i.id: i for i in contigs}
     circular = []
-    linear = []
+    circular_amend = []
+    linear_d = {}
     n = 0
-    for link in links:
-        if len(circular) >= _max_circular or n >= _max_linear*10:
-            # collect 10X candidates for linear
-            # keep longest
-            linear.sort(key=lambda x: len(x), reverse=True)
-            linear = linear[:_max_linear]
+    for link, is_circle, is_amend in links:
+        if len(circular) >= MAX_CIRCLE or len(linear_d) >= MAX_LINEAR:
             break
-        circle = (link[0][0] == link[-1][1])
         # qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart,
         # qend, sstart, send
         seq = contigs_d[link[0][0]]
@@ -411,23 +420,39 @@ def merge_seq(contigs, links, arg):
             down = contigs_d[node[1]]
             seq += down[node[11]:]
         # tail do not have link after itself
-        if not circle:
+        if not is_circle:
             tail_seq = contigs_d[link[-1][1]]
-            seq += tail_seq[link[-1][11]:]
+            try:
+                seq += tail_seq[link[-1][11]:]
+            # rare
+            except IndexError:
+                print('rare')
+                pass
         else:
             seq = seq[:-link[-1][11]]
         seq.id = f'Merged_sequence {len(seq)}bp'
-        print(circle, 134502, seq.id)
+        print(is_circle, is_amend, 134502, seq.id)
         # seems circle is ok, non-circle is always bad result
-        if circle:
-            circular.append(seq)
+        if is_circle:
+            if not is_amend:
+                circular.append(seq)
+            else:
+                circular_amend.append(seq)
         else:
-            linear.append(seq)
+            if not len(seq) in linear_d:
+                linear_d[len(seq)] = seq
         n += 1
+    # keep longest
+    linear_long = sorted(list(linear_d.values()), key=len,
+                         reverse=True)[:MAX_LINEAR]
     if len(circular) != 0:
         return circular
+    elif len(circular_amend) != 0:
+        # circular_amend may not ok, add some linear as backup
+        circular_amend.extend(linear_long)
+        return circular_amend
     else:
-        return linear
+        return linear_long
 
 
 def merge_contigs(arg_str=None):

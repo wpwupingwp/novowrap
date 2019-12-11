@@ -203,8 +203,7 @@ def _repeat(filename, fmt):
     new_file = filename.with_suffix('.rpt')
     new_fasta = filename.with_suffix('.rpt_fasta')
     raw = SeqIO.read(filename, fmt)
-    # new = raw + raw
-    print('one and half')
+    # assume given sequence is a whole chloroplast genome, no more or less
     new = raw + raw
     SeqIO.write(new, new_file, fmt)
     if fmt != 'fasta':
@@ -361,8 +360,8 @@ def rotate_seq(filename, min_IR=1000, silence=True):
             if len(set(location)) != 4:
                 continue
             # filter short hit
+            # the longest is IR
             if length < max_aln_n:
-                print('longest is IR?')
                 continue
             else:
                 max_aln_n = length

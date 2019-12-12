@@ -321,6 +321,7 @@ def get_link(contigs):
         contigs_and_rc(list(SeqRecord)): contigs with their reverse-complements
         link(list(blast_result)): link info of contigs
     """
+    MAX_TRY = 2 ** 16
     contigs_and_rc = add_rc(contigs)
     overlap = get_overlap(contigs_and_rc)
     overlap_clean, edges = clean_overlap(overlap)
@@ -341,9 +342,11 @@ def get_link(contigs):
             possible.append([overlap_clean_dict[(up, d)] for d in down])
         else:
             up_down_clean.append(overlap_clean_dict[(up, down.pop())])
-    if len(possible) >16:
-        print('Too much possible, may be slow', len(possible))
+    n = 0
     for i in cartesian_product(*possible):
+        if n >= MAX_TRY:
+            break
+        n += 1
         combine = up_down_clean + list(i)
         # print(necessary?)
         #c, _ = clean_overlap(combine)
@@ -395,11 +398,10 @@ def merge_seq(contigs, links, arg):
     # give 2 circular result at most
     MAX_CIRCLE = 2
     # break if too much linear
-    MAX_LINEAR = 10
+    MAX_LINEAR = 20
     contigs_d = {i.id: i for i in contigs}
     circular = []
     linear_d = {}
-    n = 0
     for link, is_circle in links:
         if len(circular) >= MAX_CIRCLE or len(linear_d) >= MAX_LINEAR:
             break
@@ -426,10 +428,7 @@ def merge_seq(contigs, links, arg):
         if is_circle:
             circular.append(seq)
         else:
-            # for each length, keep only one
-            if not len(seq) in linear_d:
-                linear_d[len(seq)] = seq
-        n += 1
+            linear_d[len(seq)] = seq
     # keep longest
     linear_long = sorted(list(linear_d.values()), key=len,
                          reverse=True)[:MAX_LINEAR]

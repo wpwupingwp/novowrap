@@ -427,8 +427,9 @@ def merge_seq(contigs, links):
                 pass
         else:
             seq = seq[:-link[-1][11]]
-        seq.id = f'Merged_sequence {len(seq)}bp'
-        print(is_circle, 134502, seq.id)
+        seq.id = f'Merged_sequence {len(seq)}bp is_circle={is_circle}'
+        seq.description = ''
+        print(134502, seq.id)
         # seems circle is ok, non-circle is always bad result
         if is_circle:
             circular.append(seq)

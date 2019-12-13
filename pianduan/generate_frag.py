@@ -12,7 +12,7 @@ def parse_args():
     arg.add_argument('-file', default='./Option_1_SRR1328237-rbcL.fasta',
                      help='input file')
     arg.add_argument('-step', type=int, default=50000, help='step length')
-    arg.add_argument('-extend', type=int, default=80000, help='extend length')
+    arg.add_argument('-extend', type=int, default=40000, help='extend length')
     arg.add_argument('-overlap', type=int, default=1000, help='overlap length')
     arg.add_argument('-o', '--out', default='out',
                      help='output directory')

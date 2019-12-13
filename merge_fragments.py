@@ -5,6 +5,7 @@ from itertools import product as cartesian_product
 from pathlib import Path
 from random import shuffle
 import argparse
+import logging
 
 from Bio import SeqIO
 try:
@@ -28,6 +29,103 @@ def parse_args(arg_list=None):
         return arg.parse_args()
     else:
         return arg.parse_args(arg_list)
+
+
+def reverse_link(link):
+    new = []
+    for i in reversed(link):
+        if i.startswith(PREFIX):
+            i = i.replace(PREFIX, '')
+        else:
+            i = PREFIX + i
+        new.append(i)
+    return tuple(new)
+
+
+def get_path(overlap):
+    """
+    Get path from overlap information.
+    Args:
+        overlap(list(blast_result)): overlaps
+    Yield:
+        path(list(blast_result)): ordered path
+        is_circle(bool): is circle or not (linear)
+    """
+    scaffold = []
+    overlap_dict = {i[0]: i for i in overlap}
+    up_dict = {i[0]: i for i in overlap}
+    down_dict = {i[1]: i for i in up_dict.values()}
+    try:
+        scaffold.append(overlap_dict.popitem()[1])
+    except KeyError:
+        raise Exception
+    while True:
+        try:
+            up_name = scaffold[0][0]
+            down_name = scaffold[-1][1]
+        # name is None
+        except TypeError:
+            up_name = None
+            down_name = None
+        # if downstream not in overlap_dict:
+        if up_name is None:
+            pass
+        elif up_name in down_dict:
+            upstream = down_dict[up_name][0]
+            if upstream in overlap_dict:
+                scaffold = [overlap_dict.pop(upstream), *scaffold]
+            else:
+                scaffold = [[None, None], *scaffold]
+        else:
+            # [None, None] as head/tail
+            scaffold = [[None, None], *scaffold]
+        if down_name is None:
+            pass
+        elif down_name in up_dict:
+            downstream = up_dict[down_name][0]
+            if downstream in overlap_dict:
+                scaffold.append(overlap_dict.pop(downstream))
+            else:
+                scaffold.append([None, None])
+        else:
+            scaffold.append([None, None])
+        if scaffold[0][0] is None and scaffold[-1][0] is None:
+            clean_scaffold = scaffold[1:-1]
+            is_circle = (clean_scaffold[0][0] == clean_scaffold[-1][1])
+            yield clean_scaffold, is_circle
+            try:
+                scaffold = [overlap_dict.popitem()[1], ]
+            except KeyError:
+                break
+
+
+def get_contig(files, out):
+    """
+    Get contigs (SeqRecord) from input files.
+    Add reverse-complement of each contigs.
+    Args:
+        files(list(str)): input files
+        out(Path): output file name
+    Return:
+        contigs_and_rc(list(SeqRecord)): contigs with their reverse-complements
+        contigs_and_rc_fasta(Path): fasta file
+    """
+    contigs_and_rc = []
+    for f in files:
+        fasta = Path(f)
+        # some id may already used PREFIX
+        fasta_stem = fasta.stem.replace('.fasta', '').replace(PREFIX, '-RC-')
+        for idx, record in enumerate(SeqIO.parse(fasta, 'fasta')):
+            record.id = f'{fasta_stem}-{idx}'
+            record.description = ''
+            contigs_and_rc.append(record)
+            record_rc = record.reverse_complement(id=PREFIX+record.id)
+            contigs_and_rc.append(record_rc)
+    # print(necessary?)
+    shuffle(contigs_and_rc)
+    contigs_and_rc_fasta = out.with_suffix('.with_rc.fasta')
+    SeqIO.write(contigs_and_rc, contigs_and_rc_fasta, 'fasta')
+    return contigs_and_rc, contigs_and_rc_fasta
 
 
 def get_overlap(contigs, contigs_and_rc_fasta):
@@ -70,17 +168,6 @@ def get_overlap(contigs, contigs_and_rc_fasta):
                 continue
             overlap.append(hit)
     return overlap
-
-
-def reverse_link(link):
-    new = []
-    for i in reversed(link):
-        if i.startswith(PREFIX):
-            i = i.replace(PREFIX, '')
-        else:
-            i = PREFIX + i
-        new.append(i)
-    return tuple(new)
 
 
 def clean_overlap(overlap):
@@ -238,92 +325,6 @@ def clean_overlap(overlap):
     return cleaned_overlap, edges
 
 
-def get_path(overlap):
-    """
-    Get path from overlap information.
-    Args:
-        overlap(list(blast_result)): overlaps
-    Yield:
-        path(list(blast_result)): ordered path
-        is_circle(bool): is circle or not (linear)
-    """
-    scaffold = []
-    overlap_dict = {i[0]: i for i in overlap}
-    up_dict = {i[0]: i for i in overlap}
-    down_dict = {i[1]: i for i in up_dict.values()}
-    try:
-        scaffold.append(overlap_dict.popitem()[1])
-    except KeyError:
-        raise Exception
-    while True:
-        try:
-            up_name = scaffold[0][0]
-            down_name = scaffold[-1][1]
-        # name is None
-        except TypeError:
-            up_name = None
-            down_name = None
-        # if downstream not in overlap_dict:
-        if up_name is None:
-            pass
-        elif up_name in down_dict:
-            upstream = down_dict[up_name][0]
-            if upstream in overlap_dict:
-                scaffold = [overlap_dict.pop(upstream), *scaffold]
-            else:
-                scaffold = [[None, None], *scaffold]
-        else:
-            # [None, None] as head/tail
-            scaffold = [[None, None], *scaffold]
-        if down_name is None:
-            pass
-        elif down_name in up_dict:
-            downstream = up_dict[down_name][0]
-            if downstream in overlap_dict:
-                scaffold.append(overlap_dict.pop(downstream))
-            else:
-                scaffold.append([None, None])
-        else:
-            scaffold.append([None, None])
-        if scaffold[0][0] is None and scaffold[-1][0] is None:
-            clean_scaffold = scaffold[1:-1]
-            is_circle = (clean_scaffold[0][0] == clean_scaffold[-1][1])
-            yield clean_scaffold, is_circle
-            try:
-                scaffold = [overlap_dict.popitem()[1], ]
-            except KeyError:
-                break
-
-
-def get_contig(files, out):
-    """
-    Get contigs (SeqRecord) from input files.
-    Add reverse-complement of each contigs.
-    Args:
-        files(list(str)): input files
-        out(Path): output file name
-    Return:
-        contigs_and_rc(list(SeqRecord)): contigs with their reverse-complements
-        contigs_and_rc_fasta(Path): fasta file
-    """
-    contigs_and_rc = []
-    for f in files:
-        fasta = Path(f)
-        # some id may already used PREFIX
-        fasta_stem = fasta.stem.replace('.fasta', '').replace(PREFIX, '-RC-')
-        for idx, record in enumerate(SeqIO.parse(fasta, 'fasta')):
-            record.id = f'{fasta_stem}-{idx}'
-            record.description = ''
-            contigs_and_rc.append(record)
-            record_rc = record.reverse_complement(id=PREFIX+record.id)
-            contigs_and_rc.append(record_rc)
-    # print(necessary?)
-    shuffle(contigs_and_rc)
-    contigs_and_rc_fasta = out.with_suffix('.with_rc.fasta')
-    SeqIO.write(contigs_and_rc, contigs_and_rc_fasta, 'fasta')
-    return contigs_and_rc, contigs_and_rc_fasta
-
-
 def get_link(contigs_and_rc, contigs_and_rc_fasta):
     """
     Get overlap between contigs.
@@ -460,4 +461,13 @@ def merge_contigs(arg_str=None):
 
 
 if __name__ == '__main__':
+    # define logger
+    FMT = '%(asctime)s %(levelname)-8s %(message)s'
+    DATEFMT = '%H:%M:%S'
+    logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
+    try:
+        import coloredlogs
+        coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
+    except ImportError:
+        pass
     merge_contigs()

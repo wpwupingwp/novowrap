@@ -295,10 +295,6 @@ def validate_main(arg_str=None):
         validated(list): list contains validated rotated fasta files
         success(int): success or not
     """
-    # inherit logger from novowrap, if not called by it, doesn't matter to
-    # name the logger 'novowrap'
-    global log
-    log = logging.getLogger('novowrap')
     if arg_str is None:
         arg = parse_args()
     else:
@@ -325,20 +321,20 @@ def validate_main(arg_str=None):
         if ref_gb is None:
             log.critical('Failed to get reference.')
             log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')
-            return -1
+            return [], -1
         ref_gb = move(ref_gb, tmp/ref_gb.name)
         fmt = 'gb'
     log.debug(f'Use {output} as output folder.')
     ref_len = len(SeqIO.read(ref_gb, fmt))
     r_ref_gb, r_ref_fasta = rotate_seq(ref_gb)
     if r_ref_gb is None:
-        return -1
+        return [], -1
     ref_regions = get_regions(r_ref_gb)
     if r_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
-        return -1
+        return [], -1
     divided = divide_records(arg.input, output, ref_len, arg.len_diff)
     for i in divided:
         success = False
@@ -445,4 +441,7 @@ if __name__ == '__main__':
         coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
     except ImportError:
         pass
+    # inherit logger from novowrap, if not called by it, doesn't matter to
+    # name the logger 'novowrap'
+    log = logging.getLogger('novowrap')
     validate_main()

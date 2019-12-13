@@ -16,7 +16,6 @@ except ImportError:
 
 from utils import blast, parse_blast_tab
 
-
 PREFIX = '_RC_'
 
 
@@ -123,6 +122,7 @@ def get_contig(files, out):
             contigs_and_rc.append(record_rc)
     # print(necessary?)
     shuffle(contigs_and_rc)
+    log.info(f'Got {len(contigs_and_rc)//2} contigs from input files.')
     contigs_and_rc_fasta = out.with_suffix('.with_rc.fasta')
     SeqIO.write(contigs_and_rc, contigs_and_rc_fasta, 'fasta')
     return contigs_and_rc, contigs_and_rc_fasta
@@ -339,8 +339,8 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
     overlap = get_overlap(contigs_and_rc, contigs_and_rc_fasta)
     overlap_clean, edges = clean_overlap(overlap)
     overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
-    # for i in edges:
-    #     print(i, len(edges[i]))
+    for i in edges:
+        log.debug(f'{i}, {len(edges[i])}')
     up_dict = defaultdict(set)
     down_dict = defaultdict(set)
     for i in overlap_clean:
@@ -355,6 +355,8 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
         else:
             up_down_clean.append(overlap_clean_dict[(up, down.pop())])
     n = 0
+    if len(possible) > MAX_TRY:
+        log.debug(f'Too many possible ({len(possible)}).')
     for i in cartesian_product(*possible):
         if n >= MAX_TRY:
             break
@@ -386,6 +388,8 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
         for edge in edges['bubble']:
             dot.edge(*edge, color='purple')
         dot.render(dot_out)
+    else:
+        log.debug('Cannot find graphviz, skip drawing figure.')
     # for i in links: print('->'.join([str((j[0], j[1])) for j in i[0]]))
     return links
 
@@ -408,7 +412,11 @@ def merge_seq(contigs, links):
     circular = []
     linear_d = {}
     for link, is_circle in links:
-        if len(circular) >= MAX_CIRCLE or len(linear_d) >= MAX_LINEAR:
+        if len(circular) >= MAX_CIRCLE:
+            break
+        elif len(linear_d) >= MAX_LINEAR:
+            log.debug(f'Cannot find circular assembly. Instead found '
+                      '{len(circular)} linear asseblies. Break.')
             break
         # qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen, qstart,
         # qend, sstart, send
@@ -428,7 +436,6 @@ def merge_seq(contigs, links):
             seq = seq[:-link[-1][11]]
         seq.id = f'Merged_sequence {len(seq)}bp is_circle={is_circle}'
         seq.description = ''
-        print(134502, seq.id)
         # seems circle is ok, non-circle is always bad result
         if is_circle:
             circular.append(seq)
@@ -440,6 +447,7 @@ def merge_seq(contigs, links):
     if len(circular) != 0:
         return circular
     else:
+        log.warning('No circular assembly found.')
         return linear_long
 
 
@@ -454,8 +462,9 @@ def merge_contigs(arg_str=None):
     links = get_link(contigs_and_rc, contigs_and_rc_fasta)
     merged = merge_seq(contigs_and_rc, links)
     if len(merged) == 0:
-        print('Failed to merge contigs.')
+        log.critical('Failed to assembly contigs.')
     else:
+        log.info(f'Got {len(merged)} assemblies.')
         SeqIO.write(merged, arg.out, 'fasta')
     return len(merged)
 
@@ -470,4 +479,6 @@ if __name__ == '__main__':
         coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
     except ImportError:
         pass
+    # inherit logger from novowrap
+    log = logging.getLogger('novowrap')
     merge_contigs()

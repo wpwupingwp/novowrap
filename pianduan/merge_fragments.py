@@ -326,9 +326,8 @@ def get_link(contigs):
     overlap = get_overlap(contigs_and_rc)
     overlap_clean, edges = clean_overlap(overlap)
     overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
-    for i in edges:
-        print(i, len(edges[i]))
-
+    # for i in edges:
+    #     print(i, len(edges[i]))
     up_dict = defaultdict(set)
     down_dict = defaultdict(set)
     for i in overlap_clean:
@@ -348,10 +347,8 @@ def get_link(contigs):
             break
         n += 1
         combine = up_down_clean + list(i)
-        # print(necessary?)
-        #c, _ = clean_overlap(combine)
-        c = combine
-        for link in get_path(c):
+        # c, _ = clean_overlap(combine)
+        for link in get_path(combine):
             links.append(link)
     edges['link'] = set()
     for i in links:
@@ -380,7 +377,7 @@ def get_link(contigs):
         dot.render('graph.dot')
     for i in links:
         continue
-        print('->'.join([str((j[0], j[1])) for j in i[0]]))
+        # print('->'.join([str((j[0], j[1])) for j in i[0]]))
     return contigs_and_rc, links
 
 
@@ -418,7 +415,6 @@ def merge_seq(contigs, links, arg):
                 seq += tail_seq[link[-1][11]:]
             # rare
             except IndexError:
-                print('rare')
                 pass
         else:
             seq = seq[:-link[-1][11]]

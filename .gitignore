@@ -104,3 +104,6 @@ venv.bak/
 .mypy_cache/
 
 pianduan/
+*.gb
+*.fasta
+rc.py

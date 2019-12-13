@@ -11,7 +11,7 @@
 #11. merge new_gb and regions
 #12. arg.ref_gb to arg.ref (fasta also ok)
 #13. fewer files
-14. merge contigs from various seed
+#14. merge contigs from various seed
 #15. novowrap pass assembly info to validate
 #16. split reads
 #17. auto detect reads len

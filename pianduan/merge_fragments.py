@@ -3,7 +3,6 @@
 from collections import defaultdict
 from itertools import product as cartesian_product
 from pathlib import Path
-from sys import argv
 from random import shuffle
 import argparse
 
@@ -17,6 +16,9 @@ except ImportError:
 from utils import blast, parse_blast_tab
 
 
+PREFIX = '_RC_'
+
+
 def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -28,17 +30,16 @@ def parse_args(arg_list=None):
         return arg.parse_args(arg_list)
 
 
-def get_overlap(contigs):
+def get_overlap(contigs, contigs_and_rc_fasta):
     """
     Get overlap by BLAST.
     Args:
+        contigs_and_rc_fasta(Path): fasta file
         contigs(list(SeqRecord)): contigs
     Return:
         link_info(list(blast_result)): link info of contigs
     """
-    merged = Path('tmp.merged_fasta')
-    SeqIO.write(contigs, merged, 'fasta')
-    blast_result = blast(merged, merged)
+    blast_result = blast(contigs_and_rc_fasta, contigs_and_rc_fasta)
     overlap = []
     for query, sequence in zip(parse_blast_tab(blast_result), contigs):
         if len(query) == 0:
@@ -68,25 +69,7 @@ def get_overlap(contigs):
                 # skip minus
                 continue
             overlap.append(hit)
-    # qseqid-sseqid: hit
-    # do not ignore duplicate of plus-plus
-    # overlap_d1 = {tuple(sorted(i[:2])): i for i in overlap}
     return overlap
-
-
-def add_rc(contigs):
-    """
-    Add reverse-complement contig
-    Args:
-        contigs(list(SeqRecord)): contigs
-    Return:
-        raw_and_rc(list(SeqRecord)): minus contigs
-    """
-    raw_and_rc = []
-    for i in contigs:
-        i_rc = i.reverse_complement(id=PREFIX+i.id)
-        raw_and_rc.extend([i, i_rc])
-    return raw_and_rc
 
 
 def reverse_link(link):
@@ -311,19 +294,47 @@ def get_path(overlap):
                 break
 
 
-def get_link(contigs):
+def get_contig(files, out):
+    """
+    Get contigs (SeqRecord) from input files.
+    Add reverse-complement of each contigs.
+    Args:
+        files(list(str)): input files
+        out(Path): output file name
+    Return:
+        contigs_and_rc(list(SeqRecord)): contigs with their reverse-complements
+        contigs_and_rc_fasta(Path): fasta file
+    """
+    contigs_and_rc = []
+    for f in files:
+        fasta = Path(f)
+        # some id may already used PREFIX
+        fasta_stem = fasta.stem.replace('.fasta', '').replace(PREFIX, '-RC-')
+        for idx, record in enumerate(SeqIO.parse(fasta, 'fasta')):
+            record.id = f'{fasta_stem}-{idx}'
+            record.description = ''
+            contigs_and_rc.append(record)
+            record_rc = record.reverse_complement(id=PREFIX+record.id)
+            contigs_and_rc.append(record_rc)
+    # print(necessary?)
+    shuffle(contigs_and_rc)
+    contigs_and_rc_fasta = out.with_suffix('.with_rc.fasta')
+    SeqIO.write(contigs_and_rc, contigs_and_rc_fasta, 'fasta')
+    return contigs_and_rc, contigs_and_rc_fasta
+
+
+def get_link(contigs_and_rc, contigs_and_rc_fasta):
     """
     Get overlap between contigs.
     Remove overlap that may cause chaos.
     Args:
-        contigs(list(SeqRecord)): contigs
-    Return:
         contigs_and_rc(list(SeqRecord)): contigs with their reverse-complements
+        contigs_and_rc_fasta(Path): fasta file
+    Return:
         link(list(blast_result)): link info of contigs
     """
     MAX_TRY = 2 ** 16
-    contigs_and_rc = add_rc(contigs)
-    overlap = get_overlap(contigs_and_rc)
+    overlap = get_overlap(contigs_and_rc, contigs_and_rc_fasta)
     overlap_clean, edges = clean_overlap(overlap)
     overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
     # for i in edges:
@@ -355,6 +366,7 @@ def get_link(contigs):
         for j in i[0]:
             edges['link'].add((j[0], j[1]))
     # draw
+    dot_out = contigs_and_rc_fasta.with_suffix('.dot')
     if have_dot:
         dot = Digraph(engine='dot', node_attr={'shape': 'cds'})
         for i in overlap:
@@ -374,21 +386,18 @@ def get_link(contigs):
         for edge in edges['exclude']:
             continue
             dot.edge(*edge, color='blue')
-        dot.render('graph.dot')
-    for i in links:
-        continue
-        # print('->'.join([str((j[0], j[1])) for j in i[0]]))
-    return contigs_and_rc, links
+        dot.render(dot_out)
+    # for i in links: print('->'.join([str((j[0], j[1])) for j in i[0]]))
+    return links
 
 
-def merge_seq(contigs, links, arg):
+def merge_seq(contigs, links):
     """
     Use overlap information of contigs to merge them.
     Assume link_info only contains one kind of link route.
     Arg:
         contigs(list(SeqRecord)): contigs
         links(list(blast_result, is_circle)): link info of contigs
-        arg(NameSpace): options (how many results to keep)
     Return:
         merged(list(SeqRecord)): list of merged sequences
     """
@@ -435,30 +444,19 @@ def merge_seq(contigs, links, arg):
 
 
 def merge_contigs(arg_str=None):
-    global PREFIX
-    PREFIX = '_RC_'
     if arg_str is None:
         arg = parse_args()
     else:
         arg = parse_args(arg_str.split(' '))
     if arg.out is None:
         arg.out = Path(arg.input[0]).with_suffix('.merge')
-    contigs = []
-    for f in arg.input:
-        fasta = Path(f)
-        # some id may already use PREFIX
-        fasta_stem = fasta.stem.replace('.fasta', '').replace('_RC_', '-RC-')
-        for idx, record in enumerate(SeqIO.parse(fasta, 'fasta')):
-            record.id = f'{fasta_stem}-{idx}'
-            record.description = ''
-            contigs.append(record)
-    shuffle(contigs)
-    contigs_and_rc, links = get_link(contigs)
-    merged = merge_seq(contigs_and_rc, links, arg)
+    contigs_and_rc, contigs_and_rc_fasta = get_contig(arg.input, arg.out)
+    links = get_link(contigs_and_rc, contigs_and_rc_fasta)
+    merged = merge_seq(contigs_and_rc, links)
     if len(merged) == 0:
         print('Failed to merge contigs.')
     else:
-        SeqIO.write(merged, Path(argv[1]).with_suffix('.merge'), 'fasta')
+        SeqIO.write(merged, arg.out, 'fasta')
     return len(merged)
 
 

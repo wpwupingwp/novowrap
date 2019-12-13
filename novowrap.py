@@ -132,7 +132,6 @@ def get_output(arg):
                 out_name = Path(strip_).absolute()
         return out_name
 
-        return arg, False
     if arg.out is None:
         if arg.input is not None:
             if len(arg.input) == 2:

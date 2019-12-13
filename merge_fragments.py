@@ -261,7 +261,8 @@ def get_path(overlap):
             down_name = scaffold[-1][1]
         # name is None
         except TypeError:
-            pass
+            up_name = None
+            down_name = None
         # if downstream not in overlap_dict:
         if up_name is None:
             pass
@@ -383,9 +384,6 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
             dot.edge(*edge, color='orange')
         for edge in edges['bubble']:
             dot.edge(*edge, color='purple')
-        for edge in edges['exclude']:
-            continue
-            dot.edge(*edge, color='blue')
         dot.render(dot_out)
     # for i in links: print('->'.join([str((j[0], j[1])) for j in i[0]]))
     return links

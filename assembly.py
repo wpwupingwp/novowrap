@@ -451,7 +451,7 @@ def merge_seq(contigs, links):
         return linear_long
 
 
-def merge_contigs(arg_str=None):
+def assembly_main(arg_str=None):
     if arg_str is None:
         arg = parse_args()
     else:
@@ -481,4 +481,4 @@ if __name__ == '__main__':
         pass
     # inherit logger from novowrap
     log = logging.getLogger('novowrap')
-    merge_contigs()
+    assembly_main()

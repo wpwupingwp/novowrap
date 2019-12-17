@@ -18,6 +18,18 @@ from utils import blast, parse_blast_tab
 
 PREFIX = '_RC_'
 
+# define logger
+FMT = '%(asctime)s %(levelname)-8s %(message)s'
+DATEFMT = '%H:%M:%S'
+logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
+try:
+    import coloredlogs
+    coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
+except ImportError:
+    pass
+# inherit logger from novowrap
+log = logging.getLogger('novowrap')
+
 
 def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
@@ -470,15 +482,4 @@ def assembly_main(arg_str=None):
 
 
 if __name__ == '__main__':
-    # define logger
-    FMT = '%(asctime)s %(levelname)-8s %(message)s'
-    DATEFMT = '%H:%M:%S'
-    logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
-    try:
-        import coloredlogs
-        coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
-    except ImportError:
-        pass
-    # inherit logger from novowrap
-    log = logging.getLogger('novowrap')
     assembly_main()

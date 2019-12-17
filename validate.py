@@ -16,6 +16,20 @@ from utils import get_ref, blast, parse_blast_tab, move
 from utils import get_fmt, rotate_seq, get_regions, rc_regions
 
 
+# define logger
+FMT = '%(asctime)s %(levelname)-8s %(message)s'
+DATEFMT = '%H:%M:%S'
+logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
+try:
+    import coloredlogs
+    coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
+except ImportError:
+    pass
+# inherit logger from novowrap, if not called by it, doesn't matter to
+# name the logger 'novowrap'
+log = logging.getLogger('novowrap')
+
+
 def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -408,7 +422,7 @@ def validate_main(arg_str=None):
             log.info(f'\t{i.name}')
     output_info = output / f'{output.name}-results.csv'
     output_info_exist = output_info.exists()
-    with open(output_info, 'a') as out:
+    with open(output_info, 'a', encoding='utf-8') as out:
         if not output_info_exist:
             out.write('fasta,Success,Seed,Length,LSC,IRa,SSC,IRb,'
                       'Missing,Incomplete,RC_region,'
@@ -432,16 +446,4 @@ def validate_main(arg_str=None):
 
 
 if __name__ == '__main__':
-    # define logger
-    FMT = '%(asctime)s %(levelname)-8s %(message)s'
-    DATEFMT = '%H:%M:%S'
-    logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
-    try:
-        import coloredlogs
-        coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
-    except ImportError:
-        pass
-    # inherit logger from novowrap, if not called by it, doesn't matter to
-    # name the logger 'novowrap'
-    log = logging.getLogger('novowrap')
     validate_main()

@@ -34,18 +34,17 @@ def get_novoplasty():
     Ensure perl and novoplasty is available.
     Return novoplasty's path or None.
     """
+    URL = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
     perl = run('perl -v', shell=True, stdout=open(devnull, 'w'))
     if perl.returncode != 0:
         log.critical('Please install Perl to run NOVOPlasty.')
         return None
-
     pl = list(Path('.').glob('NOVOPlasty*.pl'))
     if len(pl) != 0:
         return pl[0]
-    _URL = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
     log.critical('Cannot find NOVOPlasty, try to download.')
     try:
-        down = urlopen(_URL)
+        down = urlopen(URL)
     except HTTPError:
         log.critical('Cannot download NOVOPlasty.')
         log.critical('Please manually download it from '
@@ -159,7 +158,7 @@ def _read_table(arg):
         inputs(list): [[f, r], taxon]
     """
     inputs = []
-    with open(arg.list, 'r') as raw:
+    with open(arg.list, 'r', encoding='utf-8') as raw:
         for line in raw:
             try:
                 f, r, taxon = line.strip().split(',')
@@ -251,7 +250,7 @@ def get_seed(ref, output, gene):
             if gene_name in genes:
                 seq = feature.extract(gb)
                 seed_file = output / f'{gene_name}.seed'
-                with open(seed_file, 'w') as out:
+                with open(seed_file, 'w', encoding='utf-8') as out:
                     out.write(f'>{gene_name}|{organism}|{accession}\n')
                     out.write(f'{seq.seq}\n')
                 seeds[gene_name] = seed_file
@@ -318,7 +317,7 @@ Insert Range strict   = 1.3
 Use Quality Scores    = no
 """
     config_file = arg.raw / f'{seed.stem}_config.ini'
-    with open(config_file, 'w') as out:
+    with open(config_file, 'w', encoding='utf-8') as out:
         out.write(config)
     return config_file
 
@@ -350,7 +349,7 @@ def organize_out(pwd, out, seed):
         clean = []
         record = []
         begin = False
-        with open(old, 'r') as raw:
+        with open(old, 'r', encoding='utf-8') as raw:
             for line in raw:
                 if line.startswith('>'):
                     clean.extend(record)
@@ -364,7 +363,7 @@ def organize_out(pwd, out, seed):
                     record.append(line)
         clean.extend(record)
         new = Path(old).with_suffix('.fasta')
-        with open(new, 'w') as out:
+        with open(new, 'w', encoding='utf-8') as out:
             for line in clean:
                 out.write(line.replace('*', ''))
         return new
@@ -504,6 +503,7 @@ def main():
     novoplasty = get_novoplasty()
     if novoplasty is None:
         return -1
+    # check arg
     arg = parse_args()
     if arg.list is None:
         if arg.input is None:
@@ -515,6 +515,7 @@ def main():
     arg.out = get_output(arg)
     if arg.out is None:
         return -1
+    # mk dirs
     elif arg.out.exists():
         log.critical(f'Output folder {arg.out.name} exists.')
         return -1
@@ -541,7 +542,7 @@ def main():
             arg.input, arg.taxon = i
             assembly(arg, novoplasty)
     log.info('Bye.')
-    return
+    return 0
 
 
 if __name__ == '__main__':

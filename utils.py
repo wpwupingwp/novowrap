@@ -122,7 +122,7 @@ def get_ref(taxon):
         content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
                                 query_key=handle['QueryKey'], rettype='gb',
                                 retmode='text', retmax=1)
-        with open(ref, 'w') as out:
+        with open(ref, 'w', encoding='utf-8') as out:
             out.write(content.read())
         r_gb, r_fasta = rotate_seq(ref)
         if r_gb is None:
@@ -171,7 +171,7 @@ def parse_blast_tab(filename):
         line(list): parsed result
     """
     query = []
-    with open(filename, 'r') as raw:
+    with open(filename, 'r', encoding='utf-8') as raw:
         for line in raw:
             if line.startswith('# BLAST'):
                 if query:
@@ -278,7 +278,7 @@ def get_fmt(filename):
             return 'gz'
         except OSError:
             pass
-    with open(filename, 'r') as _:
+    with open(filename, 'r', encoding='utf-8') as _:
         peek = _.readline()
         if peek.startswith('>'):
             fmt = 'fasta'
@@ -488,7 +488,7 @@ def rc_regions(gb, choice='whole'):
         new_seq = rc(raw.seq)
     new_name = '_RC_' + raw.name
     new_file = gb.with_suffix('.rc.rc')
-    with open(new_file, 'w') as out:
+    with open(new_file, 'w', encoding='utf-8') as out:
         out.write(f'>{new_name}\n')
         out.write(f'{new_seq}\n')
     return new_file

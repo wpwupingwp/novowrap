@@ -400,8 +400,8 @@ def validate_main(arg_str=None):
     validated = []
     for i in divided:
         if divided[i]['success']:
-            file = divided[i]['fasta']
-            validated.append(file)
+            v_file = divided[i]['fasta']
+            validated.append(v_file)
     if len(validated) != 0:
         log.info('Validated sequences:')
         for i in validated:

@@ -13,7 +13,8 @@ import logging
 from Bio import SeqIO
 
 from utils import get_fmt, get_ref, move
-from validate_assembly import validate_main
+from assembly import assembly_main
+from validate import validate_main
 
 
 # define logger
@@ -132,6 +133,7 @@ def get_output(arg):
                 out_name = Path(strip_).absolute()
         return out_name
 
+    out = Path('.')
     if arg.out is None:
         if arg.input is not None:
             if len(arg.input) == 2:
@@ -153,7 +155,6 @@ def _read_table(arg):
         Input, Input(optional), Taxonomy
     Args:
         arg(NameSpace): arg generated from parse_args
-        table(list): list of input items
     Return:
         inputs(list): [[f, r], taxon]
     """
@@ -451,6 +452,7 @@ def assembly(arg, novoplasty):
         return -1
     csv_files = []
     success = False
+    all_contigs = []
     for seed in seeds:
         log.info(f'Use {seed.stem} as seed.')
         config_file = config(seed, arg)
@@ -459,6 +461,7 @@ def assembly(arg, novoplasty):
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(
             Path().cwd(), arg.out, seed.stem)
+        all_contigs.extend(contigs)
         if len(circularized) == 0 and len(options) == 0 and len(merged) == 0:
             log.warning(f'Assembled with {seed.stem} failed.')
             continue
@@ -467,7 +470,6 @@ def assembly(arg, novoplasty):
         log.info('Validate assembly results.')
         # for i in (*circularized, *options, *merged):
         for i in (*circularized, *options):
-            log.info('')
             arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {arg.out}'
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
@@ -480,7 +482,19 @@ def assembly(arg, novoplasty):
             log.warning('No records passed validation.')
         if not success:
             log.critical(f'Assembly with {seed.stem} failed.')
-    log.info('')
+    if not success:
+        log.info('Failed with all seeds. Try to assembly contigs generated'
+                 'from each seed.')
+        arg_str = f'{" ".join(all_contigs)} {arg.out.with_name("-merge_seed")}'
+        assembly_result, n_assembly = assembly_main(arg_str)
+        if n_assembly != 0:
+            arg_str = (f'{assembly_result} -ref {ref} -seed {seed.stem} '
+                       f'-o {arg.out}')
+            validate_file, report = validate_main(arg_str)
+            if len(validate_file) != 0:
+                success = True
+                csv_files.append(report)
+    log.info('Bye.')
     return 0
 
 

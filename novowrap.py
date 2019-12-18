@@ -482,9 +482,10 @@ def assembly(arg, novoplasty):
         if not success:
             log.critical(f'Assembly with {seed.stem} failed.')
     if not success:
-        log.info('Failed with all seeds. Try to assembly contigs generated'
+        log.info('Failed with all seeds. Try to assembly contigs generated '
                  'from each seed.')
-        arg_str = f'{" ".join(all_contigs)} {arg.out.with_name("-merge_seed")}'
+        all_input = ' '.join([str(i.absolute()) for i in all_contigs])
+        arg_str = f'{all_input} {arg.out/"RAW"/"merge_seed.fasta"}'
         assembly_result, n_assembly = assembly_main(arg_str)
         if n_assembly != 0:
             arg_str = (f'{assembly_result} -ref {ref} -seed {seed.stem} '
@@ -493,7 +494,6 @@ def assembly(arg, novoplasty):
             if len(validate_file) != 0:
                 success = True
                 csv_files.append(report)
-    log.info('Bye.')
     return 0
 
 
@@ -542,7 +542,6 @@ def main():
             arg.input, arg.taxon = i
             assembly(arg, novoplasty)
     log.info('Bye.')
-    return 0
 
 
 if __name__ == '__main__':

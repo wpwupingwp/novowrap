@@ -485,7 +485,7 @@ def assembly(arg, novoplasty):
         log.info('Failed with all seeds. Try to assembly contigs generated '
                  'from each seed.')
         all_input = ' '.join([str(i.absolute()) for i in all_contigs])
-        arg_str = f'{all_input} {arg.out/"RAW"/"merge_seed.fasta"}'
+        arg_str = f'{all_input} -o {arg.out/"RAW"/"merge_seed.fasta"}'
         assembly_result, n_assembly = assembly_main(arg_str)
         if n_assembly != 0:
             arg_str = (f'{assembly_result} -ref {ref} -seed {seed.stem} '

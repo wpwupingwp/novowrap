@@ -520,7 +520,7 @@ def assembly(arg, novoplasty):
         arg_str = f'{all_input} -o {arg.out/"RAW"/"merge_seed.fasta"}'
         assembly_result, n_assembly = merge_main(arg_str)
         if n_assembly != 0:
-            arg_str = (f'{assembly_result} -ref {ref} -seed {seed.stem} '
+            arg_str = (f'{assembly_result} -ref {ref} -seed merge '
                        f'-o {arg.out}')
             validate_file, report = validate_main(arg_str)
             if len(validate_file) != 0:
@@ -534,7 +534,8 @@ def main():
     # check before run
     novoplasty = get_novoplasty()
     if novoplasty is None:
-        return -1
+        log.critical('Quit.')
+        return
     # check arg
     arg = parse_args()
     success, arg = init_arg(arg)
@@ -543,6 +544,7 @@ def main():
         return
     # log to file
     log_file_handler = logging.FileHandler(str(arg.log/'Log.txt'))
+    # more detail in file log
     log_file_handler.setLevel(logging.DEBUG)
     Formatter = logging.Formatter(FMT, DATEFMT)
     log_file_handler.setFormatter(Formatter)

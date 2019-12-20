@@ -13,7 +13,7 @@ import logging
 from Bio import SeqIO
 
 from utils import get_fmt, get_ref, move
-from assembly import assembly_main
+from merge import merge_main
 from validate import validate_main
 
 
@@ -48,7 +48,7 @@ def get_novoplasty():
     except HTTPError:
         log.critical('Cannot download NOVOPlasty.')
         log.critical('Please manually download it from '
-                     'http://github.com/ndierckx/NOVOPlasty')
+                     'https://github.com/ndierckx/NOVOPlasty')
         return None
     zip_file = Path('.') / 'NOVOPlasty3.6.zip'
     with open(zip_file, 'wb') as out:
@@ -144,7 +144,39 @@ def get_output(arg):
             out = Path(Path(arg.list).stem).absolute()
     else:
         out = Path(arg.out).absolute()
+    if out.exists():
+        log.warning(f'Output folder {out.name} exists.')
+        new_name = out.name + '-New'
+        out = out.with_name(new_name)
+        log.info(f'Use {out.name} instead.')
     return out
+
+
+def init_arg(arg):
+    """
+    Initialize working folder with arg.
+    Args:
+        arg(NameSpace): arg generated from parse_args
+    Return:
+        arg(NameSpace): arg with output info
+        success(bool): success or not
+    """
+    success = False
+    if arg.list is None and arg.input is None:
+        log.critical('Input is empty.')
+        return success, arg
+    if len(arg.input) > 2:
+        log.critical('Only accept one or two input file(s).')
+        return success, arg
+    arg.out = get_output(arg)
+    arg.out.mkdir()
+    arg.log = arg.out / 'Log'
+    arg.log.mkdir()
+    arg.raw = arg.out / 'Raw'
+    arg.raw.mkdir()
+    arg.tmp = arg.out / 'Temp'
+    arg.tmp.mkdir()
+    return success, arg
 
 
 def _read_table(arg):
@@ -486,7 +518,7 @@ def assembly(arg, novoplasty):
                  'from each seed.')
         all_input = ' '.join([str(i.absolute()) for i in all_contigs])
         arg_str = f'{all_input} -o {arg.out/"RAW"/"merge_seed.fasta"}'
-        assembly_result, n_assembly = assembly_main(arg_str)
+        assembly_result, n_assembly = merge_main(arg_str)
         if n_assembly != 0:
             arg_str = (f'{assembly_result} -ref {ref} -seed {seed.stem} '
                        f'-o {arg.out}')
@@ -505,28 +537,10 @@ def main():
         return -1
     # check arg
     arg = parse_args()
-    if arg.list is None:
-        if arg.input is None:
-            log.critical('Input is empty.')
-            return -1
-        elif len(arg.input) > 2:
-            log.critical('Only accept one or two input file(s).')
-            return -1
-    arg.out = get_output(arg)
-    if arg.out is None:
-        return -1
-    # mk dirs
-    elif arg.out.exists():
-        log.critical(f'Output folder {arg.out.name} exists.')
-        return -1
-    else:
-        arg.out.mkdir()
-    arg.log = arg.out / 'Log'
-    arg.log.mkdir()
-    arg.raw = arg.out / 'Raw'
-    arg.raw.mkdir()
-    arg.tmp = arg.out / 'Temp'
-    arg.tmp.mkdir()
+    success, arg = init_arg(arg)
+    if not success:
+        log.critical('Quit.')
+        return
     # log to file
     log_file_handler = logging.FileHandler(str(arg.log/'Log.txt'))
     log_file_handler.setLevel(logging.DEBUG)

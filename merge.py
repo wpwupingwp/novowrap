@@ -463,7 +463,7 @@ def merge_seq(contigs, links):
         return linear_long
 
 
-def assembly_main(arg_str=None):
+def merge_main(arg_str=None):
     if arg_str is None:
         arg = parse_args()
     else:
@@ -482,4 +482,4 @@ def assembly_main(arg_str=None):
 
 
 if __name__ == '__main__':
-    assembly_main()
+    merge_main()

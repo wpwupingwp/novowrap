@@ -1,9 +1,38 @@
 #!/usr/bin/python3
 
+import logging
+import queue
 import tkinter as tk
-from tkinter import messagebox, simpledialog, filedialog
+from tkinter import messagebox, simpledialog, filedialog, scrolledtext
 
 from pathlib import Path
+
+from merge import merge_main
+from validate import validate_main
+
+log = logging.getLogger('novowrap')
+
+
+class QueueHandler(logging.Handler):
+    def __init__(self, log_queue):
+        super().__init__()
+        self.log_queue = log_queue
+
+    def emit(self, msg):
+        self.log_queue.put(msg)
+
+
+def stext(root): 
+    s = scrolledtext.ScrolledText(root)
+    s.pack(fill='both')
+    log_queue = queue.Queue()
+    log = logging.getLogger('novowrap')
+    log.addHandler(QueueHandler(log_queue))
+    while log_queue.not_empty:
+        msg = log_queue.get(block=False)
+        s.insert('end', msg+'\n')
+        s.yview('end')
+
 
 
 def wlabel(root, text, row, column=0, width=25, padx=0, pady=0, sticky='EW',
@@ -20,12 +49,17 @@ def entry(root, row, column, default=''):
     return entry
 
 
+def info(message):
+    messagebox.showinfo(message=message)
+
+
 def open_single(title, entry, entry2=None):
     """
     Set title, fill entry 1, empty entry 2.
+    Only open one file.
     """
     def func():
-        a = filedialog.askopenfilenames(title=title)
+        a = filedialog.askopenfilename(title=title)
         entry.insert(0, a)
         if entry2 is not None:
             entry2.delete(0, 'end')
@@ -82,14 +116,55 @@ def merge_single():
     w_button.pack(side='right')
 
 
-def submit_validate():
-    ok = messagebox.askokcancel('Run?')
-    if ok:
+def validate_ui():
+    """
+    UI of validate.
+    """
+    def submit_validate():
+        arg_str = ''
+        arg_input = i_entry.get()
+        if arg_input == '':
+            info('Input is required!')
+            return
+        else:
+            arg_str += arg_input
+        arg_ref = r_entry.get()
+        # use underscore in taxon name, which NCBI could handle
+        arg_taxon = t_entry.get().replace(' ', '_')
+        if arg_ref and arg_taxon:
+            info('Please only use one of "Reference file" and "Taxonomy"!')
+            return
+        elif arg_ref != '' and arg_taxon == '':
+            arg_str += f' -ref {arg_ref}'
+        elif arg_ref == '' and arg_taxon != '':
+            arg_str += f' -taxon {arg_taxon}'
+        arg_out = o_entry.get()
+        if arg_out == '"Current folder"':
+            arg_out = str(Path('.').absolute())
+        arg_str += f' -out {arg_out}'
+        arg_s = float(s_entry.get())
+        arg_l = float(l_entry.get())
+        if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:
+            info('Bad value!')
+            s_entry.configure(bg='red')
+            l_entry.configure(bg='red')
+            return
+        else:
+            arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
+
         wroot.destroy()
+        run = tk.Toplevel(root)
+        run.geometry('600x400')
+        run.title('Running...')
+        run.wm_transient()
+        frame = tk.Frame(run)
+        frame.pack(fill='both')
+        stext(frame)
+        r = validate_main(arg_str)
+        info('Done.')
+        run.destroy()
+        # ok = messagebox.askokcancel(message=arg_str)
 
-
-def validate_single():
-    global wroot
     wroot = tk.Toplevel(root)
     wroot.geometry(size)
     wroot.title('Validate')
@@ -140,15 +215,6 @@ def validate_single():
     ok.grid(row=row, column=0, columnspan=3, sticky='EW', padx=50, pady=10)
 
 
-def ffo():
-    a = filedialog.askdirectory(title='gb files')
-    return a
-
-
-def c():
-    raise SystemExit
-
-
 def o():
     pass
     # d = simpledialog.SimpleDialog(
@@ -156,16 +222,6 @@ def o():
     #     buttons=['yes', 'no', 'wo bu zhidao'], cancel=3, default=1)
     #value = d.go()
     #print(value)
-
-
-def ow():
-    w = tk.Toplevel(root)
-    w.geometry('500x309')
-
-
-def pp(event):
-    pass
-    #print('ent', ent.get())
 
 
 root = tk.Tk()
@@ -186,7 +242,7 @@ m_button1 = tk.Button(merge, text='Merge contigs', command=merge_single)
 m_button1.pack()
 validate = tk.LabelFrame(root, text='Validate')
 validate.pack(side='left', padx=50)
-v_button1 = tk.Button(validate, text='Validate', command=validate_single)
+v_button1 = tk.Button(validate, text='Validate', command=validate_ui)
 v_button1.pack()
 #lf = tk.LabelFrame(validate, text='Unique')
 #lf.pack(padx=20, pady=20)

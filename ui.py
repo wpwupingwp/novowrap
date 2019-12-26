@@ -4,6 +4,7 @@ import logging
 import threading
 import queue
 import tkinter as tk
+import time
 from tkinter import messagebox, simpledialog, filedialog, scrolledtext
 
 from pathlib import Path
@@ -78,11 +79,12 @@ def validate_wrap(arg_str, window):
     Wrap for callback.
     Args:
         arg_str(str): strings for validate()
-        window(Toplevel): window to destory after run
+        window(Toplevel): window to destroy
     """
     validated, output_info = validate_main(arg_str)
     info(f'Done. See {output_info} for details.')
-    window.destory()
+    window.destroy()
+    return
 
 
 def open_single(title, entry, entry2=None):
@@ -182,7 +184,7 @@ def validate_ui():
         stext(frame)
         r = threading.Thread(target=validate_wrap, args=(arg_str, run))
         r.start()
-        return
+        run.mainloop()
 
     wroot = tk.Toplevel(root)
     wroot.geometry(size)
@@ -232,6 +234,7 @@ def validate_ui():
     row += 1
     ok = tk.Button(w, text='Enter', command=submit_validate)
     ok.grid(row=row, column=0, columnspan=3, sticky='EW', padx=50, pady=10)
+    return
 
 
 def o():

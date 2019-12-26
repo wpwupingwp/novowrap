@@ -34,7 +34,7 @@ def get_novoplasty():
     Ensure perl and novoplasty is available.
     Return novoplasty's path or None.
     """
-    URL = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
+    url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
     perl = run('perl -v', shell=True, stdout=open(devnull, 'w'))
     if perl.returncode != 0:
         log.critical('Please install Perl to run NOVOPlasty.')
@@ -44,7 +44,7 @@ def get_novoplasty():
         return pl[0]
     log.critical('Cannot find NOVOPlasty, try to download.')
     try:
-        down = urlopen(URL)
+        down = urlopen(url)
     except HTTPError:
         log.critical('Cannot download NOVOPlasty.')
         log.critical('Please manually download it from '
@@ -317,7 +317,7 @@ def config(seed, arg):
     if arg.insert_size is None:
         arg.insert_size = arg.reads_len * 2 + 50
         log.info(f'The insert size is missing, use {arg.insert_size}.')
-    config = f"""Project:
+    config_str = f"""Project:
 -----------------------
 Project name          = {arg.out.name}
 Type                  = chloro
@@ -350,7 +350,7 @@ Use Quality Scores    = no
 """
     config_file = arg.raw / f'{seed.stem}_config.ini'
     with open(config_file, 'w', encoding='utf-8') as out:
-        out.write(config)
+        out.write(config_str)
     return config_file
 
 
@@ -395,9 +395,9 @@ def organize_out(pwd, out, seed):
                     record.append(line)
         clean.extend(record)
         new = Path(old).with_suffix('.fasta')
-        with open(new, 'w', encoding='utf-8') as out:
+        with open(new, 'w', encoding='utf-8') as output:
             for line in clean:
-                out.write(line.replace('*', ''))
+                output.write(line.replace('*', ''))
         return new
 
     for i in pwd.glob('contigs_tmp_*'):
@@ -428,7 +428,11 @@ def organize_out(pwd, out, seed):
 def assembly(arg, novoplasty):
     """
     Assembly input file by wrapping NOVOPlasty.
-    Return -1 if failed.
+    Args:
+        arg(NameSpace): arguments
+        novoplasty(Path): novoplasty file
+    Return:
+        success(Bool): success or not
     """
     log.info('')
     for i in arg.input:
@@ -526,7 +530,7 @@ def assembly(arg, novoplasty):
             if len(validate_file) != 0:
                 success = True
                 csv_files.append(report)
-    return 0
+    return success
 
 
 def main():
@@ -546,8 +550,8 @@ def main():
     log_file_handler = logging.FileHandler(str(arg.log/'Log.txt'))
     # more detail in file log
     log_file_handler.setLevel(logging.DEBUG)
-    Formatter = logging.Formatter(FMT, DATEFMT)
-    log_file_handler.setFormatter(Formatter)
+    formatter = logging.Formatter(FMT, DATEFMT)
+    log_file_handler.setFormatter(formatter)
     log.addHandler(log_file_handler)
     # start
     if arg.list is None:

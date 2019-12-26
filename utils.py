@@ -145,16 +145,16 @@ def blast(query, target, perc_identity=70):
     Return:
         blast_out(Path): blast result filename
     """
-    FMT = ('qseqid sseqid sstrand qlen slen length pident gapopen qstart qend '
+    fmt = ('qseqid sseqid sstrand qlen slen length pident gapopen qstart qend '
            'sstart send')
     blast_out = query.with_suffix('.blast')
     # use blastn -subject instead of makeblastdb
-    blast = run(f'blastn -query {query} -subject {target} -outfmt "7 {FMT}" '
+    b_run = run(f'blastn -query {query} -subject {target} -outfmt "7 {fmt}" '
                 f'-out {blast_out} -strand both -perc_identity '
                 f'{perc_identity}',
                 shell=True, stdout=NULL, stderr=NULL)
     # remove makeblastdb result
-    if blast.returncode != 0:
+    if b_run.returncode != 0:
         log.critical('Cannot run BLAST.')
         return None
     return blast_out
@@ -289,7 +289,7 @@ def get_fmt(filename):
     return fmt
 
 
-def rotate_seq(filename, min_IR=1000, silence=True):
+def rotate_seq(filename, min_ir=1000, silence=True):
     """
     Rotate genbank or fasta record, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Input file should only contains one record.
@@ -340,7 +340,7 @@ def rotate_seq(filename, min_IR=1000, silence=True):
             if qseqid != sseqid:
                 continue
             # skip too short match
-            if length < min_IR:
+            if length < min_ir:
                 continue
             # too long, origin to repeat
             if length >= origin_len:

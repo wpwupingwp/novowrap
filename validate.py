@@ -86,7 +86,6 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
              f"difference limit {len_diff:.2%}).")
     for idx, record in enumerate(options):
         skip = False
-        r_gb = r_fasta = ''
         if len(options) > 1:
             filename = output / _insert_suffix(fasta, f'.{idx+1}').name
         else:
@@ -109,7 +108,6 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
                                           'length': record_len})
                 move(filename,
                      output/'Temp'/filename.with_suffix('.raw').name)
-                r_fasta = r_fasta.with_suffix('.fasta')
             else:
                 skip = 'structure_unusual'
         divided[filename]['skip'] = skip
@@ -152,7 +150,6 @@ def get_alpha(old):
     Return:
         alpha(float): alpha value
     """
-    alpha = 0
     if old < 50:
         alpha = 0
     elif old < 80:
@@ -233,7 +230,6 @@ def validate_regions(length, regions, compare, perc_identity=0.7):
         strand_info(dict): region's strand information
     """
     count = {}
-    to_rc = None
     bad_region = False
     plus = np.zeros(length, dtype=bool)
     minus = np.zeros(length, dtype=bool)
@@ -352,7 +348,6 @@ def validate_main(arg_str=None):
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
         return validated, output_info
-        return output_info
     divided = divide_records(arg.input, output, ref_len, arg.len_diff)
     for i in divided:
         success = False

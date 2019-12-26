@@ -328,12 +328,9 @@ def clean_overlap(overlap):
     to_remove = to_remove.union(bubble).union(tips)
     to_remove = to_remove.union(bubble)
     cleaned_overlap = [raw[i] for i in raw if i not in to_remove]
-    edges = {}
-    edges['shortcuts'] = shortcuts
-    edges['tips'] = tips
-    edges['shortcuts_b'] = shortcuts_b
-    edges['bubble'] = bubble
-    edges['exclude'] = exclude
+    edges = {'shortcuts': shortcuts, 'tips': tips,
+             'shortcuts_b': shortcuts_b, 'bubble': bubble,
+             'exclude': exclude}
     return cleaned_overlap, edges
 
 

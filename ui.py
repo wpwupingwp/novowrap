@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import logging
+import threading
 import queue
 import tkinter as tk
 from tkinter import messagebox, simpledialog, filedialog, scrolledtext
@@ -10,47 +11,78 @@ from pathlib import Path
 from merge import merge_main
 from validate import validate_main
 
-log = logging.getLogger('novowrap')
-
 
 class QueueHandler(logging.Handler):
-    def __init__(self, log_queue):
+    """
+    For queue.
+    """
+    def __init__(self, log_queue_):
         super().__init__()
-        self.log_queue = log_queue
+        self.log_queue = log_queue_
 
     def emit(self, msg):
         self.log_queue.put(msg)
 
 
-def stext(root): 
-    s = scrolledtext.ScrolledText(root)
-    s.pack(fill='both')
-    log_queue = queue.Queue()
-    log = logging.getLogger('novowrap')
-    log.addHandler(QueueHandler(log_queue))
-    while log_queue.not_empty:
-        msg = log_queue.get(block=False)
-        s.insert('end', msg+'\n')
-        s.yview('end')
+def stext(window):
+    """
+    ScrolledText that shows logs.
+    """
+    scroll = scrolledtext.ScrolledText(window)
+    scroll.pack(fill='both')
+
+    def poll():
+        while True:
+            try:
+                msg = log_queue.get(block=False)
+                msg = formatter.format(msg) + '\n'
+                scroll.insert('end', msg)
+                scroll.yview('end')
+            except queue.Empty:
+                break
+        scroll.after(100, poll)
+
+    scroll.after(100, poll)
 
 
-
-def wlabel(root, text, row, column=0, width=25, padx=0, pady=0, sticky='EW',
+def wlabel(window, text, row, column=0, width=25, padx=0, pady=0, sticky='EW',
            **kargs):
-    label = tk.Label(root, text=text, width=width, **kargs)
+    """
+    Generate and pack labels.
+    """
+    label = tk.Label(window, text=text, width=width, **kargs)
     label.grid(row=row, column=column, padx=padx, pady=pady, sticky=sticky)
     return label
 
 
-def entry(root, row, column, default=''):
-    entry = tk.Entry(root)
+def fentry(window, row, column, default=''):
+    """
+    Generate and pack entrys.
+    Fill with default string.
+    """
+    entry = tk.Entry(window)
     entry.insert(0, default)
     entry.grid(row=row, column=column)
     return entry
 
 
 def info(message):
+    """
+    For shorter.
+    """
     messagebox.showinfo(message=message)
+
+
+def validate_wrap(arg_str, window):
+    """
+    Wrap for callback.
+    Args:
+        arg_str(str): strings for validate()
+        window(Toplevel): window to destory after run
+    """
+    validated, output_info = validate_main(arg_str)
+    info(f'Done. See {output_info} for details.')
+    window.destory()
 
 
 def open_single(title, entry, entry2=None):
@@ -74,10 +106,6 @@ def open_folder(title, entry):
 
 
 def assembly_single():
-    def open_single():
-        a = filedialog.askopenfilenames(title='Sequence files')
-        w_entry.insert(0, a)
-
     w = tk.Toplevel(root)
     w.geometry(size)
     w_label = tk.Label(w, text='Input:')
@@ -89,10 +117,6 @@ def assembly_single():
 
 
 def assembly_batch():
-    def open_single():
-        a = filedialog.askopenfilenames(title='Table files')
-        w_entry.insert(0, a)
-
     w = tk.Toplevel(root)
     w_label = tk.Label(w, text='Input:')
     w_label.pack()
@@ -103,10 +127,6 @@ def assembly_batch():
 
 
 def merge_single():
-    def open_single():
-        a = filedialog.askopenfilenames(title='fasta files')
-        w_entry.insert(0, a)
-
     w = tk.Toplevel(root)
     w_label = tk.Label(w, text='Input:')
     w_label.pack()
@@ -154,16 +174,15 @@ def validate_ui():
 
         wroot.destroy()
         run = tk.Toplevel(root)
-        run.geometry('600x400')
+        run.geometry(size)
         run.title('Running...')
         run.wm_transient()
         frame = tk.Frame(run)
         frame.pack(fill='both')
         stext(frame)
-        r = validate_main(arg_str)
-        info('Done.')
-        run.destroy()
-        # ok = messagebox.askokcancel(message=arg_str)
+        r = threading.Thread(target=validate_wrap, args=(arg_str, run))
+        r.start()
+        return
 
     wroot = tk.Toplevel(root)
     wroot.geometry(size)
@@ -175,7 +194,7 @@ def validate_ui():
     # use variable for easily edit
     row = 0
     wlabel(w, 'Input', row=row, padx=15, pady=10)
-    i_entry = entry(w, row=row, column=1)
+    i_entry = fentry(w, row=row, column=1)
     i_button = tk.Button(w, text='Open', command=open_single('Input file',
                                                              i_entry))
     i_button.grid(row=row, column=2)
@@ -184,20 +203,20 @@ def validate_ui():
     ref.grid(row=row, column=0, columnspan=5, padx=5, pady=8)
     row += 1
     wlabel(ref, 'Taxonomy', row=row, column=1)
-    t_entry = entry(ref, row=row, column=2, default='Nicotiana tabacum')
+    t_entry = fentry(ref, row=row, column=2, default='Nicotiana tabacum')
     row += 1
     label1 = tk.Label(ref, text='OR', fg='red')
     label1.grid(row=row, column=0, columnspan=2)
     row += 1
     wlabel(ref, 'Genbank file', row=row, column=1, padx=13)
-    r_entry = entry(ref, row=row, column=2)
+    r_entry = fentry(ref, row=row, column=2)
     r_button = tk.Button(ref, text='Open',
                          command=open_single('Reference file', r_entry,
                                              t_entry))
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row, padx=10, pady=8)
-    o_entry = entry(w, row=row, column=1, default='"Current folder"')
+    o_entry = fentry(w, row=row, column=1, default='"Current folder"')
     o_button = tk.Button(w, text='Open', command=open_folder('Output folder',
                                                              o_entry))
     o_button.grid(row=row, column=2)
@@ -206,10 +225,10 @@ def validate_ui():
     options.grid(row=row, padx=5, columnspan=5)
     row += 1
     wlabel(options, 'Sequence similarity (0-1)', row=row, padx=10)
-    s_entry = entry(options, row=row, column=1, default='0.7')
+    s_entry = fentry(options, row=row, column=1, default='0.7')
     row += 1
     wlabel(options, 'Length difference (0-1)', row=row, padx=10)
-    l_entry = entry(options, row=row, column=1, default='0.2')
+    l_entry = fentry(options, row=row, column=1, default='0.2')
     row += 1
     ok = tk.Button(w, text='Enter', command=submit_validate)
     ok.grid(row=row, column=0, columnspan=3, sticky='EW', padx=50, pady=10)
@@ -220,9 +239,18 @@ def o():
     # d = simpledialog.SimpleDialog(
     #     dialog, title='dialog test', text='this is a dialog',
     #     buttons=['yes', 'no', 'wo bu zhidao'], cancel=3, default=1)
-    #value = d.go()
-    #print(value)
+    # value = d.go()
+    # print(value)
 
+
+# define logger
+formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s',
+                              datefmt='%H:%M:%S')
+log = logging.getLogger('novowrap')
+log_queue = queue.Queue()
+queue_handler = QueueHandler(log_queue)
+queue_handler.setFormatter(formatter)
+log.addHandler(queue_handler)
 
 root = tk.Tk()
 w, h = root.winfo_screenwidth(), root.winfo_screenheight()
@@ -244,15 +272,14 @@ validate = tk.LabelFrame(root, text='Validate')
 validate.pack(side='left', padx=50)
 v_button1 = tk.Button(validate, text='Validate', command=validate_ui)
 v_button1.pack()
-#lf = tk.LabelFrame(validate, text='Unique')
-#lf.pack(padx=20, pady=20)
+# lf = tk.LabelFrame(validate, text='Unique')
+# lf.pack(padx=20, pady=20)
 # for i in 'first,longest,none'.split(','):
 #    r = ttk.Radiobutton(lf, text=i, variable=tk.IntVar, width=10)
 #    r.pack()
 va = tk.IntVar(root)
 vb = tk.StringVar(root)
-vc = tk.DoubleVar(root)
 va.set(100)
 vc = tk.DoubleVar(root, 3.14159)
-#print([i.get() for i in (va, vb, vc)])
+# print([i.get() for i in (va, vb, vc)])
 root.mainloop()

@@ -307,8 +307,11 @@ def validate_main(arg_str=None):
         arg_str(str): arguments string
     Return:
         validated(list): list contains validated rotated fasta files
-        success(int): success or not
+        output_info(str): result csv, empty string for failed result
     """
+    validated = []
+    output_info = ''
+
     if arg_str is None:
         arg = parse_args()
     else:
@@ -335,20 +338,21 @@ def validate_main(arg_str=None):
         if ref_gb is None:
             log.critical('Failed to get reference.')
             log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')
-            return [], -1
+            return validated, output_info
         ref_gb = move(ref_gb, tmp/ref_gb.name)
         fmt = 'gb'
     log.debug(f'Use {output} as output folder.')
     ref_len = len(SeqIO.read(ref_gb, fmt))
     r_ref_gb, r_ref_fasta = rotate_seq(ref_gb)
     if r_ref_gb is None:
-        return [], -1
+        return validated, output_info
     ref_regions = get_regions(r_ref_gb)
     if r_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
-        return [], -1
+        return validated, output_info
+        return output_info
     divided = divide_records(arg.input, output, ref_len, arg.len_diff)
     for i in divided:
         success = False
@@ -366,7 +370,7 @@ def validate_main(arg_str=None):
         if compare_result is None:
             log.critical('Cannot run BLAST.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
-            return -1
+            return output_info
         pdf = draw(r_ref_gb, i_gb, compare_result)
         pdf = move(pdf, output/pdf.name)
         log.info('Detecting reverse complement region.')
@@ -411,7 +415,6 @@ def validate_main(arg_str=None):
             success = True
         divided[i]['success'] = success
 
-    validated = []
     for i in divided:
         if divided[i]['success']:
             v_file = divided[i]['fasta']

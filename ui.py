@@ -1,28 +1,16 @@
 #!/usr/bin/python3
 
 import logging
+from logging import handlers
 import threading
 import queue
 import tkinter as tk
-import time
 from tkinter import messagebox, simpledialog, filedialog, scrolledtext
 
 from pathlib import Path
 
 from merge import merge_main
 from validate import validate_main
-
-
-class QueueHandler(logging.Handler):
-    """
-    For queue.
-    """
-    def __init__(self, log_queue_):
-        super().__init__()
-        self.log_queue = log_queue_
-
-    def emit(self, msg):
-        self.log_queue.put(msg)
 
 
 def stext(window):
@@ -41,9 +29,10 @@ def stext(window):
                 scroll.yview('end')
             except queue.Empty:
                 break
-        scroll.after(100, poll)
+        # 50 ms
+        scroll.after(50, poll)
 
-    scroll.after(100, poll)
+    scroll.after(50, poll)
 
 
 def wlabel(window, text, row, column=0, width=25, padx=0, pady=0, sticky='EW',
@@ -251,10 +240,10 @@ formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s',
                               datefmt='%H:%M:%S')
 log = logging.getLogger('novowrap')
 log_queue = queue.Queue()
-queue_handler = QueueHandler(log_queue)
+queue_handler = handlers.QueueHandler(log_queue)
 queue_handler.setFormatter(formatter)
 log.addHandler(queue_handler)
-
+# init window
 root = tk.Tk()
 w, h = root.winfo_screenwidth(), root.winfo_screenheight()
 s = min(w, h) // 2

@@ -13,13 +13,10 @@ from merge import merge_main
 from validate import validate_main
 
 
-def stext(window):
+def scroll_text(window):
     """
     ScrolledText that shows logs.
     """
-    scroll = scrolledtext.ScrolledText(window)
-    scroll.pack(fill='both')
-
     def poll():
         while True:
             try:
@@ -31,7 +28,8 @@ def stext(window):
                 break
         # 50 ms
         scroll.after(50, poll)
-
+    scroll = scrolledtext.ScrolledText(window)
+    scroll.pack(fill='both')
     scroll.after(50, poll)
 
 
@@ -68,11 +66,12 @@ def validate_wrap(arg_str, window):
     Wrap for callback.
     Args:
         arg_str(str): strings for validate()
-        window(Toplevel): window to destroy
+        window(Toplevel): window to hide
     """
     validated, output_info = validate_main(arg_str)
     info(f'Done. See {output_info} for details.')
-    window.destroy()
+    window.withdraw()
+    root.deiconify()
     return
 
 
@@ -132,6 +131,7 @@ def validate_ui():
     UI of validate.
     """
     def submit_validate():
+        # prepare arg_str
         arg_str = ''
         arg_input = i_entry.get()
         if arg_input == '':
@@ -162,24 +162,24 @@ def validate_ui():
             return
         else:
             arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
-
-        wroot.destroy()
+        # call validate
+        wroot.withdraw()
         run = tk.Toplevel(root)
         run.geometry(size)
         run.title('Running...')
         run.wm_transient()
         frame = tk.Frame(run)
         frame.pack(fill='both')
-        stext(frame)
+        scroll_text(frame)
         r = threading.Thread(target=validate_wrap, args=(arg_str, run))
         r.start()
-        run.mainloop()
 
+    root.iconify()
     wroot = tk.Toplevel(root)
     wroot.geometry(size)
     wroot.title('Validate')
     # on top
-    wroot.wm_transient(root)
+    #wroot.wm_transient(root)
     w = tk.Frame(wroot)
     w.grid(row=0, sticky='WENS', padx=30)
     # use variable for easily edit
@@ -245,10 +245,12 @@ queue_handler.setFormatter(formatter)
 log.addHandler(queue_handler)
 # init window
 root = tk.Tk()
+root.attributes('-topmost', 'true')
 w, h = root.winfo_screenwidth(), root.winfo_screenheight()
 s = min(w, h) // 2
 size = f'{s}x{int(s*0.618)}'
-root.geometry(size)
+small_size = f'{s}x{int(s*0.618/2)}'
+root.geometry(small_size)
 root.title('novowrap')
 assembly = tk.LabelFrame(root, text='Assembly')
 assembly.pack(side='left', padx=50)

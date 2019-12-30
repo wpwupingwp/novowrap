@@ -61,20 +61,6 @@ def info(message):
     messagebox.showinfo(message=message)
 
 
-def validate_wrap(arg_str, window):
-    """
-    Wrap for callback.
-    Args:
-        arg_str(str): strings for validate()
-        window(Toplevel): window to hide
-    """
-    validated, output_info = validate_main(arg_str)
-    info(f'Done. See {output_info} for details.')
-    window.withdraw()
-    root.deiconify()
-    return
-
-
 def open_single(title, entry, entry2=None):
     """
     Set title, fill entry 1, empty entry 2.
@@ -93,6 +79,23 @@ def open_folder(title, entry):
         a = filedialog.askdirectory(title=title)
         entry.insert(0, a)
     return func
+
+
+def thread_wrap(function, arg_str, window):
+    """
+    Wrap for callback.
+    The validate and merge share same return.
+    Args:
+        function(callable): function to call
+        arg_str(str): string for fuction's argparse
+        window(Toplevel): window to hide
+    """
+    result = function(arg_str)
+    # info, filename = func()
+    info(f'Done. See {result[1]} for details.')
+    window.withdraw()
+    root.deiconify()
+    return
 
 
 def assembly_single():
@@ -116,14 +119,22 @@ def assembly_batch():
     w_button.pack(side='right')
 
 
-def merge_single():
-    w = tk.Toplevel(root)
-    w_label = tk.Label(w, text='Input:')
-    w_label.pack()
-    w_entry = tk.Entry(w)
-    w_entry.pack(side='right')
-    w_button = tk.Button(w, text='Open', command=open_single)
-    w_button.pack(side='right')
+def merge_ui():
+    """
+    UI of merge.
+    """
+    root.iconify()
+    inputs = filedialog.askopenfilenames()
+    wroot = tk.Toplevel(root)
+    wroot.geometry(small_size)
+    wroot.title('Merge')
+    frame = tk.Frame(wroot)
+    frame.pack(fill='both')
+    scroll_text(frame)
+    arg_str = ' '.join(inputs)
+    r = threading.Thread(target=thread_wrap, args=(merge_main, arg_str, wroot))
+    r.start()
+    return
 
 
 def validate_ui():
@@ -171,7 +182,8 @@ def validate_ui():
         frame = tk.Frame(run)
         frame.pack(fill='both')
         scroll_text(frame)
-        r = threading.Thread(target=validate_wrap, args=(arg_str, run))
+        r = threading.Thread(target=thread_wrap,
+                             args=(validate_main, arg_str, run))
         r.start()
 
     root.iconify()
@@ -179,7 +191,7 @@ def validate_ui():
     wroot.geometry(size)
     wroot.title('Validate')
     # on top
-    #wroot.wm_transient(root)
+    # wroot.wm_transient(root)
     w = tk.Frame(wroot)
     w.grid(row=0, sticky='WENS', padx=30)
     # use variable for easily edit
@@ -254,15 +266,15 @@ root.geometry(small_size)
 root.title('novowrap')
 assembly = tk.LabelFrame(root, text='Assembly')
 assembly.pack(side='left', padx=50)
-a_button1 = tk.Button(assembly, text='Single Mode', command=assembly_single)
+a_button1 = tk.Button(assembly, text='Single file', command=assembly_single)
 a_button1.pack()
 a_button2 = tk.Button(assembly, text='Batch Mode', command=assembly_batch)
 a_button2.pack()
-merge = tk.LabelFrame(root, text='Merge')
+merge = tk.LabelFrame(root, text='')
 merge.pack(side='left', padx=10, pady=50)
-m_button1 = tk.Button(merge, text='Merge contigs', command=merge_single)
+m_button1 = tk.Button(merge, text='Merge contigs', command=merge_ui)
 m_button1.pack()
-validate = tk.LabelFrame(root, text='Validate')
+validate = tk.LabelFrame(root, text='')
 validate.pack(side='left', padx=50)
 v_button1 = tk.Button(validate, text='Validate', command=validate_ui)
 v_button1.pack()

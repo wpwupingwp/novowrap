@@ -347,6 +347,9 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
     MAX_TRY = 2 ** 16
     overlap = get_overlap(contigs_and_rc, contigs_and_rc_fasta)
     overlap_clean, edges = clean_overlap(overlap)
+    if len(overlap_clean) == 0:
+        log.critical('Bad input. Please check again.')
+        return []
     overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
     for i in edges:
         log.debug(f'{i}, {len(edges[i])}')
@@ -371,7 +374,6 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
             break
         n += 1
         combine = up_down_clean + list(i)
-        # c, _ = clean_overlap(combine)
         for link in get_path(combine):
             links.append(link)
     edges['link'] = set()
@@ -469,13 +471,16 @@ def merge_main(arg_str=None):
         arg.out = Path(arg.input[0]).with_suffix('.merge')
     contigs_and_rc, contigs_and_rc_fasta = get_contig(arg.input, arg.out)
     links = get_link(contigs_and_rc, contigs_and_rc_fasta)
-    merged = merge_seq(contigs_and_rc, links)
+    if len(links) == 0:
+        merged = []
+    else:
+        merged = merge_seq(contigs_and_rc, links)
     if len(merged) == 0:
         log.critical('Failed to assembly contigs.')
     else:
         log.info(f'Got {len(merged)} assemblies.')
         SeqIO.write(merged, arg.out, 'fasta')
-    return arg.out, len(merged)
+    return len(merged), arg.out
 
 
 if __name__ == '__main__':

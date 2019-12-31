@@ -19,12 +19,6 @@ FMT = '%(asctime)s %(levelname)-8s %(message)s'
 DATEFMT = '%H:%M:%S'
 logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
 log = logging.getLogger('novowrap')
-# init queue
-log_queue = queue.Queue()
-formatter = logging.Formatter(fmt=FMT, datefmt=DATEFMT)
-# do not add formatter to queuehandler, or msg will be formatted twice
-queue_handler = handlers.QueueHandler(log_queue)
-log.addHandler(queue_handler)
 
 
 def scroll_text(window):
@@ -43,6 +37,15 @@ def scroll_text(window):
                 break
         # 100 ms
         scroll.after(100, poll)
+
+    # clean old handlers
+    for i in log.handlers:
+        log.removeHandler(i)
+    log_queue = queue.Queue()
+    formatter = logging.Formatter(fmt=FMT, datefmt=DATEFMT)
+    # do not add formatter to queuehandler, or msg will be formatted twice
+    queue_handler = handlers.QueueHandler(log_queue)
+    log.addHandler(queue_handler)
     scroll = scrolledtext.ScrolledText(window)
     scroll.pack(fill='both')
     scroll.after(0, poll)

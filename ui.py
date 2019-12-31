@@ -35,8 +35,11 @@ def scroll_text(window):
                 scroll.yview('end')
             except queue.Empty:
                 break
-        # 100 ms
-        scroll.after(100, poll)
+        # to avoid orphan poll()
+        if log.hasHandlers():
+            scroll.after(10, poll)
+        else:
+            return
 
     # clean old handlers
     for i in log.handlers:
@@ -45,7 +48,8 @@ def scroll_text(window):
     formatter = logging.Formatter(fmt=FMT, datefmt=DATEFMT)
     # do not add formatter to queuehandler, or msg will be formatted twice
     queue_handler = handlers.QueueHandler(log_queue)
-    log.addHandler(queue_handler)
+    # give poll() time to quit
+    root.after(100, log.addHandler(queue_handler))
     scroll = scrolledtext.ScrolledText(window)
     scroll.pack(fill='both')
     scroll.after(0, poll)

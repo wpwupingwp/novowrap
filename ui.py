@@ -13,9 +13,24 @@ from merge import merge_main
 from validate import validate_main
 
 
+# define logger
+# ui needn't coloredlogs
+FMT = '%(asctime)s %(levelname)-8s %(message)s'
+DATEFMT = '%H:%M:%S'
+logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
+log = logging.getLogger('novowrap')
+# init queue
+log_queue = queue.Queue()
+formatter = logging.Formatter(fmt=FMT, datefmt=DATEFMT)
+# do not add formatter to queuehandler, or msg will be formatted twice
+queue_handler = handlers.QueueHandler(log_queue)
+log.addHandler(queue_handler)
+
+
 def scroll_text(window):
     """
     ScrolledText that shows logs.
+    Warning: if scroll was destoryed, the poll function may still running
     """
     def poll():
         while True:
@@ -26,11 +41,11 @@ def scroll_text(window):
                 scroll.yview('end')
             except queue.Empty:
                 break
-        # 50 ms
-        scroll.after(50, poll)
+        # 100 ms
+        scroll.after(100, poll)
     scroll = scrolledtext.ScrolledText(window)
     scroll.pack(fill='both')
-    scroll.after(50, poll)
+    scroll.after(0, poll)
 
 
 def wlabel(window, text, row, column=0, width=25, padx=0, pady=0, sticky='EW',
@@ -247,14 +262,6 @@ def o():
     # print(value)
 
 
-# define logger
-formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s',
-                              datefmt='%H:%M:%S')
-log = logging.getLogger('novowrap')
-log_queue = queue.Queue()
-queue_handler = handlers.QueueHandler(log_queue)
-queue_handler.setFormatter(formatter)
-log.addHandler(queue_handler)
 # init window
 root = tk.Tk()
 root.attributes('-topmost', 'true')

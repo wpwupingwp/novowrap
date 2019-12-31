@@ -171,6 +171,9 @@ def parse_blast_tab(filename):
         line(list): parsed result
     """
     query = []
+    # empty for empty
+    if filename is None:
+        return []
     with open(filename, 'r', encoding='utf-8') as raw:
         for line in raw:
             if line.startswith('# BLAST'):

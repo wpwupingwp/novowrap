@@ -24,7 +24,6 @@ log = logging.getLogger('novowrap')
 def scroll_text(window):
     """
     ScrolledText that shows logs.
-    Warning: if scroll was destoryed, the poll function may still running
     """
     def poll():
         while True:
@@ -83,13 +82,15 @@ def info(message):
     messagebox.showinfo(message=message)
 
 
-def open_single(title, entry, entry2=None):
+def open_file(title, entry, single=True, entry2=None):
     """
     Set title, fill entry 1, empty entry 2.
-    Only open one file.
     """
     def func():
-        a = filedialog.askopenfilename(title=title)
+        if single:
+            a = filedialog.askopenfilename(title=title)
+        else:
+            a = filedialog.askopenfilenames(title=title)
         entry.insert(0, a)
         if entry2 is not None:
             entry2.delete(0, 'end')
@@ -120,25 +121,116 @@ def thread_wrap(function, arg_str, window):
     return
 
 
-def assembly_single():
-    w = tk.Toplevel(root)
-    w.geometry(size)
-    w_label = tk.Label(w, text='Input:')
-    w_label.pack()
-    w_entry = tk.Entry(w)
-    w_entry.pack(side='right')
-    w_button = tk.Button(w, text='Open', command=open_single)
-    w_button.pack(side='right')
+def assembly_ui():
+    """
+    UI of assembly.
+    """
+    def submit_assembly():
+        # prepare arg_str
+        arg_str = ''
+        arg_input = i_entry.get()
+        if arg_input == '':
+            info('Input is required!')
+            return
+        else:
+            arg_str += arg_input
+        arg_ref = r_entry.get()
+        # use underscore in taxon name, which NCBI could handle
+        arg_taxon = t_entry.get().replace(' ', '_')
+        if arg_ref and arg_taxon:
+            info('Please only use one of "Reference file" and "Taxonomy"!')
+            return
+        elif arg_ref != '' and arg_taxon == '':
+            arg_str += f' -ref {arg_ref}'
+        elif arg_ref == '' and arg_taxon != '':
+            arg_str += f' -taxon {arg_taxon}'
+        arg_out = o_entry.get()
+        if arg_out == '"Current folder"':
+            arg_out = str(Path('.').absolute())
+        arg_str += f' -out {arg_out}'
+        arg_s = float(s_entry.get())
+        arg_l = float(l_entry.get())
+        if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:
+            info('Bad value!')
+            s_entry.configure(bg='red')
+            l_entry.configure(bg='red')
+            return
+        else:
+            arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
+        # call validate
+        wroot.withdraw()
+        run = tk.Toplevel(root)
+        run.geometry(size)
+        run.title('Running...')
+        run.wm_transient()
+        frame = tk.Frame(run)
+        frame.pack(fill='both')
+        scroll_text(frame)
+        r = threading.Thread(target=thread_wrap,
+                             args=(validate_main, arg_str, run))
+        r.start()
 
-
-def assembly_batch():
-    w = tk.Toplevel(root)
-    w_label = tk.Label(w, text='Input:')
-    w_label.pack()
-    w_entry = tk.Entry(w)
-    w_entry.pack(side='right')
-    w_button = tk.Button(w, text='Open', command=open_single)
-    w_button.pack(side='right')
+    root.iconify()
+    wroot = tk.Toplevel(root)
+    wroot.geometry(big_size)
+    wroot.title('Assembly')
+    w = tk.Frame(wroot)
+    w.grid(row=0, sticky='WENS', padx=30)
+    # use variable for easily edit
+    row = 0
+    inputs = tk.LabelFrame(w, text='Input')
+    inputs.grid(row=row, padx=5, pady=8, columnspan=5)
+    row += 1
+    wlabel(inputs, 'Input', row=row, column=1)
+    input_entry = fentry(inputs, row=row, column=2)
+    input_button = tk.Button(inputs, text='Open', command=open_file(
+        'Input file', input_entry, single=False))
+    input_button.grid(row=row, column=3)
+    row += 1
+    label1 = tk.Label(inputs, text='OR', fg='red')
+    label1.grid(row=row, column=0, columnspan=2)
+    row += 1
+    wlabel(inputs, 'Input list', row=row, column=1)
+    list_entry = fentry(inputs, row=row, column=2)
+    list_button = tk.Button(inputs, text='Open',
+                            command=open_file('List file', list_entry,
+                                              input_entry))
+    list_button.grid(row=row, column=3)
+    row += 1
+    ref = tk.LabelFrame(w, text='Reference')
+    ref.grid(row=row, padx=5, pady=8, columnspan=5)
+    row += 1
+    wlabel(ref, 'Taxonomy', row=row, column=1)
+    taxon_entry = fentry(ref, row=row, column=2, default='Nicotiana tabacum')
+    row += 1
+    label2 = tk.Label(ref, text='OR', fg='red')
+    label2.grid(row=row, column=0, columnspan=2)
+    row += 1
+    wlabel(ref, 'Genbank file', row=row, column=1, padx=3)
+    r_entry = fentry(ref, row=row, column=2)
+    r_button = tk.Button(ref, text='Open',
+                         command=open_file('Reference file', r_entry,
+                                           taxon_entry))
+    r_button.grid(row=row, column=5)
+    row += 1
+    wlabel(w, 'Output', row=row, padx=5, pady=8)
+    out_entry = fentry(w, row=row, column=1, default='"Current folder"')
+    o_button = tk.Button(w, text='Open', command=open_folder('Output folder',
+                                                             out_entry))
+    o_button.grid(row=row, column=2)
+    row += 1
+    advance = tk.LabelFrame(w, text='Advanced Settings')
+    advance.grid(row=row, padx=5, columnspan=5)
+    row += 1
+    wlabel(options, 'Sequence similarity (0-1)', row=row, padx=10)
+    s_entry = fentry(options, row=row, column=1, default='0.7')
+    row += 1
+    wlabel(options, 'Length difference (0-1)', row=row, padx=10)
+    l_entry = fentry(options, row=row, column=1, default='0.2')
+    row += 1
+    ok = tk.Button(w, text='Enter', command=submit_assembly)
+    ok.grid(row=row, column=0, columnspan=3, sticky='EW', padx=50, pady=10)
+    return
 
 
 def merge_ui():
@@ -220,7 +312,7 @@ def validate_ui():
     row = 0
     wlabel(w, 'Input', row=row, padx=15, pady=10)
     i_entry = fentry(w, row=row, column=1)
-    i_button = tk.Button(w, text='Open', command=open_single('Input file',
+    i_button = tk.Button(w, text='Open', command=open_file('Input file',
                                                              i_entry))
     i_button.grid(row=row, column=2)
     ref = tk.LabelFrame(w, text='Reference')
@@ -233,11 +325,11 @@ def validate_ui():
     label1 = tk.Label(ref, text='OR', fg='red')
     label1.grid(row=row, column=0, columnspan=2)
     row += 1
-    wlabel(ref, 'Genbank file', row=row, column=1, padx=13)
+    wlabel(ref, 'File', row=row, column=1, padx=13)
     r_entry = fentry(ref, row=row, column=2)
     r_button = tk.Button(ref, text='Open',
-                         command=open_single('Reference file', r_entry,
-                                             t_entry))
+                         command=open_file('Reference file (gb/fasta format)',
+                                           r_entry, t_entry))
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row, padx=10, pady=8)
@@ -276,14 +368,13 @@ w, h = root.winfo_screenwidth(), root.winfo_screenheight()
 s = min(w, h) // 2
 size = f'{s}x{int(s*0.618)}'
 small_size = f'{s}x{int(s*0.618/2)}'
+big_size = f'{s}x{int(s*0.618*2)}'
 root.geometry(small_size)
 root.title('novowrap')
-assembly = tk.LabelFrame(root, text='Assembly')
+assembly = tk.LabelFrame(root, text='')
 assembly.pack(side='left', padx=50)
-a_button1 = tk.Button(assembly, text='Single file', command=assembly_single)
+a_button1 = tk.Button(assembly, text='assembly', command=assembly_ui)
 a_button1.pack()
-a_button2 = tk.Button(assembly, text='Batch Mode', command=assembly_batch)
-a_button2.pack()
 merge = tk.LabelFrame(root, text='')
 merge.pack(side='left', padx=10, pady=50)
 m_button1 = tk.Button(merge, text='Merge contigs', command=merge_ui)

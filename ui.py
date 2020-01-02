@@ -64,14 +64,14 @@ def wlabel(window, text, row, column=0, width=25, padx=0, pady=0, sticky='EW',
     return label
 
 
-def fentry(window, row, column, default=''):
+def fentry(window, row, column, default='', padx=0, pady=0):
     """
     Generate and pack entrys.
     Fill with default string.
     """
     entry = tk.Entry(window)
     entry.insert(0, default)
-    entry.grid(row=row, column=column)
+    entry.grid(row=row, column=column, padx=padx, pady=pady)
     return entry
 
 
@@ -219,14 +219,57 @@ def assembly_ui():
                                                              out_entry))
     o_button.grid(row=row, column=2)
     row += 1
-    advance = tk.LabelFrame(w, text='Advanced Settings')
-    advance.grid(row=row, padx=5, columnspan=5)
+
+    advance = tk.LabelFrame(w, text='Advanced settings')
+    advance.grid(row=row, padx=5, columnspan=4)
     row += 1
-    wlabel(options, 'Sequence similarity (0-1)', row=row, padx=10)
-    s_entry = fentry(options, row=row, column=1, default='0.7')
+    adv_input = tk.LabelFrame(advance, text='Input')
+    adv_input.grid(row=row, padx=5, columnspan=4)
     row += 1
-    wlabel(options, 'Length difference (0-1)', row=row, padx=10)
-    l_entry = fentry(options, row=row, column=1, default='0.2')
+    wlabel(adv_input, 'Split reads', row=row, column=0)
+    split_entry = fentry(adv_input, row=row, column=1) 
+    row += 1
+    wlabel(adv_input, 'Insert size', row=row, column=0, padx=10)
+    insert_entry = fentry(adv_input, row=row, column=1)
+    row += 1
+    platform = tk.StringVar()
+    platform.set('illumina')
+    wlabel(adv_input, 'Sequence platform', row=row, column=0)
+    radio1 = tk.Radiobutton(adv_input, text='illumina', variable=platform,
+                            value='illumina')
+    radio1.grid(row=row, column=1)
+    radio2 = tk.Radiobutton(adv_input, text='ion torrent', variable=platform,
+                            value='ion')
+    radio2.grid(row=row, column=2)
+    row += 1
+    adv_assembly = tk.LabelFrame(advance, text='Assembly')
+    adv_assembly.grid(row=row, padx=5, columnspan=4)
+    row += 1
+    wlabel(adv_assembly, 'K-mer (23-39, odd)', row=row, column=0)
+    kmer_entry = fentry(adv_assembly, row=row, column=1, default=39)
+    row += 1
+    wlabel(adv_assembly, 'Genome Size (bp)', row=row, column=0)
+    min_size_entry = fentry(adv_assembly, row=row, column=1, default=100000)
+    max_size_entry = fentry(adv_assembly, row=row, column=2, default=200000,
+                            padx=10)
+    row += 1
+    wlabel(adv_assembly, 'Seed genes', row=row, column=0)
+    seed_entry = fentry(adv_assembly, row=row, column=1,
+                        default='rbcL,psaB,psaC,rrn23')
+    wlabel(adv_assembly, 'Seed file', row=row, column=0)
+    seed_file_entry = fentry(adv_assembly, row=row, column=1)
+    seed_button = tk.Button(adv_assembly, text='Open',
+                            command=open_file('Seed file', seed_file_entry))
+    seed_button.grid(row=row, column=2)
+
+    adv_validate = tk.LabelFrame(advance, text='Validate')
+    adv_validate.grid(row=row, padx=5, columnspan=2)
+    wlabel(adv_validate, 'Sequence similarity (0-1)', row=row, column=0)
+    s_entry = fentry(adv_validate, row=row, column=1, default='0.7')
+    row += 1
+    wlabel(adv_validate, 'Length difference (0-1)', row=row, padx=10)
+    l_entry = fentry(adv_validate, row=row, column=1, default='0.2')
+
     row += 1
     ok = tk.Button(w, text='Enter', command=submit_assembly)
     ok.grid(row=row, column=0, columnspan=3, sticky='EW', padx=50, pady=10)

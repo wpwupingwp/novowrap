@@ -125,29 +125,64 @@ def assembly_ui():
     """
     UI of assembly.
     """
+    def show_adv():
+        wroot.geometry(big_size)
+        advance.grid(advance_info)
+
     def submit_assembly():
         # prepare arg_str
         arg_str = ''
-        arg_input = i_entry.get()
-        if arg_input == '':
+        arg_input = input_entry.get()
+        arg_input_list = list_entry.get()
+        if arg_input and arg_input_list:
+            info('Please only use one of "Input file" and "Input list"!')
+            return
+        elif arg_input == '' and arg_input_list == '':
             info('Input is required!')
             return
+        elif arg_input:
+            arg_str += f'-i {arg_input}'
         else:
-            arg_str += arg_input
-        arg_ref = r_entry.get()
+            arg_str += f'-l {arg_input_list}'
+        arg_ref = ref_entry.get()
         # use underscore in taxon name, which NCBI could handle
-        arg_taxon = t_entry.get().replace(' ', '_')
+        arg_taxon = taxon_entry.get().replace(' ', '_')
         if arg_ref and arg_taxon:
-            info('Please only use one of "Reference file" and "Taxonomy"!')
+            info('Please only use one of "Refence" and "Taxonomy"!')
             return
         elif arg_ref != '' and arg_taxon == '':
             arg_str += f' -ref {arg_ref}'
         elif arg_ref == '' and arg_taxon != '':
             arg_str += f' -taxon {arg_taxon}'
-        arg_out = o_entry.get()
+        arg_out = out_entry.get()
         if arg_out == '"Current folder"':
             arg_out = str(Path('.').absolute())
         arg_str += f' -out {arg_out}'
+        # advanced options
+        arg_split = split_entry.get()
+        if arg_split:
+            arg_str += f' -split {arg_split}'
+        arg_insert = insert_entry.get()
+        if arg_insert:
+            arg_insert += f' -insert_size {arg_insert}'
+        arg_str += f' -p {platform.get()}'
+        arg_kmer = int(kmer_entry.get())
+        if arg_kmer > 39 or arg_kmer < 23 or (arg_kmer % 2 != 1):
+            info('K-mer should be an odd number in (23, 39)!')
+            return
+        arg_str += f' -kmer {arg_kmer}'
+        arg_size = size_entry.get()
+        if '-' not in arg_size:
+            info('Genome size should be "min-max" format!')
+            return
+        min_size, max_size = arg_size.split('-')
+        arg_str += f' -min {min_size} -max {max_size}'
+        arg_seed = seed_entry.get().strip(',')
+        if arg_seed:
+            arg_str += f' -seed {arg_seed}'
+        arg_seed_file = seed_file_entry.get()
+        if arg_seed_file:
+            arg_str += f' -seed_file {arg_seed_file}'
         arg_s = float(s_entry.get())
         arg_l = float(l_entry.get())
         if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:
@@ -166,6 +201,7 @@ def assembly_ui():
         frame = tk.Frame(run)
         frame.pack(fill='both')
         scroll_text(frame)
+        # to be continued
         r = threading.Thread(target=thread_wrap,
                              args=(validate_main, arg_str, run))
         r.start()
@@ -207,9 +243,9 @@ def assembly_ui():
     label2.grid(row=row, column=0, columnspan=2)
     row += 1
     wlabel(ref, 'Genbank file', row=row, column=1)
-    r_entry = fentry(ref, row=row, column=2)
+    ref_entry = fentry(ref, row=row, column=2)
     r_button = tk.Button(ref, text='Open',
-                         command=open_file('Reference file', r_entry,
+                         command=open_file('Reference file', ref_entry,
                                            taxon_entry))
     r_button.grid(row=row, column=3)
     row += 1
@@ -260,7 +296,8 @@ def assembly_ui():
     wlabel(adv_assembly, 'Seed file', row=row, column=0)
     seed_file_entry = fentry(adv_assembly, row=row, column=1)
     seed_button = tk.Button(adv_assembly, text='Open',
-                            command=open_file('Seed file', seed_file_entry))
+                            command=open_file('Seed file', seed_file_entry,
+                                              single=True))
     seed_button.grid(row=row, column=2)
 
     adv_validate = tk.LabelFrame(advance, text='Validate')
@@ -271,9 +308,6 @@ def assembly_ui():
     wlabel(adv_validate, 'Length difference (0-1)', row=row)
     l_entry = fentry(adv_validate, row=row, column=1, default='0.2')
 
-    def show_adv():
-        wroot.geometry(big_size)
-        advance.grid(advance_info)
     row += 1
     show_more = tk.Button(w, text='More options', command=show_adv)
     show_more.grid(row=row, column=0, pady=10)

@@ -172,14 +172,14 @@ def assembly_ui():
 
     root.iconify()
     wroot = tk.Toplevel(root)
-    wroot.geometry(big_size)
+    wroot.geometry(size)
     wroot.title('Assembly')
     w = tk.Frame(wroot)
     w.grid(row=0, sticky='WENS', padx=30)
     # use variable for easily edit
     row = 0
     inputs = tk.LabelFrame(w, text='Input')
-    inputs.grid(row=row, padx=5, pady=8, columnspan=5)
+    inputs.grid(row=row, columnspan=4)
     row += 1
     wlabel(inputs, 'Input', row=row, column=1)
     input_entry = fentry(inputs, row=row, column=2)
@@ -198,7 +198,7 @@ def assembly_ui():
     list_button.grid(row=row, column=3)
     row += 1
     ref = tk.LabelFrame(w, text='Reference')
-    ref.grid(row=row, padx=5, pady=8, columnspan=5)
+    ref.grid(row=row, columnspan=4)
     row += 1
     wlabel(ref, 'Taxonomy', row=row, column=1)
     taxon_entry = fentry(ref, row=row, column=2, default='Nicotiana tabacum')
@@ -206,14 +206,14 @@ def assembly_ui():
     label2 = tk.Label(ref, text='OR', fg='red')
     label2.grid(row=row, column=0, columnspan=2)
     row += 1
-    wlabel(ref, 'Genbank file', row=row, column=1, padx=3)
+    wlabel(ref, 'Genbank file', row=row, column=1)
     r_entry = fentry(ref, row=row, column=2)
     r_button = tk.Button(ref, text='Open',
                          command=open_file('Reference file', r_entry,
                                            taxon_entry))
-    r_button.grid(row=row, column=5)
+    r_button.grid(row=row, column=3)
     row += 1
-    wlabel(w, 'Output', row=row, padx=5, pady=8)
+    wlabel(w, 'Output', row=row, pady=8)
     out_entry = fentry(w, row=row, column=1, default='"Current folder"')
     o_button = tk.Button(w, text='Open', command=open_folder('Output folder',
                                                              out_entry))
@@ -221,15 +221,16 @@ def assembly_ui():
     row += 1
 
     advance = tk.LabelFrame(w, text='Advanced settings')
-    advance.grid(row=row, padx=5, columnspan=4)
+    advance.grid(row=row, columnspan=3)
+    advance_info = advance.grid_info()
     row += 1
     adv_input = tk.LabelFrame(advance, text='Input')
-    adv_input.grid(row=row, padx=5, columnspan=4)
+    adv_input.grid(row=row)
     row += 1
     wlabel(adv_input, 'Split reads', row=row, column=0)
     split_entry = fentry(adv_input, row=row, column=1) 
     row += 1
-    wlabel(adv_input, 'Insert size', row=row, column=0, padx=10)
+    wlabel(adv_input, 'Insert size', row=row, column=0)
     insert_entry = fentry(adv_input, row=row, column=1)
     row += 1
     platform = tk.StringVar()
@@ -243,19 +244,19 @@ def assembly_ui():
     radio2.grid(row=row, column=2)
     row += 1
     adv_assembly = tk.LabelFrame(advance, text='Assembly')
-    adv_assembly.grid(row=row, padx=5, columnspan=4)
+    adv_assembly.grid(row=row, padx=5)
     row += 1
     wlabel(adv_assembly, 'K-mer (23-39, odd)', row=row, column=0)
     kmer_entry = fentry(adv_assembly, row=row, column=1, default=39)
     row += 1
-    wlabel(adv_assembly, 'Genome Size (bp)', row=row, column=0)
-    min_size_entry = fentry(adv_assembly, row=row, column=1, default=100000)
-    max_size_entry = fentry(adv_assembly, row=row, column=2, default=200000,
-                            padx=10)
+    wlabel(adv_assembly, 'Genome Size range (bp)', row=row, column=0)
+    size_entry = fentry(adv_assembly, row=row, column=1,
+                        default='100000-200000')
     row += 1
     wlabel(adv_assembly, 'Seed genes', row=row, column=0)
     seed_entry = fentry(adv_assembly, row=row, column=1,
                         default='rbcL,psaB,psaC,rrn23')
+    row += 1
     wlabel(adv_assembly, 'Seed file', row=row, column=0)
     seed_file_entry = fentry(adv_assembly, row=row, column=1)
     seed_button = tk.Button(adv_assembly, text='Open',
@@ -263,16 +264,22 @@ def assembly_ui():
     seed_button.grid(row=row, column=2)
 
     adv_validate = tk.LabelFrame(advance, text='Validate')
-    adv_validate.grid(row=row, padx=5, columnspan=2)
+    adv_validate.grid(row=row)
     wlabel(adv_validate, 'Sequence similarity (0-1)', row=row, column=0)
     s_entry = fentry(adv_validate, row=row, column=1, default='0.7')
     row += 1
-    wlabel(adv_validate, 'Length difference (0-1)', row=row, padx=10)
+    wlabel(adv_validate, 'Length difference (0-1)', row=row)
     l_entry = fentry(adv_validate, row=row, column=1, default='0.2')
 
+    def show_adv():
+        wroot.geometry(big_size)
+        advance.grid(advance_info)
     row += 1
+    show_more = tk.Button(w, text='More options', command=show_adv)
+    show_more.grid(row=row, column=0, pady=10)
     ok = tk.Button(w, text='Enter', command=submit_assembly)
-    ok.grid(row=row, column=0, columnspan=3, sticky='EW', padx=50, pady=10)
+    ok.grid(row=row, column=1, columnspan=2, sticky='EW', padx=40)
+    advance.grid_forget()
     return
 
 
@@ -415,16 +422,16 @@ big_size = f'{s}x{int(s*0.618*2)}'
 root.geometry(small_size)
 root.title('novowrap')
 assembly = tk.LabelFrame(root, text='')
-assembly.pack(side='left', padx=50)
-a_button1 = tk.Button(assembly, text='assembly', command=assembly_ui)
+assembly.pack(side='left', padx=20)
+a_button1 = tk.Button(assembly, text='Assembly sequences', command=assembly_ui)
 a_button1.pack()
 merge = tk.LabelFrame(root, text='')
 merge.pack(side='left', padx=10, pady=50)
 m_button1 = tk.Button(merge, text='Merge contigs', command=merge_ui)
 m_button1.pack()
 validate = tk.LabelFrame(root, text='')
-validate.pack(side='left', padx=50)
-v_button1 = tk.Button(validate, text='Validate', command=validate_ui)
+validate.pack(side='left', padx=20)
+v_button1 = tk.Button(validate, text='Validate assembly', command=validate_ui)
 v_button1.pack()
 # lf = tk.LabelFrame(validate, text='Unique')
 # lf.pack(padx=20, pady=20)

@@ -176,6 +176,7 @@ def init_arg(arg):
     arg.raw.mkdir()
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
+    success = True
     return success, arg
 
 

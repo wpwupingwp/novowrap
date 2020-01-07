@@ -482,7 +482,7 @@ def merge_main(arg_str=None):
     else:
         log.info(f'Got {len(merged)} assemblies.')
         SeqIO.write(merged, arg.out, 'fasta')
-    return len(merged), arg.out
+    return arg.out, len(merged)
 
 
 if __name__ == '__main__':

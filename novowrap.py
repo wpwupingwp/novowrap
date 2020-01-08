@@ -534,17 +534,19 @@ def assembly(arg, novoplasty):
     return success
 
 
-def main():
+def assembly_main(arg_str=None):
     log.info('Welcome to novowrap.')
+    # check arg
+    if arg_str is None:
+        arg = parse_args()
+    else:
+        arg = parse_args(arg_str.split(' '))
+    success, arg = init_arg(arg)
+    if not success:
+        log.critical('Quit.')
     # check before run
     novoplasty = get_novoplasty()
     if novoplasty is None:
-        log.critical('Quit.')
-        return
-    # check arg
-    arg = parse_args()
-    success, arg = init_arg(arg)
-    if not success:
         log.critical('Quit.')
         return
     # log to file
@@ -566,4 +568,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    assembly_main()

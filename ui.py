@@ -114,7 +114,13 @@ def thread_wrap(function, arg_str, window):
         arg_str(str): string for fuction's argparse
         window(Toplevel): window to hide
     """
-    result = function(arg_str)
+    try:
+        result = function(arg_str)
+    except Exception:
+        log.exception('Abort.')
+        info('Abort.')
+        root.deiconify()
+        return
     if result[0]:
         info(f'Done. See {result[1]} for details.')
     else:

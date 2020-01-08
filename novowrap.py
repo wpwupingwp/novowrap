@@ -97,6 +97,12 @@ def parse_args(arg_list=None):
                            'only one record')
     reference.add_argument('-taxon', default='Nicotiana tabacum',
                            help='Taxonomy name')
+    validate = arg.add_argument_group('Validate')
+    validate.add_argument('-perc_identity', type=float, default=0.7,
+                          help='minimum percentage of identity of BLAST, 0-1')
+    validate.add_argument('-len_diff', type=float, default=0.2,
+                          help='maximum percentage of length differnce of '
+                          'query to reference, 0-1')
     if arg_list is None:
         return arg.parse_args()
     else:

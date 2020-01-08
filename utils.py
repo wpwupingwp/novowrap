@@ -36,7 +36,8 @@ def move(source, dest, copy=False):
     source = Path(source).absolute()
     dest = Path(dest).absolute()
     # avoid useless copy
-    if source.samefile(dest):
+    # Path.samefile may raise FileNotFoundError
+    if source == dest:
         pass
     else:
         # read_bytes/write_bytes includes open, read/write and close steps

@@ -63,7 +63,7 @@ def get_novoplasty():
     return novoplasty
 
 
-def parse_args():
+def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     inputs = arg.add_argument_group('Input')
@@ -97,7 +97,10 @@ def parse_args():
                            'only one record')
     reference.add_argument('-taxon', default='Nicotiana tabacum',
                            help='Taxonomy name')
-    return arg.parse_args()
+    if arg_list is None:
+        return arg.parse_args()
+    else:
+        return arg.parse_args(arg_list)
 
 
 def get_output(arg):

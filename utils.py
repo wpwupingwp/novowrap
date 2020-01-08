@@ -81,12 +81,13 @@ def get_full_taxon(taxon):
     return reversed(full_lineage)
 
 
-def get_ref(taxon):
+def get_ref(taxon, out):
     """
     Get reference gb file.
     Only one record will be retrieved.
     Arg:
         taxon(str): given taxon name
+        out(Path): output folder
     Return:
         ref(Path): gb file
         ref_taxon(str): taxon of reference's, may not be same with given taxon
@@ -94,7 +95,7 @@ def get_ref(taxon):
     log.info(f'Try to get reference of {taxon} from NCBI Genbank.')
     lineage = get_full_taxon(taxon)
     if lineage is None:
-        return None
+        return None, None
     for taxon in lineage:
         rank, taxon_name = taxon
         if taxon_name == '':
@@ -118,7 +119,7 @@ def get_ref(taxon):
                                            webenv=handle['WebEnv'],
                                            query_key=handle['QueryKey']))
         accession = info[0]['Caption']
-        ref = Path(f'{taxon_name}_{accession}.gb')
+        ref = out / f'{taxon_name}_{accession}.gb'
         content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
                                 query_key=handle['QueryKey'], rettype='gb',
                                 retmode='text', retmax=1)
@@ -132,7 +133,7 @@ def get_ref(taxon):
             r_fasta.unlink()
             log.info(f'Got {ref.name} as reference.')
             return ref, taxon_name
-    return None
+    return None, None
 
 
 def blast(query, target, perc_identity=70):

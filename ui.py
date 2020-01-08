@@ -160,6 +160,8 @@ def assembly_ui():
         arg_out = out_entry.get()
         if arg_out == '"Current folder"':
             arg_out = str(Path('.').absolute())
+        else:
+            arg_out = str(Path(arg_out).absolute())
         arg_str += f' -out {arg_out}'
         # advanced options
         arg_split = split_entry.get()

@@ -89,7 +89,7 @@ def parse_args(arg_list=None):
                          help='maximum genome size (KB)')
     options.add_argument('-mem', default=30, type=int,
                          help='maximum memory (GB)')
-    options.add_argument('-o', dest='out', help='output folder')
+    options.add_argument('-o', '-out', dest='out', help='output folder')
     options.add_argument('-debug', action='store_true', help='debug mode')
     reference = arg.add_argument_group('Reference')
     reference.add_argument('-ref',
@@ -477,7 +477,7 @@ def assembly(arg, novoplasty):
         ref = move(ref, arg.tmp/ref, copy=True)
     else:
         log.info('Try to get reference from NCBI Genbank.')
-        ref, arg.taxon = get_ref(arg.taxon)
+        ref, arg.taxon = get_ref(arg.taxon, arg.tmp)
         if ref is None:
             log.critical('Cannot get reference.')
             return success
@@ -515,7 +515,9 @@ def assembly(arg, novoplasty):
         log.info('Validate assembly results.')
         # for i in (*circularized, *options, *merged):
         for i in (*circularized, *options):
-            arg_str = f'{i} -ref {ref} -seed {seed.stem} -o {arg.out}'
+            arg_str = (f'{i} -ref {ref} -seed {seed.stem} -o {arg.out} '
+                       f'-perc_identity {arg.perc_identity} '
+                       f'-len_diff {arg.len_diff}')
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
             if report not in csv_files:
@@ -535,7 +537,9 @@ def assembly(arg, novoplasty):
         n_assembly, assembly_result = merge_main(arg_str)
         if n_assembly != 0:
             arg_str = (f'{assembly_result} -ref {ref} -seed merge '
-                       f'-o {arg.out}')
+                       f'-o {arg.out} '
+                       f'-perc_identity {arg.perc_identity} '
+                       f'-len_diff {arg.len_diff}')
             validate_file, report = validate_main(arg_str)
             if len(validate_file) != 0:
                 success = True

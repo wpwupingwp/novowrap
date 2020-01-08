@@ -11,6 +11,7 @@ from pathlib import Path
 
 from merge import merge_main
 from validate import validate_main
+from novowrap import assembly_main
 
 
 # define logger
@@ -203,7 +204,7 @@ def assembly_ui():
         scroll_text(frame)
         # to be continued
         r = threading.Thread(target=thread_wrap,
-                             args=(validate_main, arg_str, run))
+                             args=(assembly_main, arg_str, run))
         r.start()
 
     root.iconify()
@@ -264,7 +265,7 @@ def assembly_ui():
     adv_input.grid(row=row)
     row += 1
     wlabel(adv_input, 'Split reads', row=row, column=0)
-    split_entry = fentry(adv_input, row=row, column=1) 
+    split_entry = fentry(adv_input, row=row, column=1)
     row += 1
     wlabel(adv_input, 'Insert size', row=row, column=0)
     insert_entry = fentry(adv_input, row=row, column=1)
@@ -397,7 +398,7 @@ def validate_ui():
     wlabel(w, 'Input', row=row, padx=15, pady=10)
     i_entry = fentry(w, row=row, column=1)
     i_button = tk.Button(w, text='Open', command=open_file('Input file',
-                                                             i_entry))
+                                                           i_entry))
     i_button.grid(row=row, column=2)
     ref = tk.LabelFrame(w, text='Reference')
     row += 1

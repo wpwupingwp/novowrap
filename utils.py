@@ -22,6 +22,10 @@ def move(source, dest, copy=False):
     """
     Move source to dest and return dest.
     If set "copy", copy source to dest instead of move.
+    Because Path.rename could not move file across different filesystem or
+    drive, have to use copy and delete to implement "move".
+    Warning:
+        This function does not check whether dest exists or not.
     Args:
         source(Path): old path
         dest(Path or str): new path
@@ -29,15 +33,17 @@ def move(source, dest, copy=False):
     Return:
         dest(Path): new path
     """
-    if source.absolute() == dest.absolute():
-        return Path(dest)
-    elif not copy:
-        source.rename(dest)
-        return Path(dest)
+    source = Path(source).absolute()
+    dest = Path(dest).absolute()
+    # avoid useless copy
+    if source.samefile(dest):
+        pass
     else:
-        with open(source, 'rb') as a, open(dest, 'wb') as b:
-            b.write(a.read())
-        return Path(dest)
+        # read_bytes/write_bytes includes open, read/write and close steps
+        dest.write_bytes(source.read_bytes())
+        if not copy:
+            source.unlink()
+    return Path(dest)
 
 
 def get_full_taxon(taxon):

@@ -108,15 +108,17 @@ def open_folder(title, entry):
 def thread_wrap(function, arg_str, window):
     """
     Wrap for callback.
-    The validate and merge share same return.
+    The validate and merge share same return structure.
     Args:
         function(callable): function to call
         arg_str(str): string for fuction's argparse
         window(Toplevel): window to hide
     """
     result = function(arg_str)
-    # info, filename = func()
-    info(f'Done. See {result[1]} for details.')
+    if result[0]:
+        info(f'Done. See {result[1]} for details.')
+    else:
+        info(f'Fail. See {result[1]} for details.')
     window.withdraw()
     root.deiconify()
     return

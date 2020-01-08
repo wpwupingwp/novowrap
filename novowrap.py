@@ -435,13 +435,14 @@ def assembly(arg, novoplasty):
     Return:
         success(Bool): success or not
     """
+    success = False
     log.info('')
     for i in arg.input:
         test = Path(i)
         # arg.list may contains invalid file
         if not test.exists():
             log.critical(f'Cannot find input file {i}')
-            return -1
+            return success
         else:
             log.info(f'Input file: {i}')
     log.info(f'Minimum genome size: {arg.min}')
@@ -462,7 +463,7 @@ def assembly(arg, novoplasty):
         if get_fmt(arg.ref) != 'gb':
             log.critical('Reference file should be genbank format, '
                          'but {arg.ref} is not.')
-            return -1
+            return success
         ref = Path(arg.ref)
         ref = move(ref, arg.tmp/ref, copy=True)
     else:
@@ -470,7 +471,7 @@ def assembly(arg, novoplasty):
         ref, arg.taxon = get_ref(arg.taxon)
         if ref is None:
             log.critical('Cannot get reference.')
-            return -1
+            return success
         else:
             log.info(f'Got {ref.stem}.')
             ref = move(ref, arg.tmp/ref)
@@ -485,9 +486,8 @@ def assembly(arg, novoplasty):
         seeds.extend(ordered_seeds)
     if len(seeds) == 0:
         log.critical('Cannot get seeds!')
-        return -1
+        return success
     csv_files = []
-    success = False
     all_contigs = []
     for seed in seeds:
         log.info(f'Use {seed.stem} as seed.')
@@ -523,7 +523,7 @@ def assembly(arg, novoplasty):
                  'from each seed.')
         all_input = ' '.join([str(i.absolute()) for i in all_contigs])
         arg_str = f'{all_input} -o {arg.out/"Raw"/"merge_seed.fasta"}'
-        assembly_result, n_assembly = merge_main(arg_str)
+        n_assembly, assembly_result = merge_main(arg_str)
         if n_assembly != 0:
             arg_str = (f'{assembly_result} -ref {ref} -seed merge '
                        f'-o {arg.out}')
@@ -535,6 +535,9 @@ def assembly(arg, novoplasty):
 
 
 def assembly_main(arg_str=None):
+    """
+    For consistence, return (success, arg.out).
+    """
     log.info('Welcome to novowrap.')
     # check arg
     if arg_str is None:
@@ -544,11 +547,13 @@ def assembly_main(arg_str=None):
     success, arg = init_arg(arg)
     if not success:
         log.critical('Quit.')
+        return success, arg.out
     # check before run
     novoplasty = get_novoplasty()
     if novoplasty is None:
         log.critical('Quit.')
-        return
+        success = False
+        return success, arg.out
     # log to file
     log_file_handler = logging.FileHandler(str(arg.log/'Log.txt'))
     # more detail in file log
@@ -558,13 +563,14 @@ def assembly_main(arg_str=None):
     log.addHandler(log_file_handler)
     # start
     if arg.list is None:
-        assembly(arg, novoplasty)
+        success = assembly(arg, novoplasty)
     else:
         table = _read_table(arg)
         for i in table:
             arg.input, arg.taxon = i
-            assembly(arg, novoplasty)
+            success = assembly(arg, novoplasty)
     log.info('Bye.')
+    return success, arg.out
 
 
 if __name__ == '__main__':

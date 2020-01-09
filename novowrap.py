@@ -27,6 +27,8 @@ try:
     coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
 except ImportError:
     pass
+# define null
+NULL = open(devnull, 'w')
 
 
 def get_novoplasty():
@@ -35,7 +37,7 @@ def get_novoplasty():
     Return novoplasty's path or None.
     """
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
-    perl = run('perl -v', shell=True, stdout=open(devnull, 'w'))
+    perl = run('perl -v', shell=True, stdout=NULL, stderr=NULL)
     if perl.returncode != 0:
         log.critical('Please install Perl to run NOVOPlasty.')
         return None
@@ -501,8 +503,10 @@ def assembly(arg, novoplasty):
     for seed in seeds:
         log.info(f'Use {seed.stem} as seed.')
         config_file = config(seed, arg)
-        log.info('Call NOVOPlasty...')
-        run(f'perl {novoplasty} -c {config_file}', shell=True)
+        log.info('Call NOVOPlasty... May need minutes (rarely half an hour)')
+        # to be continue
+        run(f'perl {novoplasty} -c {config_file}', shell=True,
+            stdout=NULL, stderr=NULL)
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(
             Path().cwd(), arg.out, seed.stem)

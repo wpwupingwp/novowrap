@@ -3,8 +3,8 @@
 from os import devnull
 from pathlib import Path
 from subprocess import DEVNULL, run
-from time import sleep
 from threading import Thread
+from time import sleep
 from urllib.error import HTTPError
 from urllib.request import urlopen
 from zipfile import ZipFile
@@ -451,8 +451,9 @@ def assembly(arg, novoplasty):
     def _patient_log():
         # hint user every 30s to avoid long time boring waiting
         while novoplasty_is_running:
-            log.info('NOVOPlasty is running, please be patient...')
             sleep(30)
+            log.info('NOVOPlasty is running, please be patient...')
+        return
 
     success = False
     log.info('')
@@ -486,13 +487,11 @@ def assembly(arg, novoplasty):
         ref = Path(arg.ref)
         ref = move(ref, arg.tmp/ref, copy=True)
     else:
-        log.info('Try to get reference from NCBI Genbank.')
         ref, arg.taxon = get_ref(arg.taxon, arg.tmp)
         if ref is None:
             log.critical('Cannot get reference.')
             return success
         else:
-            log.info(f'Got {ref.stem}.')
             ref = move(ref, arg.tmp/ref)
     # get seed
     seeds = []

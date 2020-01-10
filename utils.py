@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
-import argparse
-import gzip
-import logging
 from pathlib import Path
 from subprocess import run, DEVNULL
 from time import sleep
+import argparse
+import gzip
+import logging
 
 from Bio import Entrez, SeqIO
 from Bio.Alphabet import IUPAC

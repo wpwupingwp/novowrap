@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
+from logging import handlers
+from pathlib import Path
+from tkinter import messagebox, simpledialog, filedialog, scrolledtext
 import logging
 import queue
 import threading
 import tkinter as tk
-from logging import handlers
-from pathlib import Path
-from tkinter import messagebox, simpledialog, filedialog, scrolledtext
 
 from merge import merge_main
 from validate import validate_main

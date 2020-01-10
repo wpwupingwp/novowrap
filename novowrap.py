@@ -2,7 +2,9 @@
 
 from os import devnull
 from pathlib import Path
-from subprocess import run
+from subprocess import DEVNULL, run
+from time import sleep
+from threading import Thread
 from urllib.error import HTTPError
 from urllib.request import urlopen
 from zipfile import ZipFile
@@ -446,6 +448,12 @@ def assembly(arg, novoplasty):
     Return:
         success(Bool): success or not
     """
+    def _patient_log():
+        # hint user every 30s to avoid long time boring waiting
+        while novoplasty_is_running:
+            log.info('NOVOPlasty is running, please be patient...')
+            sleep(30)
+
     success = False
     log.info('')
     for i in arg.input:
@@ -505,8 +513,14 @@ def assembly(arg, novoplasty):
         config_file = config(seed, arg)
         log.info('Call NOVOPlasty... May need minutes (rarely half an hour)')
         # to be continue
+        novoplasty_is_running = True
+        hint = Thread(target=_patient_log)
+        hint.start()
+        # ignore bad returncode
         run(f'perl {novoplasty} -c {config_file}', shell=True,
-            stdout=NULL, stderr=NULL)
+            stdout=DEVNULL, stderr=DEVNULL)
+        novoplasty_is_running = False
+
         # novoplasty use current folder as output folder
         circularized, options, merged, contigs = organize_out(
             Path().cwd(), arg.out, seed.stem)

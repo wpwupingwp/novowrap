@@ -330,7 +330,7 @@ def validate_main(arg_str=None):
         ref_gb = move(ref_gb, tmp/ref_gb.name, copy=True)
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')
-        ref_gb, ref_taxon = get_ref(arg.taxon)
+        ref_gb, ref_taxon = get_ref(arg.taxon, tmp)
         if ref_gb is None:
             log.critical('Failed to get reference.')
             log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')

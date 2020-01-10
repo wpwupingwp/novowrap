@@ -29,8 +29,9 @@ def scroll_text(window):
         while True:
             try:
                 msg = log_queue.get(block=False)
+                level = msg.levelname
                 msg = formatter.format(msg) + '\n'
-                scroll.insert('end', msg)
+                scroll.insert('end', msg, level)
                 scroll.yview('end')
             except queue.Empty:
                 break
@@ -50,6 +51,12 @@ def scroll_text(window):
     # give poll() time to quit
     root.after(100, log.addHandler(queue_handler))
     scroll = scrolledtext.ScrolledText(window)
+    scroll.tag_config
+    scroll.tag_config('INFO', foreground='black')
+    scroll.tag_config('WARNING', foreground='orange')
+    scroll.tag_config('ERROR', foreground='red')
+    scroll.tag_config('CRITICAL', foreground='red')
+    scroll.tag_config('EXCEPTION', foreground='red')
     scroll.pack(fill='both')
     scroll.after(0, poll)
 
@@ -229,7 +236,6 @@ def assembly_ui():
         frame = tk.Frame(run)
         frame.pack(fill='both')
         scroll_text(frame)
-        # to be continued
         r = threading.Thread(target=thread_wrap,
                              args=(assembly_main, arg_str, run))
         r.start()

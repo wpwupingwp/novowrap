@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 
 import logging
-from logging import handlers
-import threading
 import queue
+import threading
 import tkinter as tk
-from tkinter import messagebox, simpledialog, filedialog, scrolledtext
-
+from logging import handlers
 from pathlib import Path
+from tkinter import messagebox, simpledialog, filedialog, scrolledtext
 
 from merge import merge_main
 from validate import validate_main
@@ -165,10 +164,26 @@ def assembly_ui():
             arg_str += f' -taxon {arg_taxon}'
         arg_out = out_entry.get()
         if arg_out == '"Current folder"':
-            arg_out = str(Path('.').absolute())
+            out_path = Path('.').absolute() / 'Output'
         else:
-            arg_out = str(Path(arg_out).absolute())
-        arg_str += f' -out {arg_out}'
+            out_path = Path(arg_out).absolute()
+        if out_path.exists():
+            info('Output folder exists. Please use another folder.')
+            out_entry.configure(bg='red')
+            return
+        else:
+            test_file = out_path / 'test'
+            try:
+                out_path.mkdir()
+                test_file.touch()
+                test_file.unlink()
+                out_path.rmdir()
+            except PermissionError:
+                info(f'You do not have permission to write in given output '
+                     'folder. Please try another path.')
+                out_entry.configure(bg='red')
+                return
+        arg_str += f' -out {out_path}'
         # advanced options
         arg_split = split_entry.get()
         if arg_split:

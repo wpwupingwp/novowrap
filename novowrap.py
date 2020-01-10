@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-from os import devnull
 from pathlib import Path
 from subprocess import DEVNULL, run
 from threading import Thread
@@ -29,8 +28,6 @@ try:
     coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
 except ImportError:
     pass
-# define null
-NULL = open(devnull, 'w')
 
 
 def get_novoplasty():
@@ -39,7 +36,7 @@ def get_novoplasty():
     Return novoplasty's path or None.
     """
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
-    perl = run('perl -v', shell=True, stdout=NULL, stderr=NULL)
+    perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
     if perl.returncode != 0:
         log.critical('Please install Perl to run NOVOPlasty.')
         return None
@@ -47,6 +44,7 @@ def get_novoplasty():
     if len(pl) != 0:
         return pl[0]
     log.critical('Cannot find NOVOPlasty, try to download.')
+    log.info('Due to connection speed, may need minutes.')
     try:
         down = urlopen(url)
     except HTTPError:
@@ -511,7 +509,7 @@ def assembly(arg, novoplasty):
         log.info(f'Use {seed.stem} as seed.')
         config_file = config(seed, arg)
         log.info('Call NOVOPlasty... May need minutes (rarely half an hour)')
-        # to be continue
+        # use mark to terminate thread
         novoplasty_is_running = True
         hint = Thread(target=_patient_log)
         hint.start()

@@ -3,9 +3,8 @@
 import argparse
 import gzip
 import logging
-from os import devnull
 from pathlib import Path
-from subprocess import run
+from subprocess import run, DEVNULL
 from time import sleep
 
 from Bio import Entrez, SeqIO
@@ -14,7 +13,6 @@ from Bio.Seq import reverse_complement as rc
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 
-NULL = open(devnull, 'w')
 log = logging.getLogger('novowrap')
 
 
@@ -160,7 +158,7 @@ def blast(query, target, perc_identity=70):
     b_run = run(f'blastn -query {query} -subject {target} -outfmt "7 {fmt}" '
                 f'-out {blast_out} -strand both -perc_identity '
                 f'{perc_identity}',
-                shell=True, stdout=NULL, stderr=NULL)
+                shell=True, stdout=DEVNULL, stderr=DEVNULL)
     # remove makeblastdb result
     if b_run.returncode != 0:
         log.critical('Cannot run BLAST.')

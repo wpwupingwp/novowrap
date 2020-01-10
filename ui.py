@@ -195,11 +195,13 @@ def assembly_ui():
         arg_kmer = int(kmer_entry.get())
         if arg_kmer > 39 or arg_kmer < 23 or (arg_kmer % 2 != 1):
             info('K-mer should be an odd number in (23, 39)!')
+            kmer_entry.configure(bg='red')
             return
         arg_str += f' -kmer {arg_kmer}'
         arg_size = size_entry.get()
         if '-' not in arg_size:
             info('Genome size should be "min-max" format!')
+            size_entry.configure(bg='red')
             return
         min_size, max_size = arg_size.split('-')
         arg_str += f' -min {min_size} -max {max_size}'

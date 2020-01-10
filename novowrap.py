@@ -448,9 +448,13 @@ def assembly(arg, novoplasty):
     """
     def _patient_log():
         # hint user every 30s to avoid long time boring waiting
+        n = 0
         while novoplasty_is_running:
-            sleep(30)
-            log.info('NOVOPlasty is running, please be patient...')
+            sleep(1)
+            n += 1
+            if n >= 30:
+                log.info('NOVOPlasty is running, please be patient...')
+                n = 0
         return
 
     success = False
@@ -545,9 +549,12 @@ def assembly(arg, novoplasty):
         if not success:
             log.critical(f'Assembly with {seed.stem} failed.')
     if not success:
-        log.info('Failed with all seeds. Try to assembly contigs generated '
-                 'from each seed.')
+        log.info('Failed with all seeds.')
         all_input = ' '.join([str(i.absolute()) for i in all_contigs])
+        # '' means empty
+        if len(all_input) == 0:
+            return success
+        log.info('Try to assembly contigs generated from each seed.')
         arg_str = f'{all_input} -o {arg.out/"Raw"/"merge_seed.fasta"}'
         n_assembly, assembly_result = merge_main(arg_str)
         if n_assembly != 0:

@@ -111,6 +111,30 @@ def open_folder(title, entry):
     return func
 
 
+def check_output(output, out_entry):
+    """
+    Check given path does not exist and writable.
+    """
+    output = Path(output).absolute()
+    if output.exists():
+        info('Output folder exists. Please use another folder.')
+        out_entry.configure(bg='red')
+        return False
+    else:
+        test_file = output / 'test'
+        try:
+            output.mkdir()
+            test_file.touch()
+            test_file.unlink()
+            output.rmdir()
+        except PermissionError:
+            info(f'You do not have permission to write in given output '
+                 'folder. Please try another path.')
+            out_entry.configure(bg='red')
+            return False
+    return True
+
+
 def thread_wrap(function, arg_str, window):
     """
     Wrap for callback.
@@ -155,6 +179,8 @@ def assembly_ui():
         elif arg_input == '' and arg_input_list == '':
             info('Input is required!')
             return
+        # use dialog window to choose input, usually needn't check whether
+        # exists
         elif arg_input:
             arg_str += f'-i {arg_input}'
         else:
@@ -174,22 +200,8 @@ def assembly_ui():
             out_path = Path('.').absolute() / 'Output'
         else:
             out_path = Path(arg_out).absolute()
-        if out_path.exists():
-            info('Output folder exists. Please use another folder.')
-            out_entry.configure(bg='red')
+        if not check_output(out_path, out_entry):
             return
-        else:
-            test_file = out_path / 'test'
-            try:
-                out_path.mkdir()
-                test_file.touch()
-                test_file.unlink()
-                out_path.rmdir()
-            except PermissionError:
-                info(f'You do not have permission to write in given output '
-                     'folder. Please try another path.')
-                out_entry.configure(bg='red')
-                return
         arg_str += f' -out {out_path}'
         # advanced options
         arg_split = split_entry.get()
@@ -394,8 +406,12 @@ def validate_ui():
             arg_str += f' -taxon {arg_taxon}'
         arg_out = o_entry.get()
         if arg_out == '"Current folder"':
-            arg_out = str(Path('.').absolute())
-        arg_str += f' -out {arg_out}'
+            out_path = Path('.').absolute()
+        else:
+            out_path = Path(arg_out).absolute()
+        if not check_output(out_path, o_entry):
+            return
+        arg_str += f' -out {out_path}'
         arg_s = float(s_entry.get())
         arg_l = float(l_entry.get())
         if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:

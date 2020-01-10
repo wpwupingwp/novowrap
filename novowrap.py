@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from pathlib import Path
+from random import randint
 from subprocess import DEVNULL, run
 from threading import Thread
 from time import sleep
@@ -157,7 +158,8 @@ def get_output(arg):
         out = Path(arg.out).absolute()
     if out.exists():
         log.warning(f'Output folder {out.name} exists.')
-        new_name = out.name + '-New'
+        # give users one more chance
+        new_name = out.name + f'-{randint(0, 2020):04d}'
         out = out.with_name(new_name)
         log.info(f'Use {out.name} instead.')
     return out

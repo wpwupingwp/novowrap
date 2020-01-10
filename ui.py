@@ -157,7 +157,7 @@ def assembly_ui():
         # use underscore in taxon name, which NCBI could handle
         arg_taxon = taxon_entry.get().replace(' ', '_')
         if arg_ref and arg_taxon:
-            info('Please only use one of "Refence" and "Taxonomy"!')
+            info('Please only use one of "Genbank file" and "Taxonomy"!')
             return
         elif arg_ref != '' and arg_taxon == '':
             arg_str += f' -ref {arg_ref}'
@@ -241,7 +241,7 @@ def assembly_ui():
     list_entry = fentry(inputs, row=row, column=2)
     list_button = tk.Button(inputs, text='Open',
                             command=open_file('List file', list_entry,
-                                              input_entry))
+                                              entry2=input_entry))
     list_button.grid(row=row, column=3)
     row += 1
     ref = tk.LabelFrame(w, text='Reference')
@@ -257,7 +257,7 @@ def assembly_ui():
     ref_entry = fentry(ref, row=row, column=2)
     r_button = tk.Button(ref, text='Open',
                          command=open_file('Reference file', ref_entry,
-                                           taxon_entry))
+                                           entry2=taxon_entry))
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row, pady=8)

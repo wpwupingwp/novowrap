@@ -344,6 +344,7 @@ Genome Range          = {arg.min}-{arg.max}
 K-mer                 = {arg.kmer}
 Max memory            = {arg.mem}
 Extended log          = 1
+Extend seed directly  = no
 Save assembled reads  = no
 Seed Input            = {seed}
 Reference sequence    =

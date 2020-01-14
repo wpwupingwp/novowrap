@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from os import chdir
 from pathlib import Path
 from random import randint
 from subprocess import DEVNULL, run
@@ -31,10 +32,14 @@ except ImportError:
     pass
 
 
-def get_novoplasty():
+def get_novoplasty(out):
     """
     Ensure perl and novoplasty is available.
     Return novoplasty's path or None.
+    Args:
+        out(Path): path to save downloaded files
+    Return:
+        novoplasty(Path): path of perl file
     """
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
     perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
@@ -43,7 +48,7 @@ def get_novoplasty():
         return None
     pl = list(Path('.').glob('NOVOPlasty*.pl'))
     if len(pl) != 0:
-        return pl[0]
+        return pl[0].absolute()
     log.critical('Cannot find NOVOPlasty, try to download.')
     log.info('Due to connection speed, may need minutes.')
     try:
@@ -63,7 +68,7 @@ def get_novoplasty():
     novoplasty = Path(novoplasty)
     novoplasty = move(novoplasty, Path('.')/novoplasty.name)
     log.info(f'Got {novoplasty.stem}.')
-    return novoplasty
+    return novoplasty.absolute()
 
 
 def parse_args(arg_list=None):
@@ -585,8 +590,10 @@ def assembly_main(arg_str=None):
     if not success:
         log.critical('Quit.')
         return success, arg.out
+    cwd = Path().cwd()
+    chdir(arg.out)
     # check before run
-    novoplasty = get_novoplasty()
+    novoplasty = get_novoplasty(arg.out)
     if novoplasty is None:
         log.critical('Quit.')
         success = False
@@ -607,6 +614,7 @@ def assembly_main(arg_str=None):
             arg.input, arg.taxon = i
             success = assembly(arg, novoplasty)
     log.info('Bye.')
+    chdir(cwd)
     return success, arg.out
 
 

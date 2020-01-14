@@ -32,24 +32,31 @@ except ImportError:
     pass
 
 
-def get_novoplasty(out):
+def get_novoplasty(arg):
     """
     Ensure perl and novoplasty is available.
     Return novoplasty's path or None.
     Args:
-        out(Path): path to save downloaded files
+        arg(NameSpace): args
     Return:
         novoplasty(Path): path of perl file
     """
-    url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.6.zip'
+    url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.7.2.zip'
     perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
     if perl.returncode != 0:
         log.critical('Please install Perl to run NOVOPlasty.')
         return None
-    pl = list(Path('.').glob('NOVOPlasty*.pl'))
-    if len(pl) != 0:
-        return pl[0].absolute()
+    filename = 'NOVOPlasty3.7.2.pl'
+    pl = Path('.') / filename
+    if pl.exists():
+        return pl.absolute()
+    pl = arg.third_party / filename
+    if pl.exists():
+        return pl
     log.critical('Cannot find NOVOPlasty, try to download.')
+    log.info('\tThe program assumes that users accept the license of '
+             'NOVOPlasty. (see https://raw.githubusercontent.com/'
+             'ndierckx/NOVOPlasty/master/LICENSE for details)')
     log.info('Due to connection speed, may need minutes.')
     try:
         down = urlopen(url)
@@ -58,12 +65,18 @@ def get_novoplasty(out):
         log.critical('Please manually download it from '
                      'https://github.com/ndierckx/NOVOPlasty')
         return None
-    zip_file = Path('.') / 'NOVOPlasty3.6.zip'
+    zip_file = Path('.') / 'NOVOPlasty3.7.2.zip'
     with open(zip_file, 'wb') as out:
-        out.write(down.read())
+        try:
+            out.write(down.read())
+        except PermissionError:
+            log.exception(f'You do not have permission to write file to '
+                          f'{Path(".").absolute()}, please contact the '
+                          f'administrator.')
+            return None
     with ZipFile(zip_file, 'r') as z:
         # windows and linux both use "/"
-        novoplasty = z.extract('NOVOPlasty-NOVOPlasty3.6/NOVOPlasty3.6.pl')
+        novoplasty = z.extract('NOVOPlasty-NOVOPlasty3.7.2/NOVOPlasty3.7.2.pl')
     zip_file.unlink()
     novoplasty = Path(novoplasty)
     novoplasty = move(novoplasty, Path('.')/novoplasty.name)
@@ -187,13 +200,26 @@ def init_arg(arg):
         log.critical('Only accept one or two input file(s).')
         return success, arg
     arg.out = get_output(arg)
-    arg.out.mkdir()
+    try:
+        arg.out.mkdir()
+    except PermissionError:
+        log.critical(f'Failed create {arg.out}. Please contact the '
+                     f'administrator.')
+        return success, arg
     arg.log = arg.out / 'Log'
     arg.log.mkdir()
     arg.raw = arg.out / 'Raw'
     arg.raw.mkdir()
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
+    arg.third_party = Path().home() / 'novowrap'
+    if not arg.third_party.exists():
+        try:
+            arg.third_party.mkdir()
+        except PermissionError:
+            log.critical(f'Failed create {arg.third_party}.'
+                         f'Please contact the administrator.')
+        return success, arg
     success = True
     return success, arg
 

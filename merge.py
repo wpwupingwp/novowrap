@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from itertools import product as cartesian_product
 from pathlib import Path
 from random import shuffle
@@ -62,7 +62,7 @@ def get_path(overlap):
         path(list(blast_result)): ordered path
         is_circle(bool): is circle or not (linear)
     """
-    scaffold = []
+    scaffold = deque()
     overlap_dict = {i[0]: i for i in overlap}
     up_dict = {i[0]: i for i in overlap}
     down_dict = {i[1]: i for i in up_dict.values()}
@@ -84,12 +84,12 @@ def get_path(overlap):
         elif up_name in down_dict:
             upstream = down_dict[up_name][0]
             if upstream in overlap_dict:
-                scaffold = [overlap_dict.pop(upstream), *scaffold]
+                scaffold.appendleft(overlap_dict.pop(upstream))
             else:
-                scaffold = [[None, None], *scaffold]
+                scaffold.appendleft([None, None])
         else:
             # [None, None] as head/tail
-            scaffold = [[None, None], *scaffold]
+            scaffold.appendleft([None, None])
         if down_name is None:
             pass
         elif down_name in up_dict:
@@ -101,11 +101,12 @@ def get_path(overlap):
         else:
             scaffold.append([None, None])
         if scaffold[0][0] is None and scaffold[-1][0] is None:
-            clean_scaffold = scaffold[1:-1]
-            is_circle = (clean_scaffold[0][0] == clean_scaffold[-1][1])
-            yield clean_scaffold, is_circle
+            scaffold = list(scaffold)[1:-1]
+            is_circle = (scaffold[0][0] == scaffold[-1][1])
+            yield scaffold, is_circle
+            scaffold = deque()
             try:
-                scaffold = [overlap_dict.popitem()[1], ]
+                scaffold.append(overlap_dict.popitem()[1])
             except KeyError:
                 break
 

@@ -406,7 +406,7 @@ Use Quality Scores    = no
     return config_file
 
 
-def organize_out(pwd, out, seed):
+def organize_out(arg, seed):
     """
     Organize NOVOPlasty output.
         log*: log file
@@ -417,8 +417,7 @@ def organize_out(pwd, out, seed):
         Circularized*: circularized sequence
     Return fasta list.
     Arg:
-        pwd(Path): current directory
-        output(Path): output folder, contains "Temp", "Log", "Raw"
+        arg(NameSpace): args
         seed(str): seed gene's name
     Return:
         contigs(list): contig files
@@ -452,27 +451,27 @@ def organize_out(pwd, out, seed):
                 output.write(line.replace('*', ''))
         return new
 
-    for i in pwd.glob('contigs_tmp_*'):
-        move(i, out/'Temp'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
-    for i in pwd.glob('log_*.txt'):
-        move(i, out/'Log'/i.with_name('NOVOPlasty-'+i.name).name)
+    for i in arg.out.glob('contigs_tmp_*'):
+        move(i, arg.tmp/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+    for i in arg.out.glob('log_*.txt'):
+        move(i, arg.log/i.with_name('NOVOPlasty-'+i.name).name)
     contigs = []
-    for i in pwd.glob('Contigs_*'):
-        i = move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+    for i in arg.out.glob('Contigs_*'):
+        i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         contigs.append(i)
     merged = []
-    for i in pwd.glob('Merged_contigs_*'):
-        i = move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+    for i in arg.out.glob('Merged_contigs_*'):
+        i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         fasta = txt_to_fasta(i)
-        fasta = move(fasta, out/'Raw'/fasta.name)
+        fasta = move(fasta, arg.raw/fasta.name)
         merged.append(fasta)
     options = []
-    for i in pwd.glob('Option_*'):
-        i = move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+    for i in arg.out.glob('Option_*'):
+        i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         options.append(i)
     circularized = []
-    for i in pwd.glob('Circularized_assembly*'):
-        i = move(i, out/'Raw'/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+    for i in arg.out.glob('Circularized_assembly*'):
+        i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         circularized.append(i)
     return circularized, options, merged, contigs
 

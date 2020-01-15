@@ -158,7 +158,9 @@ def blast(query, target, perc_identity=70):
     b_run = run(f'blastn -query {query} -subject {target} -outfmt "7 {fmt}" '
                 f'-out {blast_out} -strand both -perc_identity '
                 f'{perc_identity}',
-                shell=True, stdout=DEVNULL, stderr=DEVNULL)
+                #shell=True, stdout=DEVNULL, stderr=DEVNULL)
+                to be continue
+                shell=True, stdout=DEVNULL)
     # remove makeblastdb result
     if b_run.returncode != 0:
         log.critical('Cannot run BLAST.')

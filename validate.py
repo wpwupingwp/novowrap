@@ -365,7 +365,7 @@ def validate_main(arg_str=None):
         if compare_result is None:
             log.critical('Cannot run BLAST.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
-            return output_info
+            return validated, output_info
         pdf = draw(r_ref_gb, i_gb, compare_result)
         pdf = move(pdf, output/pdf.name)
         log.info('Detecting reverse complement region.')

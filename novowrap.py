@@ -6,7 +6,6 @@ from random import randint
 from subprocess import DEVNULL, run
 from threading import Thread
 from time import sleep
-from urllib.error import HTTPError
 from urllib.request import urlopen
 from zipfile import ZipFile
 import argparse
@@ -55,17 +54,18 @@ def get_novoplasty(arg):
         return pl
     log.critical('Cannot find NOVOPlasty, try to download.')
     log.info('\tThe program assumes that users accept the license of '
-             'NOVOPlasty. (see https://raw.githubusercontent.com/'
-             'ndierckx/NOVOPlasty/master/LICENSE for details)')
+             'NOVOPlasty. ')
+    log.info('\tSee https://raw.githubusercontent.com/'
+             'ndierckx/NOVOPlasty/master/LICENSE for details.')
     log.info('Due to connection speed, may need minutes.')
     try:
         down = urlopen(url)
-    except HTTPError:
+    except Exception:
         log.critical('Cannot download NOVOPlasty.')
         log.critical('Please manually download it from '
                      'https://github.com/ndierckx/NOVOPlasty')
         return None
-    zip_file = Path('.') / 'NOVOPlasty3.7.2.zip'
+    zip_file = arg.third_party / 'NOVOPlasty3.7.2.zip'
     with open(zip_file, 'wb') as out:
         try:
             out.write(down.read())
@@ -77,9 +77,8 @@ def get_novoplasty(arg):
     with ZipFile(zip_file, 'r') as z:
         # windows and linux both use "/"
         novoplasty = z.extract('NOVOPlasty-NOVOPlasty3.7.2/NOVOPlasty3.7.2.pl')
-    zip_file.unlink()
     novoplasty = Path(novoplasty)
-    novoplasty = move(novoplasty, Path('.')/novoplasty.name)
+    novoplasty = move(novoplasty, pl)
     log.info(f'Got {novoplasty.stem}.')
     return novoplasty.absolute()
 
@@ -216,15 +215,18 @@ def init_arg(arg):
     if not arg.third_party.exists():
         try:
             arg.third_party.mkdir()
+            tmp = arg.third_party / 'test'
+            tmp.touch()
+            tmp.unlink()
         except PermissionError:
-            log.critical(f'Failed create {arg.third_party}.'
+            log.critical(f'Failed to access {arg.third_party}.'
                          f'Please contact the administrator.')
         return success, arg
     success = True
     return success, arg
 
 
-def _read_table(arg):
+def read_table(arg):
     """
     Read table from given csv file.
     Columns of table:
@@ -620,7 +622,7 @@ def assembly_main(arg_str=None):
     cwd = Path().cwd()
     chdir(arg.out)
     # check before run
-    novoplasty = get_novoplasty(arg.out)
+    novoplasty = get_novoplasty(arg)
     if novoplasty is None:
         log.critical('Quit.')
         success = False
@@ -636,7 +638,7 @@ def assembly_main(arg_str=None):
     if arg.list is None:
         success = assembly(arg, novoplasty)
     else:
-        table = _read_table(arg)
+        table = read_table(arg)
         for i in table:
             arg.input, arg.taxon = i
             success = assembly(arg, novoplasty)

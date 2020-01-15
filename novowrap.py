@@ -198,6 +198,10 @@ def init_arg(arg):
     if len(arg.input) > 2:
         log.critical('Only accept one or two input file(s).')
         return success, arg
+    if arg.list is not None:
+        arg.list = Path(arg.list).absolute()
+    if arg.input is not None:
+        arg.input = [Path(i).absolute() for i in arg.input]
     arg.out = get_output(arg)
     try:
         arg.out.mkdir()

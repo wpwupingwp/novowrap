@@ -53,13 +53,14 @@ def parse_args(arg_list=None):
         return arg.parse_args(arg_list)
 
 
-def divide_records(fasta, output, ref_len, len_diff=0.1):
+def divide_records(fasta, output, ref_len, tmp, len_diff=0.1):
     """
     Make sure each file has only one record.
     Args:
         fasta(Path or str): fasta file
         output(Path): output folder
         ref_len(int): length of reference, to filter bad records
+        tmp(Path): temp folder
         len_diff: maximum allowed length difference
     Returns:
         option_files(list(Path)):  list of divided files
@@ -102,12 +103,12 @@ def divide_records(fasta, output, ref_len, len_diff=0.1):
             skip = 'undersize' if record_len_diff < 0 else 'oversize'
         SeqIO.write(record, filename, 'fasta')
         if not skip:
-            r_gb, r_fasta = rotate_seq(filename)
+            r_gb, r_fasta = rotate_seq(filename, tmp=tmp)
             if r_gb is not None:
                 divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
                                           'length': record_len})
                 move(filename,
-                     output/'Temp'/filename.with_suffix('.raw').name)
+                     tmp/filename.with_suffix('.raw').name)
             else:
                 skip = 'structure_unusual'
         divided[filename]['skip'] = skip
@@ -339,7 +340,7 @@ def validate_main(arg_str=None):
         fmt = 'gb'
     log.debug(f'Use {output} as output folder.')
     ref_len = len(SeqIO.read(ref_gb, fmt))
-    r_ref_gb, r_ref_fasta = rotate_seq(ref_gb)
+    r_ref_gb, r_ref_fasta = rotate_seq(ref_gb, tmp=tmp)
     if r_ref_gb is None:
         return validated, output_info
     ref_regions = get_regions(r_ref_gb)
@@ -348,7 +349,7 @@ def validate_main(arg_str=None):
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
         return validated, output_info
-    divided = divide_records(arg.input, output, ref_len, arg.len_diff)
+    divided = divide_records(arg.input, output, ref_len, tmp, arg.len_diff)
     for i in divided:
         success = False
         divided[i]['success'] = success
@@ -384,7 +385,7 @@ def validate_main(arg_str=None):
                 i_fasta.stem+'-noRC.fasta')).name)
             i_gb = move(i_gb, tmp/(i_gb.with_name(i_gb.stem+'-noRC.gb')).name)
             rc_fasta = move(rc_fasta, rc_fasta.with_suffix(''))
-            r_rc_gb, r_rc_fasta = rotate_seq(rc_fasta)
+            r_rc_gb, r_rc_fasta = rotate_seq(rc_fasta, tmp=tmp)
             if r_rc_gb is None:
                 continue
             rc_fasta.unlink()

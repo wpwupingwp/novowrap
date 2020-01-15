@@ -562,20 +562,19 @@ def assembly(arg, novoplasty):
         novoplasty_is_running = False
 
         # novoplasty use current folder as output folder
-        circularized, options, merged, contigs = organize_out(
-            Path().cwd(), arg.out, seed.stem)
+        circularized, options, merged, contigs = organize_out(arg, seed.stem)
         all_contigs.extend(contigs)
         if len(circularized) == 0 and len(options) == 0 and len(merged) == 0:
             log.warning(f'Assembled with {seed.stem} failed.')
             continue
         validated = []
-        # validate merged or not?
         log.info('Validate assembly results.')
-        # for i in (*circularized, *options, *merged):
+        # validate merged or not?
         for i in (*circularized, *options):
             arg_str = (f'{i} -ref {ref} -seed {seed.stem} -o {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
+            print(arg_str)
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
             if report not in csv_files:

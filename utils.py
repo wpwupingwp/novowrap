@@ -150,22 +150,26 @@ def blast(query, target, perc_identity=70):
         perc_identity(float): perc_identity for BLAST
     Return:
         blast_out(Path): blast result filename
+        blast_log(Path): blast log
+
     """
     fmt = ('qseqid sseqid sstrand qlen slen length pident gapopen qstart qend '
            'sstart send')
+    query = query.absolute()
     blast_out = query.with_suffix('.blast')
+    blast_log = query.with_suffix('.blast_log')
     # use blastn -subject instead of makeblastdb
+    b_log = open(blast_log, 'w')
     b_run = run(f'blastn -query {query} -subject {target} -outfmt "7 {fmt}" '
                 f'-out {blast_out} -strand both -perc_identity '
                 f'{perc_identity}',
-                #shell=True, stdout=DEVNULL, stderr=DEVNULL)
-                to be continue
-                shell=True, stdout=DEVNULL)
+                shell=True, stdout=b_log, stderr=b_log)
+    b_log.close()
     # remove makeblastdb result
     if b_run.returncode != 0:
         log.critical('Cannot run BLAST.')
-        return None
-    return blast_out
+        return None, blast_log
+    return blast_out, blast_log
 
 
 def parse_blast_tab(filename):
@@ -300,7 +304,7 @@ def get_fmt(filename):
     return fmt
 
 
-def rotate_seq(filename, min_ir=1000, silence=True):
+def rotate_seq(filename, min_ir=1000, silence=True, tmp=None):
     """
     Rotate genbank or fasta record, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Input file should only contains one record.
@@ -313,7 +317,7 @@ def rotate_seq(filename, min_ir=1000, silence=True):
     if silence:
         log.setLevel(logging.CRITICAL)
     log.info(f'Rotate {filename}...')
-    filename = Path(filename)
+    filename = Path(filename).absolute()
     fmt = get_fmt(filename)
     # get origin seq
     origin_seq = list(SeqIO.parse(filename, fmt))
@@ -323,7 +327,7 @@ def rotate_seq(filename, min_ir=1000, silence=True):
     # get repeat seq
     repeat_record, repeat_fasta = _repeat(filename, fmt)
     repeat_seq = SeqIO.read(repeat_record, fmt)
-    blast_result = blast(repeat_fasta, repeat_fasta)
+    blast_result, blast_log = blast(repeat_fasta, repeat_fasta)
     new_fasta = filename.with_suffix('.rotate')
     if filename.suffix == '.gb':
         new_gb = filename.with_suffix('.gb.gb')
@@ -445,7 +449,12 @@ def rotate_seq(filename, min_ir=1000, silence=True):
         SeqIO.write(new_seq, new_gb, 'gb')
         SeqIO.write(new_seq, new_fasta, 'fasta')
         success = True
-    blast_result.unlink()
+    if tmp is not None:
+        move(blast_result, tmp/blast_result)
+        # blast log needn't put into Log
+        move(blast_log, tmp/blast_log)
+    else:
+        blast_result.unlink()
     repeat_record.unlink()
     if repeat_fasta.exists():
         repeat_fasta.unlink()

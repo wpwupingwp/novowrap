@@ -150,7 +150,7 @@ def get_overlap(contigs, contigs_and_rc_fasta):
     Return:
         link_info(list(blast_result)): link info of contigs
     """
-    blast_result = blast(contigs_and_rc_fasta, contigs_and_rc_fasta)
+    blast_result, blast_log = blast(contigs_and_rc_fasta, contigs_and_rc_fasta)
     overlap = []
     for query, sequence in zip(parse_blast_tab(blast_result), contigs):
         if len(query) == 0:

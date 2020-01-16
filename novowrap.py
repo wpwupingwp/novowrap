@@ -451,26 +451,26 @@ def organize_out(arg, seed):
                 output.write(line.replace('*', ''))
         return new
 
-    for i in arg.out.glob('contigs_tmp_*'):
+    for i in arg.out.glob('contigs_tmp_*.txt'):
         move(i, arg.tmp/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
     for i in arg.out.glob('log_*.txt'):
         move(i, arg.log/i.with_name('NOVOPlasty-'+i.name).name)
     contigs = []
-    for i in arg.out.glob('Contigs_*'):
+    for i in arg.out.glob('Contigs_*.fasta'):
         i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         contigs.append(i)
     merged = []
-    for i in arg.out.glob('Merged_contigs_*'):
+    for i in arg.out.glob('Merged_contigs_*.txt'):
         i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         fasta = txt_to_fasta(i)
         fasta = move(fasta, arg.raw/fasta.name)
         merged.append(fasta)
     options = []
-    for i in arg.out.glob('Option_*'):
+    for i in arg.out.glob('Option_*.fasta'):
         i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         options.append(i)
     circularized = []
-    for i in arg.out.glob('Circularized_assembly*'):
+    for i in arg.out.glob('Circularized_assembly*.fasta'):
         i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         circularized.append(i)
     return circularized, options, merged, contigs

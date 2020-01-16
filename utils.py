@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from pathlib import Path
-from subprocess import run, DEVNULL
+from subprocess import run
 from time import sleep
 import argparse
 import gzip

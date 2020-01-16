@@ -116,18 +116,19 @@ def divide_records(fasta, output, ref_len, tmp, len_diff=0.1):
     return divided
 
 
-def compare(query, reference, perc_identity):
+def compare(query, reference, tmp, perc_identity):
     """
     Use BLAST to compare two records.
     Args:
         query(Path or str): query file
         reference(Path or str): reference file
+        tmp(Path): temp folder
         perc_identity(float): percent identity for BLAST, need multiply 100
     Return:
         results[0][1]: BLAST data
     """
     results = []
-    blast_result = blast(Path(query), reference, perc_identity*100)
+    blast_result, blast_log = blast(Path(query), reference, perc_identity*100)
     if blast_result is None:
         return None
     # only one record in file, loop is for unpack
@@ -138,8 +139,9 @@ def compare(query, reference, perc_identity):
              qstart, qend, sstart, send) = i
             record.append([qstart, qend, sstart, send, sstrand, pident])
         results.append(record)
-    assert len(results) == 1
-    blast_result.unlink()
+    # assert len(results) == 1
+    move(blast_result, tmp/blast_result)
+    move(blast_log, tmp/blast_log)
     return results[0]
 
 
@@ -211,7 +213,8 @@ def draw(ref_gb, seq_gb, data):
             plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
             plt.fill([send, sstart, qend, qstart], [0.8, 0.8, 0.65, 0.65],
                      color='#88cc88', alpha=get_alpha(pident))
-    pdf = seq_gb.with_name(seq_gb.stem+'.pdf')
+    # pdf = seq_gb.with_name(seq_gb.stem+'.pdf')
+    pdf = seq_gb.with_suffix('.pdf')
     plt.savefig(pdf)
     plt.close()
     return pdf
@@ -313,11 +316,11 @@ def validate_main(arg_str=None):
         arg = parse_args()
     else:
         arg = parse_args(arg_str.split(' '))
-    arg.input = Path(arg.input)
+    arg.input = Path(arg.input).absolute()
     if arg.out is None:
-        output = Path(arg.input.stem+'-out')
+        output = Path(arg.input.stem+'-out').absolute()
     else:
-        output = Path(arg.out)
+        output = Path(arg.out).absolute()
     if not output.exists():
         output.mkdir()
     tmp = output / 'Temp'
@@ -362,7 +365,7 @@ def validate_main(arg_str=None):
         # add regions info
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])
-        compare_result = compare(i_fasta, r_ref_fasta, arg.perc_identity)
+        compare_result = compare(i_fasta, r_ref_fasta, tmp, arg.perc_identity)
         if compare_result is None:
             log.critical('Cannot run BLAST.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')

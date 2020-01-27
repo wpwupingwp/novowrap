@@ -175,7 +175,7 @@ def get_output(arg):
         new_name = out.name + f'-{randint(0, 2020):04d}'
         out = out.with_name(new_name)
         log.info(f'Use {out.name} instead.')
-    return out
+    return out.absolute()
 
 
 def init_arg(arg):
@@ -218,8 +218,7 @@ def init_arg(arg):
     arg.raw.mkdir()
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
-    arg.third_party = Path().home() / '.novowrap'
-    arg.third_party = arg.third_party.absolute()
+    arg.third_party = Path().home().absolute() / '.novowrap'
     if not arg.third_party.exists():
         try:
             arg.third_party.mkdir()
@@ -272,7 +271,7 @@ def split(raw, number, output):
         splitted(Path): splitted file, fastq format
         count(int): reads actually got
     """
-    raw = Path(raw)
+    raw = Path(raw).absolute()
     fmt = get_fmt(raw)
     splitted = output / raw.with_suffix(f'.{number}').name
     splitted_handle = open(splitted, 'wb')
@@ -457,25 +456,31 @@ def organize_out(arg, seed):
         return new
 
     for i in arg.out.glob('contigs_tmp_*.txt'):
+        i = i.absolute()
         move(i, arg.tmp/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
     for i in arg.out.glob('log_*.txt'):
+        i = i.absolute()
         move(i, arg.log/i.with_name('NOVOPlasty-'+i.name).name)
     contigs = []
     for i in arg.out.glob('Contigs_*.fasta'):
+        i = i.absolute()
         i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         contigs.append(i)
     merged = []
     for i in arg.out.glob('Merged_contigs_*.txt'):
+        i = i.absolute()
         i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         fasta = txt_to_fasta(i)
         fasta = move(fasta, arg.raw/fasta.name)
         merged.append(fasta)
     options = []
     for i in arg.out.glob('Option_*.fasta'):
+        i = i.absolute()
         i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         options.append(i)
     circularized = []
     for i in arg.out.glob('Circularized_assembly*.fasta'):
+        i = i.absolute()
         i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         circularized.append(i)
     return circularized, options, merged, contigs
@@ -530,7 +535,7 @@ def assembly(arg, novoplasty):
             log.critical('Reference file should be genbank format, '
                          'but {arg.ref} is not.')
             return success
-        ref = Path(arg.ref)
+        ref = Path(arg.ref).absolute()
         ref = move(ref, arg.tmp/ref, copy=True)
     else:
         ref, arg.taxon = get_ref(arg.taxon, arg.tmp)
@@ -543,7 +548,7 @@ def assembly(arg, novoplasty):
     seeds = []
     ordered_seeds = get_seed(ref, arg.raw, arg.seed)
     if arg.seed_file is not None:
-        seeds.append(Path(arg.seed_file))
+        seeds.append(Path(arg.seed_file).absolute())
         # only add whole.seed
         seeds.append(ordered_seeds[-1])
     else:
@@ -628,7 +633,7 @@ def assembly_main(arg_str=None):
         return success, arg.out
     else:
         log.debug('Init OK.')
-    cwd = Path().cwd()
+    cwd = Path().cwd().absolute()
     chdir(arg.out)
     # check before run
     novoplasty = get_novoplasty(arg)

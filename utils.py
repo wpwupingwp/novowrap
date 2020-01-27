@@ -42,7 +42,7 @@ def move(source, dest, copy=False):
         dest.write_bytes(source.read_bytes())
         if not copy:
             source.unlink()
-    return Path(dest)
+    return dest
 
 
 def get_full_taxon(taxon):
@@ -156,6 +156,7 @@ def blast(query, target, perc_identity=70):
     fmt = ('qseqid sseqid sstrand qlen slen length pident gapopen qstart qend '
            'sstart send')
     query = query.absolute()
+    target = target.absolute()
     blast_out = query.with_suffix('.blast')
     blast_log = query.with_suffix('.blast_log')
     # use blastn -subject instead of makeblastdb

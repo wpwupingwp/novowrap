@@ -127,7 +127,7 @@ def get_contig(files, out):
     """
     contigs_and_rc = []
     for f in files:
-        fasta = Path(f)
+        fasta = Path(f).absolute()
         # some id may already used PREFIX
         fasta_stem = fasta.stem.replace('.fasta', '').replace(PREFIX, '-RC-')
         for idx, record in enumerate(SeqIO.parse(fasta, 'fasta')):
@@ -472,9 +472,9 @@ def merge_main(arg_str=None):
     else:
         arg = parse_args(arg_str.split(' '))
     if arg.out is None:
-        arg.out = Path(arg.input[0]).with_suffix('.merge')
+        arg.out = Path(arg.input[0]).with_suffix('.merge').absolute()
     else:
-        arg.out = Path(arg.out)
+        arg.out = Path(arg.out).absolute()
     contigs_and_rc, contigs_and_rc_fasta = get_contig(arg.input, arg.out)
     links = get_link(contigs_and_rc, contigs_and_rc_fasta)
     if len(links) == 0:

@@ -330,7 +330,7 @@ def validate_main(arg_str=None):
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
         fmt = get_fmt(arg.ref)
-        ref_gb = Path(arg.ref)
+        ref_gb = Path(arg.ref).absolute()
         ref_gb = move(ref_gb, tmp/ref_gb.name, copy=True)
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')

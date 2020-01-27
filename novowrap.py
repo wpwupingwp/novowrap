@@ -59,10 +59,17 @@ def get_novoplasty(arg):
              'NOVOPlasty. ')
     log.info('\tSee https://raw.githubusercontent.com/'
              'ndierckx/NOVOPlasty/master/LICENSE for details.')
-    log.info('Due to connection speed, may need minutes.')
     try:
-        # file is ~18mb, 18mb/180s=100kb/s, consider it's ok for most of users
-        down = urlopen(url, timeout=180)
+        # 126kb/10s=12.6kb/s, enough for test
+        _ = urlopen('https://github.com', timeout=10)
+    except Exception:
+        log.critical('Cannot connect to github.com.')
+        log.critical('Please check your Internet connection.')
+        return None
+    log.info('Due to connection speed, may need minutes. Please be patient.')
+    try:
+        # file is ~18mb, 18mb/360s=50kb/s, consider it's ok for most of users
+        down = urlopen(url, timeout=360)
     except Exception:
         log.critical('Cannot download NOVOPlasty.')
         log.critical('Please manually download it from '

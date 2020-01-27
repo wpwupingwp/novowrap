@@ -43,6 +43,9 @@ def parse_args(arg_list=None):
 
 
 def reverse_link(link):
+    """
+    Reverse blast_result
+    """
     new = []
     for i in reversed(link):
         if i.startswith(PREFIX):

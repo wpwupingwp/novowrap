@@ -61,7 +61,8 @@ def get_novoplasty(arg):
              'ndierckx/NOVOPlasty/master/LICENSE for details.')
     log.info('Due to connection speed, may need minutes.')
     try:
-        down = urlopen(url)
+        # file is ~18mb, 18mb/180s=100kb/s, consider it's ok for most of users
+        down = urlopen(url, timeout=180)
     except Exception:
         log.critical('Cannot download NOVOPlasty.')
         log.critical('Please manually download it from '

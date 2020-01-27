@@ -43,14 +43,16 @@ def get_novoplasty(arg):
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.7.2.zip'
     perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
     if perl.returncode != 0:
-        log.critical('Please install Perl to run NOVOPlasty.')
+        log.critical('Please install Perl for running NOVOPlasty.')
         return None
     filename = 'NOVOPlasty3.7.2.pl'
-    pl = Path('.') / filename
+    pl = Path('.').absolute() / filename
     if pl.exists():
-        return pl.absolute()
+        log.debug('Found NOVOPlasty in current folder.')
+        return pl
     pl = arg.third_party / filename
     if pl.exists():
+        log.debug('Found NOVOPlasty in third_party folder.')
         return pl
     log.critical('Cannot find NOVOPlasty, try to download.')
     log.info('\tThe program assumes that users accept the license of '
@@ -67,20 +69,14 @@ def get_novoplasty(arg):
         return None
     zip_file = arg.third_party / 'NOVOPlasty3.7.2.zip'
     with open(zip_file, 'wb') as out:
-        try:
-            out.write(down.read())
-        except PermissionError:
-            log.exception(f'You do not have permission to write file to '
-                          f'{Path(".").absolute()}, please contact the '
-                          f'administrator.')
-            return None
+        out.write(down.read())
     with ZipFile(zip_file, 'r') as z:
         # windows and linux both use "/"
         novoplasty = z.extract('NOVOPlasty-NOVOPlasty3.7.2/NOVOPlasty3.7.2.pl')
-    novoplasty = Path(novoplasty)
+    novoplasty = Path(novoplasty).absolute()
     novoplasty = move(novoplasty, pl)
     log.info(f'Got {novoplasty.stem}.')
-    return novoplasty.absolute()
+    return novoplasty
 
 
 def parse_args(arg_list=None):
@@ -209,19 +205,28 @@ def init_arg(arg):
         log.critical(f'Failed create {arg.out}. Please contact the '
                      f'administrator.')
         return success, arg
+    if arg.debug:
+        logging.basicConfig(level=logging.DEBUG)
+        try:
+            import coloredlogs
+            coloredlogs.install(level=logging.DEBUG, fmt=FMT, datefmt=DATEFMT)
+        except ImportError:
+            pass
     arg.log = arg.out / 'Log'
     arg.log.mkdir()
     arg.raw = arg.out / 'Raw'
     arg.raw.mkdir()
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
-    arg.third_party = Path().home() / 'novowrap'
+    arg.third_party = Path().home() / '.novowrap'
+    arg.third_party = arg.third_party.absolute()
     if not arg.third_party.exists():
         try:
             arg.third_party.mkdir()
             tmp = arg.third_party / 'test'
             tmp.touch()
             tmp.unlink()
+            success = True
         except PermissionError:
             log.critical(f'Failed to access {arg.third_party}.'
                          f'Please contact the administrator.')

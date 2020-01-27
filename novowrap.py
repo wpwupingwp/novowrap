@@ -621,6 +621,8 @@ def assembly_main(arg_str=None):
     if not success:
         log.critical('Quit.')
         return success, arg.out
+    else:
+        log.debug('Init OK.')
     cwd = Path().cwd()
     chdir(arg.out)
     # check before run

@@ -36,7 +36,7 @@ def move(source, dest, copy=False):
     # avoid useless copy
     # Path.samefile may raise FileNotFoundError
     if source == dest:
-        pass
+        log.debug(f'{source} and {dest} are same.')
     else:
         # read_bytes/write_bytes includes open, read/write and close steps
         dest.write_bytes(source.read_bytes())
@@ -219,6 +219,7 @@ def repeat(filename, fmt):
     raw = SeqIO.read(filename, fmt)
     # assume given sequence is a whole chloroplast genome, no more or less
     new = raw + raw
+    log.debug(f'Before {len(raw)}; Repeat {len(new)}')
     SeqIO.write(new, new_file, 'fasta')
     return new_file
 
@@ -304,17 +305,19 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
     Rotate genbank or fasta record, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Input file should only contains one record.
     Arg:
-        filename(Path or str): genbank or filename
+        filename(Path): genbank or filename
         min_IR: minimum IR length
         tmp(Path or None): temporary folder
         silence(bool): print debug info or not
     Return:
         success(bool): success or not
     """
+    filename = Path(filename).absolute()
+    if tmp is None:
+        tmp = filename.parent
     if silence:
         log.setLevel(logging.CRITICAL)
     log.info(f'Rotate {filename}...')
-    filename = Path(filename).absolute()
     fmt = get_fmt(filename)
     # get origin seq
     origin_seq = list(SeqIO.parse(filename, fmt))
@@ -322,15 +325,14 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
     origin_seq = origin_seq[0]
     origin_len = len(origin_seq)
     # get repeat seq
-    repeat_record, repeat_fasta = _repeat(filename, fmt)
-    repeat_record = move(repeat_record, tmp/repeat_record)
-    repeat_seq = SeqIO.read(repeat_record, fmt)
+    repeat_fasta = repeat(filename, fmt)
+    repeat_seq = SeqIO.read(repeat_fasta, 'fasta')
     blast_result, blast_log = blast(repeat_fasta, repeat_fasta)
     if blast_result is None:
-        log.debug('Failed to run BLAST. Abort rotate_seq.')
+        log.critical(f'Failed to run BLAST. See {blast_log} for details.')
         return None, None
     # clean tmp files immediately, in case of exceptions that break clean step
-    repeat_record.unlink()
+    repeat_fasta.unlink()
     new_fasta = filename.with_suffix('.rotate')
     if filename.suffix == '.gb':
         new_gb = filename.with_suffix('.gb.gb')
@@ -454,7 +456,6 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
         success = True
     blast_result.unlink()
     blast_log.unlink()
-    repeat
     log.setLevel(logging.INFO)
     if not success:
         log.critical(f'Failed to rotate {filename}.')
@@ -527,8 +528,9 @@ def main():
     If run directly, rotate input file.
     """
     arg = parse_args()
+    arg.filename = Path(arg.filename).absolute()
     tmp = Path('.').absolute()
-    new_gb, new_fasta = rotate_seq(arg.filename, arg.min_ir, tmp=tmp)
+    new_gb, new_fasta = rotate_seq(arg.filename, min_ir=arg.min_ir, tmp=tmp)
     return
 
 

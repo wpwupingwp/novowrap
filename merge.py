@@ -475,6 +475,7 @@ def merge_main(arg_str=None):
         arg.out = Path(arg.input[0]).with_suffix('.merge').absolute()
     else:
         arg.out = Path(arg.out).absolute()
+    arg.input = Path(arg.input).absolute()
     contigs_and_rc, contigs_and_rc_fasta = get_contig(arg.input, arg.out)
     links = get_link(contigs_and_rc, contigs_and_rc_fasta)
     if len(links) == 0:

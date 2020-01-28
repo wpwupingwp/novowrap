@@ -592,7 +592,6 @@ def assembly(arg, novoplasty):
             arg_str = (f'{i} -ref {ref} -seed {seed.stem} -o {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
-            print(arg_str)
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
             if report not in csv_files:

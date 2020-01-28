@@ -57,7 +57,7 @@ def divide_records(fasta, output, ref_len, tmp, len_diff=0.1):
     """
     Make sure each file has only one record.
     Args:
-        fasta(Path or str): fasta file
+        fasta(Path): fasta file
         output(Path): output folder
         ref_len(int): length of reference, to filter bad records
         tmp(Path): temp folder
@@ -116,7 +116,7 @@ def divide_records(fasta, output, ref_len, tmp, len_diff=0.1):
     return divided
 
 
-def compare(query, reference, tmp, perc_identity):
+def compare_seq(query, reference, tmp, perc_identity):
     """
     Use BLAST to compare two records.
     Args:
@@ -130,6 +130,7 @@ def compare(query, reference, tmp, perc_identity):
     results = []
     blast_result, blast_log = blast(Path(query), reference, perc_identity*100)
     if blast_result is None:
+        log.critical('Failed to run BLAST.')
         return None
     # only one record in file, loop is for unpack
     for query in parse_blast_tab(blast_result):
@@ -139,9 +140,8 @@ def compare(query, reference, tmp, perc_identity):
              qstart, qend, sstart, send) = i
             record.append([qstart, qend, sstart, send, sstrand, pident])
         results.append(record)
-    # assert len(results) == 1
-    move(blast_result, tmp/blast_result)
-    move(blast_log, tmp/blast_log)
+    move(blast_result, tmp/blast_result.name)
+    move(blast_log, tmp/blast_log.name)
     return results[0]
 
 
@@ -365,7 +365,8 @@ def validate_main(arg_str=None):
         # add regions info
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])
-        compare_result = compare(i_fasta, r_ref_fasta, tmp, arg.perc_identity)
+        compare_result = compare_seq(i_fasta, r_ref_fasta, tmp,
+                                     arg.perc_identity)
         if compare_result is None:
             log.critical('Cannot run BLAST.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
@@ -396,7 +397,7 @@ def validate_main(arg_str=None):
                 r_rc_gb.stem+'_RC.gb').name)
             r_rc_fasta = move(r_rc_fasta, output/r_rc_fasta.with_name(
                 r_rc_fasta.stem+'_RC.fasta').name)
-            new_compare_result = compare(r_rc_fasta, r_ref_fasta, tmp,
+            new_compare_result = compare_seq(r_rc_fasta, r_ref_fasta, tmp,
                                          arg.perc_identity)
             pdf = draw(r_ref_gb, r_rc_gb, new_compare_result)
             pdf = move(pdf, output/pdf.name)

@@ -86,18 +86,21 @@ def get_full_taxon(taxon):
     return reversed(full_lineage)
 
 
-def get_ref(taxon, out):
+def get_ref(taxon, out, tmp=None):
     """
     Get reference gb file.
     Only one record will be retrieved.
     Arg:
         taxon(str): given taxon name
         out(Path): output folder
+        tmp(None or Path): temp folder
     Return:
         ref(Path): gb file
         ref_taxon(str): taxon of reference's, may not be same with given taxon
     """
     log.info(f'Try to get reference of {taxon} from NCBI Genbank.')
+    if tmp is None:
+        tmp = out
     lineage = get_full_taxon(taxon)
     if lineage is None:
         return None, None
@@ -130,7 +133,7 @@ def get_ref(taxon, out):
                                 retmode='text', retmax=1)
         with open(ref, 'w', encoding='utf-8') as out:
             out.write(content.read())
-        r_gb, r_fasta = rotate_seq(ref)
+        r_gb, r_fasta = rotate_seq(ref, tmp=tmp)
         if r_gb is None:
             continue
         else:
@@ -202,31 +205,22 @@ def parse_blast_tab(filename):
                 query.append(line)
 
 
-def _repeat(filename, fmt):
+def repeat(filename, fmt):
     """
     Duplicate sequence to get full length of IR which may locate in start or
     end of sequences that BLAST cannot get whole length.
-
-    The repeated gb record contains two "source"-type features, which may not
-    be parsed correctly by other functions, hence make this function private.
     Args:
         filename(Path): file to be repeat
         fmt(str): 'gb' or 'fasta'
     Return:
-        new_file(Path): repeated file with origin format
-        new_fasta(Path): fasta file for BLAST
+        new_file(Path): repeated fasta
     """
     new_file = filename.with_suffix('.rpt')
-    new_fasta = filename.with_suffix('.rpt_fasta')
     raw = SeqIO.read(filename, fmt)
     # assume given sequence is a whole chloroplast genome, no more or less
     new = raw + raw
-    SeqIO.write(new, new_file, fmt)
-    if fmt != 'fasta':
-        SeqIO.write(new, new_fasta, 'fasta')
-    else:
-        new_fasta = new_file
-    return new_file, new_fasta
+    SeqIO.write(new, new_file, 'fasta')
+    return new_file
 
 
 def slice_gb(seq, location):
@@ -305,13 +299,15 @@ def get_fmt(filename):
     return fmt
 
 
-def rotate_seq(filename, min_ir=1000, silence=True, tmp=None):
+def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
     """
     Rotate genbank or fasta record, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Input file should only contains one record.
     Arg:
         filename(Path or str): genbank or filename
         min_IR: minimum IR length
+        tmp(Path or None): temporary folder
+        silence(bool): print debug info or not
     Return:
         success(bool): success or not
     """
@@ -327,8 +323,14 @@ def rotate_seq(filename, min_ir=1000, silence=True, tmp=None):
     origin_len = len(origin_seq)
     # get repeat seq
     repeat_record, repeat_fasta = _repeat(filename, fmt)
+    repeat_record = move(repeat_record, tmp/repeat_record)
     repeat_seq = SeqIO.read(repeat_record, fmt)
     blast_result, blast_log = blast(repeat_fasta, repeat_fasta)
+    if blast_result is None:
+        log.debug('Failed to run BLAST. Abort rotate_seq.')
+        return None, None
+    # clean tmp files immediately, in case of exceptions that break clean step
+    repeat_record.unlink()
     new_fasta = filename.with_suffix('.rotate')
     if filename.suffix == '.gb':
         new_gb = filename.with_suffix('.gb.gb')
@@ -450,15 +452,9 @@ def rotate_seq(filename, min_ir=1000, silence=True, tmp=None):
         SeqIO.write(new_seq, new_gb, 'gb')
         SeqIO.write(new_seq, new_fasta, 'fasta')
         success = True
-    if tmp is not None:
-        move(blast_result, tmp/blast_result)
-        # blast log needn't put into Log
-        move(blast_log, tmp/blast_log)
-    else:
-        blast_result.unlink()
-    repeat_record.unlink()
-    if repeat_fasta.exists():
-        repeat_fasta.unlink()
+    blast_result.unlink()
+    blast_log.unlink()
+    repeat
     log.setLevel(logging.INFO)
     if not success:
         log.critical(f'Failed to rotate {filename}.')
@@ -531,7 +527,8 @@ def main():
     If run directly, rotate input file.
     """
     arg = parse_args()
-    new_gb, new_fasta = rotate_seq(arg.filename, arg.min_ir)
+    tmp = Path('.').absolute()
+    new_gb, new_fasta = rotate_seq(arg.filename, arg.min_ir, tmp=tmp)
     return
 
 

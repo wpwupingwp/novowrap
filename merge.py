@@ -471,11 +471,11 @@ def merge_main(arg_str=None):
         arg = parse_args()
     else:
         arg = parse_args(arg_str.split(' '))
+    arg.input = [Path(i).absolute() for i in arg.input]
     if arg.out is None:
-        arg.out = Path(arg.input[0]).with_suffix('.merge').absolute()
+        arg.out = arg.input[0].with_suffix('.merge')
     else:
         arg.out = Path(arg.out).absolute()
-    arg.input = Path(arg.input).absolute()
     contigs_and_rc, contigs_and_rc_fasta = get_contig(arg.input, arg.out)
     links = get_link(contigs_and_rc, contigs_and_rc_fasta)
     if len(links) == 0:

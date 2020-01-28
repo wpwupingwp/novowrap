@@ -398,7 +398,7 @@ def validate_main(arg_str=None):
             r_rc_fasta = move(r_rc_fasta, output/r_rc_fasta.with_name(
                 r_rc_fasta.stem+'_RC.fasta').name)
             new_compare_result = compare_seq(r_rc_fasta, r_ref_fasta, tmp,
-                                         arg.perc_identity)
+                                             arg.perc_identity)
             pdf = draw(r_ref_gb, r_rc_gb, new_compare_result)
             pdf = move(pdf, output/pdf.name)
             divided[i]['fasta'] = r_rc_fasta

@@ -544,14 +544,14 @@ def assembly(arg, novoplasty):
                          'but {arg.ref} is not.')
             return success
         ref = Path(arg.ref).absolute()
-        ref = move(ref, arg.tmp/ref, copy=True)
+        ref = move(ref, arg.tmp/ref.name, copy=True)
     else:
         ref, arg.taxon = get_ref(arg.taxon, arg.tmp)
         if ref is None:
             log.critical('Cannot get reference.')
             return success
         else:
-            ref = move(ref, arg.tmp/ref)
+            ref = move(ref, arg.tmp/ref.name)
     # get seed
     seeds = []
     ordered_seeds = get_seed(ref, arg.raw, arg.seed)

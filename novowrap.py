@@ -379,7 +379,7 @@ def config(seed, arg):
     arg.reads_len = get_reads_len(arg.input[0])
     if arg.insert_size is None:
         arg.insert_size = arg.reads_len * 2 + 50
-        log.info(f'The insert size is missing, use {arg.insert_size}.')
+        log.debug(f'The insert size is missing, use {arg.insert_size}.')
     config_str = f"""Project:
 -----------------------
 Project name          = {arg.out.name}

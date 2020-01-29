@@ -2,6 +2,7 @@
 
 from os import environ
 from pathlib import Path
+from random import randint
 import argparse
 import logging
 
@@ -12,7 +13,7 @@ if environ.get('DISPLAY', '') == '':
 from matplotlib import pyplot as plt
 import numpy as np
 
-from utils import get_ref, blast, parse_blast_tab, move
+from utils import get_ref, blast, parse_blast_tab, accessible, move
 from utils import get_fmt, rotate_seq, get_regions, rc_regions
 
 
@@ -316,14 +317,52 @@ def validate_main(arg_str=None):
         arg = parse_args()
     else:
         arg = parse_args(arg_str.split(' '))
+    init_ok, arg = init_arg(arg)
+    if not init_ok:
+        log.critical('Quit.')
+        return validated, output_info
+
+def init_arg(arg):
+    """
+    Initialize working folder with arg.
+    Args:
+        arg(NameSpace): arg generated from parse_args
+    Return:
+        success(bool): success or not
+        arg(NameSpace): arg with output info
+    """
+    if arg.debug:
+        logging.basicConfig(level=logging.DEBUG)
+        try:
+            import coloredlogs
+            coloredlogs.install(level=logging.DEBUG, fmt=FMT, datefmt=DATEFMT)
+        except ImportError:
+            pass
+    success = False
     arg.input = Path(arg.input).absolute()
+    if not arg.input.exists():
+        log.critical(f'Input file {arg.input} does not exist.')
+        return success, arg
     if arg.out is None:
-        output = Path(arg.input.stem+'-out').absolute()
+        arg.out = Path(arg.input.stem+'-out').absolute()
     else:
-        output = Path(arg.out).absolute()
-    if not output.exists():
-        output.mkdir()
-    tmp = output / 'Temp'
+        arg.out = Path(arg.out).absolute()
+    if arg.out.exists():
+        log.warning(f'Output folder {arg.out.name} exists.')
+        # give users one more chance
+        new_name = arg.out.name + f'-{randint(0, 2020):04d}'
+        arg.out = arg.out.with_name(new_name)
+        if arg.out.exists():
+            log.critical('Cannot create output folder.')
+            return success, arg
+        else:
+            log.info(f'Use {arg.out.name} instead.')
+    if not accessible(arg.out):
+        log.critical(f'Failed to access output folder {arg.output}.'
+                     f'Please contact the administrator.')
+        return success, arg
+    tmp = arg.out / 'Temp'
+    # if called by novowrap, tmp is accessible already
     if not tmp.exists():
         tmp.mkdir()
     log.info(f'Input:\t{arg.input}')
@@ -332,6 +371,13 @@ def validate_main(arg_str=None):
         fmt = get_fmt(arg.ref)
         ref_gb = Path(arg.ref).absolute()
         ref_gb = move(ref_gb, tmp/ref_gb.name, copy=True)
+        ref_records = list(SeqIO.parse(ref_gb, fmt))
+        if len(ref_records) > 1:
+            log.warning('Given reference contains more than one records, '
+                        'only use the first.')
+            # assume given reference is ok since user refuse to auto download
+            # reference from Genbank
+            SeqIO.write(ref_records[0], ref_gb, fmt)
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')
         ref_gb, ref_taxon = get_ref(arg.taxon, tmp)

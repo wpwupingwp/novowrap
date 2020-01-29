@@ -45,5 +45,5 @@
 44. BLAST a to b different with b to a
 #45. toplevel cannot be destoryed
 46. contigs and _RC_ contigs in same link
-47. clean blastlog
+#47. clean blastlog
 48. validate only validate first record in input

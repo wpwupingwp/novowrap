@@ -192,8 +192,8 @@ def init_arg(arg):
     Args:
         arg(NameSpace): arg generated from parse_args
     Return:
-        arg(NameSpace): arg with output info
         success(bool): success or not
+        arg(NameSpace): arg with output info
     """
     success = False
     if arg.list is None and arg.input is None:

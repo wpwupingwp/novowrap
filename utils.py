@@ -16,6 +16,33 @@ from Bio.SeqFeature import SeqFeature, FeatureLocation
 log = logging.getLogger('novowrap')
 
 
+def accessible(p):
+    """
+    Check given path is accessible or not.
+    Assume given path does not exist.
+    Args:
+        p(Path): folder or file, absolute path
+    Return:
+        ok(bool): accessible or not
+    """
+    p = Path(p)
+    if p.is_dir():
+        try:
+            p.mkdir()
+            p.rmdir()
+            ok = True
+        except PermissionError:
+            ok = False
+    elif p.is_file():
+        try:
+            p.touch()
+            p.unlink()
+            ok = True
+        except PermissionError:
+            ok = False
+    return ok
+
+
 def move(source, dest, copy=False):
     """
     Move source to dest and return dest.

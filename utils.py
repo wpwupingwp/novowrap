@@ -16,30 +16,34 @@ from Bio.SeqFeature import SeqFeature, FeatureLocation
 log = logging.getLogger('novowrap')
 
 
-def accessible(p):
+def accessible(name, type_):
     """
     Check given path is accessible or not.
-    Assume given path does not exist.
+    Given path does not exist.
     Args:
-        p(Path): folder or file, absolute path
+        name(Path): folder or file, absolute path
+        type_(str): 'folder' or 'file'
     Return:
         ok(bool): accessible or not
     """
-    p = Path(p)
-    if p.is_dir():
+    p = Path(name)
+    if type_ == 'folder':
         try:
             p.mkdir()
             p.rmdir()
             ok = True
         except PermissionError:
             ok = False
-    elif p.is_file():
+    elif type_ == 'file':
         try:
             p.touch()
             p.unlink()
             ok = True
         except PermissionError:
             ok = False
+    else:
+        log.critical(f'Illegal type: {type_}')
+        ok = False
     return ok
 
 

@@ -48,6 +48,8 @@ def parse_args(arg_list=None):
     options.add_argument('-s', '-seed', dest='seed',
                          help='seed used in assembly, only for caller')
     options.add_argument('-o', '-out', dest='out', help='output folder')
+    options.add_argument('-debug', action='store_true',
+                         help='print debug info')
     if arg_list is None:
         return arg.parse_args()
     else:
@@ -89,8 +91,8 @@ def init_arg(arg):
             return success, arg
         else:
             log.info(f'Use {arg.out.name} instead.')
-    if not accessible(arg.out):
-        log.critical(f'Failed to access output folder {arg.output}.'
+    if not accessible(arg.out, 'folder'):
+        log.critical(f'Failed to access output folder {arg.out}.'
                      f'Please contact the administrator.')
         return success, arg
     arg.out.mkdir()
@@ -396,6 +398,7 @@ def validate_main(arg_str=None):
     ref_len = len(SeqIO.read(ref_gb, fmt))
     r_ref_gb, r_ref_fasta = rotate_seq(ref_gb, tmp=arg.tmp)
     if r_ref_gb is None:
+        log.critical(f'Cannot process reference sequence. Quit.')
         return validated, output_info
     ref_regions = get_regions(r_ref_gb)
     if r_ref_gb is None:
@@ -403,7 +406,7 @@ def validate_main(arg_str=None):
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
         return validated, output_info
-    divided = divide_records(arg.input, arg.output, ref_len, arg.tmp,
+    divided = divide_records(arg.input, arg.out, ref_len, arg.tmp,
                              arg.len_diff)
     for i in divided:
         success = False
@@ -477,10 +480,9 @@ def validate_main(arg_str=None):
         for i in validated:
             log.info(f'\t{i.name}')
     output_info = arg.out / f'{arg.out.name}-results.csv'
-    output_info_exist = output_info.exists()
     with open(output_info, 'a', encoding='utf-8') as out:
-        if not output_info_exist:
-            out.write('fasta,Success,Seed,Length,LSC,IRa,SSC,IRb,'
+        if not output_info.exists():
+            out.write('Input,Success,Seed,Length,LSC,IRa,SSC,IRb,'
                       'Missing,Incomplete,RC_region,'
                       'Reference,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n'
                       )

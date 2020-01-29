@@ -58,7 +58,7 @@ def get_novoplasty(arg):
     log.info('\tThe program assumes that users accept the license of '
              'NOVOPlasty. ')
     log.info('\tSee https://raw.githubusercontent.com/'
-             'ndierckx/NOVOPlasty/master/LICENSE for details.')
+             'ndierckx/NOVOPlasty/ for details.')
     try:
         # 126kb/10s=12.6kb/s, enough for test
         _ = urlopen('https://github.com', timeout=10)
@@ -219,13 +219,15 @@ def init_arg(arg):
             return success, arg
         arg.list = Path(arg.list).absolute()
     if arg.input is not None:
-        if not arg.input.exists():
-            log.critical(f'Input file{arg.input} does not exists.')
         arg.input = [Path(i).absolute() for i in arg.input]
+        for i in arg.input:
+            if not i.exists():
+                log.critical(f'Input file {i} does not exists.')
+                return success, arg
     arg.out = get_output(arg)
     if arg.out is None:
         return success, arg
-    if not accessible(arg.out):
+    if not accessible(arg.out, 'folder'):
         log.critical(f'Failed create {arg.out}. Please contact the '
                      f'administrator.')
         return success, arg
@@ -237,12 +239,13 @@ def init_arg(arg):
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
     arg.third_party = Path().home().absolute() / '.novowrap'
-    if not accessible(arg.third_party):
+    if not arg.third_party.exists():
+        log.debug(f'Create folder {arg.third_party}')
+        arg.third_party.mkdir()
+    if not accessible(arg.third_party/'test', 'file'):
         log.critical(f'Failed to access {arg.third_party}.'
                      f'Please contact the administrator.')
         return success, arg
-    if not arg.third_party.exists():
-        arg.third_party.mkdir()
     success = True
     return success, arg
 

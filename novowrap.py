@@ -14,7 +14,7 @@ import logging
 
 from Bio import SeqIO
 
-from utils import get_fmt, get_ref, move
+from utils import get_fmt, get_ref, accessible, move
 from merge import merge_main
 from validate import validate_main
 
@@ -210,23 +210,26 @@ def init_arg(arg):
     if arg.list is None and arg.input is None:
         log.critical('Input is empty.')
         return success, arg
-    print('to be continue')
     if len(arg.input) > 2:
         log.critical('Only accept one or two input file(s).')
         return success, arg
     if arg.list is not None:
+        if not arg.list.exists():
+            log.critical(f'Input file {arg.list} does not exists.')
+            return success, arg
         arg.list = Path(arg.list).absolute()
     if arg.input is not None:
+        if not arg.input.exists():
+            log.critical(f'Input file{arg.input} does not exists.')
         arg.input = [Path(i).absolute() for i in arg.input]
     arg.out = get_output(arg)
     if arg.out is None:
         return success, arg
-    try:
-        arg.out.mkdir()
-    except PermissionError:
+    if not accessible(arg.out):
         log.critical(f'Failed create {arg.out}. Please contact the '
                      f'administrator.')
         return success, arg
+    arg.out.mkdir()
     arg.log = arg.out / 'Log'
     arg.log.mkdir()
     arg.raw = arg.out / 'Raw'
@@ -234,17 +237,12 @@ def init_arg(arg):
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
     arg.third_party = Path().home().absolute() / '.novowrap'
-    if not arg.third_party.exists():
-        try:
-            arg.third_party.mkdir()
-            tmp = arg.third_party / 'test'
-            tmp.touch()
-            tmp.unlink()
-            success = True
-        except PermissionError:
-            log.critical(f'Failed to access {arg.third_party}.'
-                         f'Please contact the administrator.')
+    if not accessible(arg.third_party):
+        log.critical(f'Failed to access {arg.third_party}.'
+                     f'Please contact the administrator.')
         return success, arg
+    if not arg.third_party.exists():
+        arg.third_party.mkdir()
     success = True
     return success, arg
 

@@ -93,6 +93,7 @@ def init_arg(arg):
         log.critical(f'Failed to access output folder {arg.output}.'
                      f'Please contact the administrator.')
         return success, arg
+    arg.out.mkdir()
     arg.tmp = arg.out / 'Temp'
     # if called by novowrap, tmp is accessible already
     if not arg.tmp.exists():

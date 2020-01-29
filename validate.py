@@ -54,6 +54,53 @@ def parse_args(arg_list=None):
         return arg.parse_args(arg_list)
 
 
+def init_arg(arg):
+    """
+    Initialize working folder with arg.
+    Args:
+        arg(NameSpace): arg generated from parse_args
+    Return:
+        success(bool): success or not
+        arg(NameSpace): arg with output info
+    """
+    if arg.debug:
+        logging.basicConfig(level=logging.DEBUG)
+        try:
+            import coloredlogs
+            coloredlogs.install(level=logging.DEBUG, fmt=FMT, datefmt=DATEFMT)
+        except ImportError:
+            pass
+    success = False
+    arg.input = Path(arg.input).absolute()
+    if not arg.input.exists():
+        log.critical(f'Input file {arg.input} does not exist.')
+        return success, arg
+    if arg.out is None:
+        arg.out = Path(arg.input.stem+'-out').absolute()
+    else:
+        arg.out = Path(arg.out).absolute()
+    if arg.out.exists():
+        log.warning(f'Output folder {arg.out.name} exists.')
+        # give users one more chance
+        new_name = arg.out.name + f'-{randint(0, 2020):04d}'
+        arg.out = arg.out.with_name(new_name)
+        if arg.out.exists():
+            log.critical('Cannot create output folder.')
+            return success, arg
+        else:
+            log.info(f'Use {arg.out.name} instead.')
+    if not accessible(arg.out):
+        log.critical(f'Failed to access output folder {arg.output}.'
+                     f'Please contact the administrator.')
+        return success, arg
+    arg.tmp = arg.out / 'Temp'
+    # if called by novowrap, tmp is accessible already
+    if not arg.tmp.exists():
+        arg.tmp.mkdir()
+    success = True
+    return success, arg
+
+
 def divide_records(fasta, output, ref_len, tmp, len_diff=0.1):
     """
     Make sure each file has only one record.
@@ -322,55 +369,12 @@ def validate_main(arg_str=None):
         log.critical('Quit.')
         return validated, output_info
 
-def init_arg(arg):
-    """
-    Initialize working folder with arg.
-    Args:
-        arg(NameSpace): arg generated from parse_args
-    Return:
-        success(bool): success or not
-        arg(NameSpace): arg with output info
-    """
-    if arg.debug:
-        logging.basicConfig(level=logging.DEBUG)
-        try:
-            import coloredlogs
-            coloredlogs.install(level=logging.DEBUG, fmt=FMT, datefmt=DATEFMT)
-        except ImportError:
-            pass
-    success = False
-    arg.input = Path(arg.input).absolute()
-    if not arg.input.exists():
-        log.critical(f'Input file {arg.input} does not exist.')
-        return success, arg
-    if arg.out is None:
-        arg.out = Path(arg.input.stem+'-out').absolute()
-    else:
-        arg.out = Path(arg.out).absolute()
-    if arg.out.exists():
-        log.warning(f'Output folder {arg.out.name} exists.')
-        # give users one more chance
-        new_name = arg.out.name + f'-{randint(0, 2020):04d}'
-        arg.out = arg.out.with_name(new_name)
-        if arg.out.exists():
-            log.critical('Cannot create output folder.')
-            return success, arg
-        else:
-            log.info(f'Use {arg.out.name} instead.')
-    if not accessible(arg.out):
-        log.critical(f'Failed to access output folder {arg.output}.'
-                     f'Please contact the administrator.')
-        return success, arg
-    tmp = arg.out / 'Temp'
-    # if called by novowrap, tmp is accessible already
-    if not tmp.exists():
-        tmp.mkdir()
     log.info(f'Input:\t{arg.input}')
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
         fmt = get_fmt(arg.ref)
         ref_gb = Path(arg.ref).absolute()
-        ref_gb = move(ref_gb, tmp/ref_gb.name, copy=True)
+        ref_gb = move(ref_gb, arg.tmp/ref_gb.name, copy=True)
         ref_records = list(SeqIO.parse(ref_gb, fmt))
         if len(ref_records) > 1:
             log.warning('Given reference contains more than one records, '
@@ -380,16 +384,16 @@ def init_arg(arg):
             SeqIO.write(ref_records[0], ref_gb, fmt)
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')
-        ref_gb, ref_taxon = get_ref(arg.taxon, tmp)
+        ref_gb, ref_taxon = get_ref(arg.taxon, arg.tmp)
         if ref_gb is None:
             log.critical('Failed to get reference.')
             log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')
             return validated, output_info
-        ref_gb = move(ref_gb, tmp/ref_gb.name)
+        ref_gb = move(ref_gb, arg.tmp/ref_gb.name)
         fmt = 'gb'
-    log.debug(f'Use {output} as output folder.')
+    log.info(f'Output:\t {arg.out}')
     ref_len = len(SeqIO.read(ref_gb, fmt))
-    r_ref_gb, r_ref_fasta = rotate_seq(ref_gb, tmp=tmp)
+    r_ref_gb, r_ref_fasta = rotate_seq(ref_gb, tmp=arg.tmp)
     if r_ref_gb is None:
         return validated, output_info
     ref_regions = get_regions(r_ref_gb)
@@ -398,7 +402,8 @@ def init_arg(arg):
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
         return validated, output_info
-    divided = divide_records(arg.input, output, ref_len, tmp, arg.len_diff)
+    divided = divide_records(arg.input, arg.output, ref_len, arg.tmp,
+                             arg.len_diff)
     for i in divided:
         success = False
         divided[i]['success'] = success
@@ -411,14 +416,14 @@ def init_arg(arg):
         # add regions info
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])
-        compare_result = compare_seq(i_fasta, r_ref_fasta, tmp,
+        compare_result = compare_seq(i_fasta, r_ref_fasta, arg.tmp,
                                      arg.perc_identity)
         if compare_result is None:
             log.critical('Cannot run BLAST.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
             return validated, output_info
         pdf = draw(r_ref_gb, i_gb, compare_result)
-        pdf = move(pdf, output/pdf.name)
+        pdf = move(pdf, arg.out/pdf.name)
         log.info('Detecting reverse complement region.')
         option_len = divided[i]['length']
         count, to_rc, strand_info, bad_region = validate_regions(
@@ -431,22 +436,23 @@ def init_arg(arg):
             log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
             rc_fasta = rc_regions(i_gb, to_rc)
             # clean old files
-            i_fasta = move(i_fasta, tmp/(i_fasta.with_name(
+            i_fasta = move(i_fasta, arg.tmp/(i_fasta.with_name(
                 i_fasta.stem+'-noRC.fasta')).name)
-            i_gb = move(i_gb, tmp/(i_gb.with_name(i_gb.stem+'-noRC.gb')).name)
+            i_gb = move(i_gb, arg.tmp/(i_gb.with_name(
+                i_gb.stem+'-noRC.gb')).name)
             rc_fasta = move(rc_fasta, rc_fasta.with_suffix(''))
-            r_rc_gb, r_rc_fasta = rotate_seq(rc_fasta, tmp=tmp)
+            r_rc_gb, r_rc_fasta = rotate_seq(rc_fasta, tmp=arg.tmp)
             if r_rc_gb is None:
                 continue
             rc_fasta.unlink()
-            r_rc_gb = move(r_rc_gb, output/r_rc_gb.with_name(
+            r_rc_gb = move(r_rc_gb, arg.out/r_rc_gb.with_name(
                 r_rc_gb.stem+'_RC.gb').name)
-            r_rc_fasta = move(r_rc_fasta, output/r_rc_fasta.with_name(
+            r_rc_fasta = move(r_rc_fasta, arg.out/r_rc_fasta.with_name(
                 r_rc_fasta.stem+'_RC.fasta').name)
-            new_compare_result = compare_seq(r_rc_fasta, r_ref_fasta, tmp,
+            new_compare_result = compare_seq(r_rc_fasta, r_ref_fasta, arg.tmp,
                                              arg.perc_identity)
             pdf = draw(r_ref_gb, r_rc_gb, new_compare_result)
-            pdf = move(pdf, output/pdf.name)
+            pdf = move(pdf, arg.out/pdf.name)
             divided[i]['fasta'] = r_rc_fasta
             new_regions = get_regions(r_rc_gb)
             for _ in new_regions:
@@ -469,7 +475,7 @@ def init_arg(arg):
         log.info('Validated sequences:')
         for i in validated:
             log.info(f'\t{i.name}')
-    output_info = output / f'{output.name}-results.csv'
+    output_info = arg.out / f'{arg.out.name}-results.csv'
     output_info_exist = output_info.exists()
     with open(output_info, 'a', encoding='utf-8') as out:
         if not output_info_exist:

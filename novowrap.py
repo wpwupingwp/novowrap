@@ -91,12 +91,13 @@ def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     inputs = arg.add_argument_group('Input')
-    inputs.add_argument('-i', dest='input', nargs='*',
+    inputs.add_argument('-i', '-input', dest='input', nargs='*',
                         help='single or pair-end input, fastq or gz format')
-    inputs.add_argument('-l', dest='list', help='csv file for batch mode')
+    inputs.add_argument('-l', '-list', dest='list',
+                        help='csv file for batch mode')
     inputs.add_argument('-p', dest='platform', choices=['illumina', 'ion'],
                         default='illumina', help='sequencing platform')
-    inputs.add_argument('-insert_size',
+    inputs.add_argument('-insert_size', type=int,
                         help='insert size of sequencing library')
     inputs.add_argument('-seed', default='rbcL,psaB,psaC,rrn23',
                         help='seed gene, separated by comma')

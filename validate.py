@@ -81,21 +81,26 @@ def init_arg(arg):
         arg.out = Path(arg.input.stem+'-out').absolute()
     else:
         arg.out = Path(arg.out).absolute()
-    if arg.out.exists():
-        log.warning(f'Output folder {arg.out.name} exists.')
-        # give users one more chance
-        new_name = arg.out.name + f'-{randint(0, 2020):04d}'
-        arg.out = arg.out.with_name(new_name)
+    if __name__ == 'novowrap':
+        # if called from novowrap, out exist and accessible already
+        pass
+    else:
         if arg.out.exists():
-            log.critical('Cannot create output folder.')
-            return success, arg
+            log.warning(f'Output folder {arg.out.name} exists.')
+            # give users one more chance
+            new_name = arg.out.name + f'-{randint(0, 2020):04d}'
+            arg.out = arg.out.with_name(new_name)
+            if arg.out.exists():
+                log.critical('Cannot create output folder.')
+                return success, arg
+            else:
+                log.info(f'Use {arg.out.name} instead.')
         else:
-            log.info(f'Use {arg.out.name} instead.')
-    if not accessible(arg.out, 'folder'):
-        log.critical(f'Failed to access output folder {arg.out}.'
-                     f'Please contact the administrator.')
-        return success, arg
-    arg.out.mkdir()
+            if not accessible(arg.out, 'folder'):
+                log.critical(f'Failed to access output folder {arg.out}.'
+                             f'Please contact the administrator.')
+                return success, arg
+            arg.out.mkdir()
     arg.tmp = arg.out / 'Temp'
     # if called by novowrap, tmp is accessible already
     if not arg.tmp.exists():

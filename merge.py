@@ -352,7 +352,7 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
     overlap = get_overlap(contigs_and_rc, contigs_and_rc_fasta)
     overlap_clean, edges = clean_overlap(overlap)
     if len(overlap_clean) == 0:
-        log.critical('Bad input. Please check again.')
+        log.critical('Bad input. Failed to merge.')
         return []
     overlap_clean_dict = {(i[0], i[1]): i for i in overlap_clean}
     for i in edges:

@@ -81,7 +81,7 @@ def init_arg(arg):
         arg.out = Path(arg.input.stem+'-out').absolute()
     else:
         arg.out = Path(arg.out).absolute()
-    if __name__ == 'novowrap':
+    if __name__ != '__main__':
         # if called from novowrap, out exist and accessible already
         pass
     else:

@@ -11,6 +11,7 @@ from zipfile import ZipFile
 import argparse
 import gzip
 import logging
+import platform
 
 from Bio import SeqIO
 
@@ -29,6 +30,52 @@ try:
     coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
 except ImportError:
     pass
+
+
+def get_perl(arg):
+    """
+    Linux and Mac have perl already.
+    For Windows user, this function help to get perl.exe .
+    Only support x86_64 or amd64 machine.
+    Args:
+        arg(NameSpace): args
+    Return:
+        perl(str): perl location
+    """
+    url = ('http://strawberryperl.com/download/5.30.1.1/'
+           'strawberry-perl-5.30.1.1-64bit-portable.zip')
+    # use run instead of find_executable because the later only check if exist
+    # and ignore if could run
+    perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
+    if perl.returncode == 0:
+        return 'perl'
+    if platform.system() != 'Windows':
+        log.critical('Cannot find Perl. Please follow the link '
+                     'https://www.perl.org/get.html to install.')
+        return None
+    else:
+        log.warning('Cannot find Perl. Try to install.')
+        if '64' not in platform.machine():
+            log.critical(f'Unsupport machine {platform.machine()}')
+            return None
+        try:
+            # file is 148mb, 148mb/3000s=~50kb/s, consider it's ok for
+            # most of users
+            log.info('Download may be slow. Please consider manualy install '
+                     'Perl according to https://www.perl.org/get.html ')
+            down = urlopen(url, timeout=3000)
+        except Exception:
+            log.critical('Cannot download Perl. Please try to manually '
+                         ' install.')
+            return None
+        zip_file = arg.third_party / 'strawberry-perl.zip'
+        with open(zip_file, 'wb') as out:
+            out.write(down.read())
+        folder = arg.third_party / 'perl'
+        with ZipFile(zip_file, 'r') as z:
+            z.extractall(folder)
+        # fixed path in zip file
+        return str(folder/'perl'/'bin'/'perl.exe')
 
 
 def get_novoplasty(arg):
@@ -80,9 +127,9 @@ def get_novoplasty(arg):
         out.write(down.read())
     with ZipFile(zip_file, 'r') as z:
         # windows and linux both use "/"
-        novoplasty = z.extract('NOVOPlasty-NOVOPlasty3.7.2/NOVOPlasty3.7.2.pl')
-    novoplasty = Path(novoplasty).absolute()
-    novoplasty = move(novoplasty, pl)
+        z.extractall(arg.third_party)
+    novoplasty = (arg.third_party / 'NOVOPlasty-NOVOPlasty3.7.2' /
+                  'NOVOPlasty3.7.2.pl')
     log.info(f'Got {novoplasty.stem}.')
     return novoplasty
 

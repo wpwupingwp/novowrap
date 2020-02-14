@@ -46,6 +46,7 @@
 #45. toplevel cannot be destoryed
 46. contigs and _RC_ contigs in same link
 #47. clean blastlog
-48. validate only validate first record in input
+#48. validate only validate first record in input
 49. test get_perl
 50. failed to rotate Pinus_NC_028552
+51. BLAST as third_party

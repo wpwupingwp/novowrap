@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from pathlib import Path
-from subprocess import run
+from subprocess import DEVNULL, run
 from time import sleep
 import argparse
 import gzip
@@ -173,6 +173,19 @@ def get_ref(taxon, out, tmp=None):
             log.info(f'Got {ref.name} as reference.')
             return ref, taxon_name
     return None, None
+
+
+def get_blast():
+    """
+    Get BLAST location.
+    If BLAST was found, assume makeblastdb is found, too.
+    Return:
+        blast(str): blast path
+    """
+    blast = run('blastn -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
+    if blast.returncode == 0:
+        return 'blastn'
+    return None
 
 
 def blast(query, target, perc_identity=70):

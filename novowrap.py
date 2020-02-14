@@ -16,6 +16,7 @@ import platform
 from Bio import SeqIO
 
 from utils import get_fmt, get_ref, accessible, move
+from utils import get_blast
 from merge import merge_main
 from validate import validate_main
 
@@ -93,10 +94,6 @@ def get_novoplasty(arg):
         log.critical('Please install Perl for running NOVOPlasty.')
         return None
     filename = 'NOVOPlasty3.7.2.pl'
-    pl = Path('.').absolute() / filename
-    if pl.exists():
-        log.debug('Found NOVOPlasty in current folder.')
-        return pl
     pl = arg.third_party / filename
     if pl.exists():
         log.debug('Found NOVOPlasty in third_party folder.')

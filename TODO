@@ -49,4 +49,5 @@
 #48. validate only validate first record in input
 49. test get_perl
 50. failed to rotate Pinus_NC_028552
-51. BLAST as third_party
+#51. BLAST as third_party
+52. test get_blast

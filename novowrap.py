@@ -99,8 +99,10 @@ def get_novoplasty(arg):
         log.debug('Found NOVOPlasty in third_party folder.')
         return pl
     log.critical('Cannot find NOVOPlasty, try to download.')
-    log.info('\tThe program assumes that users accept the license of '
+    # license warning
+    log.info('\tThe program assumes that user ACCEPT the license of '
              'NOVOPlasty. ')
+    log.info('\tIF NOT, please terminate the running.')
     log.info('\tSee https://raw.githubusercontent.com/'
              'ndierckx/NOVOPlasty/ for details.')
     try:

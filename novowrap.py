@@ -16,7 +16,6 @@ import platform
 from Bio import SeqIO
 
 from utils import get_fmt, get_ref, accessible, move
-from utils import get_blast
 from merge import merge_main
 from validate import validate_main
 
@@ -31,6 +30,9 @@ try:
     coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
 except ImportError:
     pass
+
+# share third party folder across file
+THIRD_PARTY = Path().home().absolute() / '.novowrap'
 
 
 def get_perl(arg):
@@ -285,14 +287,14 @@ def init_arg(arg):
     arg.raw.mkdir()
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
-    arg.third_party = Path().home().absolute() / '.novowrap'
-    if not arg.third_party.exists():
-        log.debug(f'Create folder {arg.third_party}')
-        arg.third_party.mkdir()
-    if not accessible(arg.third_party/'test', 'file'):
+    arg.third_party = THIRD_PARTY
+    if not accessible(arg.third_party, 'folder'):
         log.critical(f'Failed to access {arg.third_party}.'
                      f'Please contact the administrator.')
         return success, arg
+    if not arg.third_party.exists():
+        log.debug(f'Create folder {arg.third_party}')
+        arg.third_party.mkdir()
     success = True
     return success, arg
 

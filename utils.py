@@ -1,11 +1,14 @@
 #!/usr/bin/python3
 
 from pathlib import Path
+from shutil import unpack_archive
 from subprocess import DEVNULL, run
 from time import sleep
+from urllib.request import urlopen
 import argparse
 import gzip
 import logging
+import platform
 
 from Bio import Entrez, SeqIO
 from Bio.Alphabet import IUPAC
@@ -14,6 +17,8 @@ from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 
 log = logging.getLogger('novowrap')
+# share third party folder across file
+THIRD_PARTY = Path().home().absolute() / '.novowrap'
 
 
 def accessible(name, type_):
@@ -175,17 +180,50 @@ def get_ref(taxon, out, tmp=None):
     return None, None
 
 
-def get_blast():
+def get_blast(arg):
     """
     Get BLAST location.
     If BLAST was found, assume makeblastdb is found, too.
+    Args:
+        arg(NameSpace): args
     Return:
         blast(str): blast path
     """
+    # older than 2.8.1 is buggy
+    url = ('ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.10.0/'
+           'ncbi-blast-2.10.0+')
+    urls = {'Linux': url+'-x64-linux.tar.gz',
+            'Darwin': url+'-x64-macosx.tar.gz',
+            'Windows': url+'-x64-win64.tar.gz'}
     blast = run('blastn -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
     if blast.returncode == 0:
         return 'blastn'
-    return None
+    log.warning('Cannot find NCBI BLAST, try to install.')
+    log.info('According to Internet speed, may be slow.')
+    try:
+        # 50kb/10s=5kb/s, enough for test
+        _ = urlopen('https://www.ncbi.nlm.nih.gov', timeout=10)
+    except Exception:
+        log.critical('Cannot connect to NCBI.')
+        log.critical('Please check your Internet connection.')
+        return None
+    try:
+        # file is 86-222mb, 222mb/3600s=60kb/s, consider it's ok for users all
+        # over the world
+        down = urlopen(urls[platform.system()], timeout=3600)
+    except Exception:
+        log.critical('Cannot download BLAST.')
+        log.critical('Please manually download it from'
+                     'ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/')
+        return None
+    down_file = arg.third_party / 'BLAST_2.10.0.tar.gz'
+    with open(down_file, 'wb') as out:
+        out.write(down.read())
+    unpack_archive(down_file, arg.third_party)
+    if platform.system() == 'Windows':
+        return str(arg.third_party/'ncbi-lbast-2.10.0+'/'bin'/'blastn.exe')
+    else:
+        return str(arg.third_party/'ncbi-lbast-2.10.0+'/'bin'/'blastn')
 
 
 def blast(query, target, perc_identity=70):

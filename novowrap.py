@@ -15,7 +15,7 @@ import platform
 
 from Bio import SeqIO
 
-from utils import get_fmt, get_ref, accessible, move
+from utils import get_fmt, get_ref, accessible, get_third_party, move
 from merge import merge_main
 from validate import validate_main
 
@@ -277,7 +277,7 @@ def init_arg(arg):
     if arg.out is None:
         return success, arg
     if not accessible(arg.out, 'folder'):
-        log.critical(f'Failed create {arg.out}. Please contact the '
+        log.critical(f'Fail to create {arg.out}. Please contact the '
                      f'administrator.')
         return success, arg
     arg.out.mkdir()
@@ -287,15 +287,7 @@ def init_arg(arg):
     arg.raw.mkdir()
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
-    arg.third_party = THIRD_PARTY
-    if not accessible(arg.third_party, 'folder'):
-        log.critical(f'Failed to access {arg.third_party}.'
-                     f'Please contact the administrator.')
-        return success, arg
-    if not arg.third_party.exists():
-        log.debug(f'Create folder {arg.third_party}')
-        arg.third_party.mkdir()
-    success = True
+    success, arg.third_party = get_third_party()
     return success, arg
 
 

@@ -17,8 +17,6 @@ from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 
 log = logging.getLogger('novowrap')
-# share third party folder across file
-THIRD_PARTY = Path().home().absolute() / '.novowrap'
 
 
 def accessible(name, type_):
@@ -50,6 +48,33 @@ def accessible(name, type_):
         log.critical(f'Illegal type: {type_}')
         ok = False
     return ok
+
+
+def get_third_party():
+    """
+    Get third_party folder.
+    If do not exist, create it.
+    If cannot access, report.
+    Return:
+        success(bool): ok or not
+        third_party(Path): absolute path of third_party folder
+    """
+    third_party = Path().home().absolute() / '.novowrap'
+    success = False
+    if not third_party.exists():
+        log.debug(f'Create folder {third_party}')
+        try:
+            third_party.mkdir()
+        except Exception:
+            log.critical(f'Fail to create {third_party}.'
+                         'Please contact the administrator.')
+            return success, third_party
+    if not accessible(third_party/'test', 'file'):
+        log.critical(f'Failed to access {third_party}.'
+                     f'Please contact the administrator.')
+        return success, third_party
+    success = True
+    return success, third_party
 
 
 def move(source, dest, copy=False):
@@ -180,10 +205,12 @@ def get_ref(taxon, out, tmp=None):
     return None, None
 
 
-def get_blast(arg):
+def get_blast(THIRD_PARTY):
     """
     Get BLAST location.
     If BLAST was found, assume makeblastdb is found, too.
+    If not found, download it.
+    Also check third_party if accessible or not.
     Args:
         arg(NameSpace): args
     Return:

@@ -66,7 +66,7 @@ def get_third_party():
         try:
             third_party.mkdir()
         except Exception:
-            log.critical(f'Fail to create {third_party}.'
+            log.critical(f'Failed to create {third_party}.'
                          'Please contact the administrator.')
             return success, third_party
     if not accessible(third_party/'test', 'file'):
@@ -205,17 +205,21 @@ def get_ref(taxon, out, tmp=None):
     return None, None
 
 
-def get_blast(THIRD_PARTY):
+def get_blast():
     """
     Get BLAST location.
     If BLAST was found, assume makeblastdb is found, too.
     If not found, download it.
-    Also check third_party if accessible or not.
     Args:
         arg(NameSpace): args
     Return:
+        ok(bool): success or not
         blast(str): blast path
     """
+    ok, third_party = get_third_party()
+    if not ok:
+        return ok, ''
+    ok = False
     # older than 2.8.1 is buggy
     url = ('ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.10.0/'
            'ncbi-blast-2.10.0+')
@@ -233,7 +237,7 @@ def get_blast(THIRD_PARTY):
     except Exception:
         log.critical('Cannot connect to NCBI.')
         log.critical('Please check your Internet connection.')
-        return None
+        return ok, ''
     try:
         # file is 86-222mb, 222mb/3600s=60kb/s, consider it's ok for users all
         # over the world
@@ -242,15 +246,16 @@ def get_blast(THIRD_PARTY):
         log.critical('Cannot download BLAST.')
         log.critical('Please manually download it from'
                      'ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/')
-        return None
-    down_file = arg.third_party / 'BLAST_2.10.0.tar.gz'
+        return ok, ''
+    down_file = third_party / 'BLAST_2.10.0.tar.gz'
     with open(down_file, 'wb') as out:
         out.write(down.read())
-    unpack_archive(down_file, arg.third_party)
+    unpack_archive(down_file, third_party)
+    ok = True
     if platform.system() == 'Windows':
-        return str(arg.third_party/'ncbi-lbast-2.10.0+'/'bin'/'blastn.exe')
+        return ok, str(third_party/'ncbi-lbast-2.10.0+'/'bin'/'blastn.exe')
     else:
-        return str(arg.third_party/'ncbi-lbast-2.10.0+'/'bin'/'blastn')
+        return ok, str(third_party/'ncbi-lbast-2.10.0+'/'bin'/'blastn')
 
 
 def blast(query, target, perc_identity=70):
@@ -272,8 +277,12 @@ def blast(query, target, perc_identity=70):
     blast_out = query.with_suffix('.blast')
     blast_log = query.with_suffix('.blast_log')
     # use blastn -subject instead of makeblastdb
+    ok, blastn = get_blast()
+    if not ok:
+        log.critical('Failed to run BLAST.')
+        return None, None
     b_log = open(blast_log, 'w')
-    b_run = run(f'blastn -query {query} -subject {target} -outfmt "7 {fmt}" '
+    b_run = run(f'{blastn} -query {query} -subject {target} -outfmt "7 {fmt}" '
                 f'-out {blast_out} -strand both -perc_identity '
                 f'{perc_identity}',
                 shell=True, stdout=b_log, stderr=b_log)

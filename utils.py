@@ -226,9 +226,10 @@ def get_blast():
     urls = {'Linux': url+'-x64-linux.tar.gz',
             'Darwin': url+'-x64-macosx.tar.gz',
             'Windows': url+'-x64-win64.tar.gz'}
-    blast = run('blastn -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
+    blast = run('blastn -version', shell=True, stdout=DEVNULL, stderr=DEVNULL)
     if blast.returncode == 0:
-        return 'blastn'
+        ok = True
+        return ok, 'blastn'
     log.warning('Cannot find NCBI BLAST, try to install.')
     log.info('According to Internet speed, may be slow.')
     try:

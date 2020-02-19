@@ -246,13 +246,11 @@ def get_blast():
     urls = {'Linux': url+'-x64-linux.tar.gz',
             'Darwin': url+'-x64-macosx.tar.gz',
             'Windows': url+'-x64-win64.tar.gz'}
-    blast = run('blastn -version', shell=True, stdout=DEVNULL, stderr=DEVNULL)
-    if blast.returncode == 0:
+    blast = 'blastn'
+    if test_cmd(blast, '-version'):
         ok = True
-        return ok, 'blastn'
-    blast2 = run(str(home_blast)+' -version', shell=True, stdout=DEVNULL,
-                 stderr=DEVNULL)
-    if blast2.returncode == 0:
+        return ok, blast
+    if test_cmd(home_blast, '-version'):
         ok = True
         return ok, str(home_blast)
     log.warning('Cannot find NCBI BLAST, try to install.')
@@ -277,6 +275,7 @@ def get_blast():
     with open(down_file, 'wb') as out:
         out.write(down.read())
     unpack_archive(down_file, third_party)
+    assert test_cmd(home_blast, '-version')
     ok = True
     return ok, str(home_blast)
 

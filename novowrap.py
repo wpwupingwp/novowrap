@@ -15,7 +15,8 @@ import platform
 
 from Bio import SeqIO
 
-from utils import get_fmt, get_ref, accessible, get_third_party, move
+from utils import get_fmt, get_ref, accessible
+from utils import get_third_party, move, test_cmd
 from merge import merge_main
 from validate import validate_main
 
@@ -53,13 +54,11 @@ def get_perl(arg):
     home_perl = arg.third_party / 'perl' / 'bin' / 'perl.exe'
     # use run instead of find_executable because the later only check if exist
     # and ignore if could run
-    perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
-    if perl.returncode == 0:
+    perl = 'perl'
+    if test_cmd(perl):
         success = True
-        return success, 'perl'
-    perl2 = run(str(home_perl)+' -v', shell=True, stdout=DEVNULL,
-                stderr=DEVNULL)
-    if perl2.returncode == 0:
+        return success, perl
+    if test_cmd(home_perl):
         success = True
         return success, str(home_perl)
     if platform.system() != 'Windows':
@@ -87,7 +86,8 @@ def get_perl(arg):
         folder = arg.third_party / 'perl'
         with ZipFile(zip_file, 'r') as z:
             z.extractall(folder)
-        # fixed path in zip file
+        # fixed path in zip file, should not be wrong
+        assert test_cmd(home_perl)
         success = True
         return success, str(home_perl)
 
@@ -102,7 +102,6 @@ def get_novoplasty(arg):
         novoplasty(Path): path of perl file
     """
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.7.2.zip'
-    ok, perl
     perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
     if perl.returncode != 0:
         log.critical('Please install Perl for running NOVOPlasty.')

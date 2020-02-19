@@ -77,6 +77,23 @@ def get_third_party():
     return success, third_party
 
 
+def test_cmd(program, option='-v'):
+    """
+    Test given program and option is ok to run or not.
+    Args:
+        program(Path or str): program path, could be relative path if it can
+        be found in $PATH or %PATH%
+        option(str): option for program, usually use "-v" to show version to
+        test
+    Return:
+        success(bool): success or not
+    """
+    test = run(f'{program} {option}', shell=True, stdout=DEVNULL,
+               stderr=DEVNULL)
+    success = True if test.returncode == 0 else False
+    return success
+
+
 def move(source, dest, copy=False):
     """
     Move source to dest and return dest.

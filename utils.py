@@ -216,12 +216,12 @@ def get_blast():
         ok(bool): success or not
         blast(str): blast path
     """
-    ok, third_party = get_third_party()
+    third_party_ok, third_party = get_third_party()
     home_blast = third_party / 'ncbi-blast-2.10.0+' / 'bin' / 'blastn'
     # in Windows, ".exe" can be omitted
     # win_home_blast = home_blast.with_name('blastn.exe')
-    if not ok:
-        return ok, ''
+    if not third_party_ok:
+        return third_party_ok, ''
     ok = False
     # older than 2.8.1 is buggy
     url = ('ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.10.0/'

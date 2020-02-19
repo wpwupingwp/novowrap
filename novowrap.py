@@ -43,24 +43,34 @@ def get_perl(arg):
     Args:
         arg(NameSpace): args
     Return:
+        success(bool): success or not
         perl(str): perl location
     """
     url = ('http://strawberryperl.com/download/5.30.1.1/'
            'strawberry-perl-5.30.1.1-64bit-portable.zip')
+    success = False
+    # only Windows need it
+    home_perl = arg.third_party / 'perl' / 'bin' / 'perl.exe'
     # use run instead of find_executable because the later only check if exist
     # and ignore if could run
     perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
     if perl.returncode == 0:
-        return 'perl'
+        success = True
+        return success, 'perl'
+    perl2 = run(str(home_perl)+' -v', shell=True, stdout=DEVNULL,
+                stderr=DEVNULL)
+    if perl2.returncode == 0:
+        success = True
+        return success, str(home_perl)
     if platform.system() != 'Windows':
         log.critical('Cannot find Perl. Please follow the link '
                      'https://www.perl.org/get.html to install.')
-        return None
+        return success, ''
     else:
         log.warning('Cannot find Perl. Try to install.')
         if '64' not in platform.machine():
             log.critical(f'Unsupport machine {platform.machine()}')
-            return None
+            return success, ''
         try:
             # file is 148mb, 148mb/3000s=~50kb/s, consider it's ok for
             # most of users
@@ -70,7 +80,7 @@ def get_perl(arg):
         except Exception:
             log.critical('Cannot download Perl. Please try to manually '
                          ' install.')
-            return None
+            return success, ''
         zip_file = arg.third_party / 'strawberry-perl.zip'
         with open(zip_file, 'wb') as out:
             out.write(down.read())
@@ -78,7 +88,8 @@ def get_perl(arg):
         with ZipFile(zip_file, 'r') as z:
             z.extractall(folder)
         # fixed path in zip file
-        return str(folder/'perl'/'bin'/'perl.exe')
+        success = True
+        return success, str(home_perl)
 
 
 def get_novoplasty(arg):
@@ -91,6 +102,7 @@ def get_novoplasty(arg):
         novoplasty(Path): path of perl file
     """
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.7.2.zip'
+    ok, perl
     perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
     if perl.returncode != 0:
         log.critical('Please install Perl for running NOVOPlasty.')

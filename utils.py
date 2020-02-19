@@ -217,6 +217,9 @@ def get_blast():
         blast(str): blast path
     """
     ok, third_party = get_third_party()
+    home_blast = third_party / 'ncbi-blast-2.10.0+' / 'bin' / 'blastn'
+    # in Windows, ".exe" can be omitted
+    # win_home_blast = home_blast.with_name('blastn.exe')
     if not ok:
         return ok, ''
     ok = False
@@ -230,6 +233,11 @@ def get_blast():
     if blast.returncode == 0:
         ok = True
         return ok, 'blastn'
+    blast2 = run(str(home_blast)+' -version', shell=True, stdout=DEVNULL,
+                 stderr=DEVNULL)
+    if blast2.returncode == 0:
+        ok = True
+        return ok, str(home_blast)
     log.warning('Cannot find NCBI BLAST, try to install.')
     log.info('According to Internet speed, may be slow.')
     try:
@@ -253,10 +261,7 @@ def get_blast():
         out.write(down.read())
     unpack_archive(down_file, third_party)
     ok = True
-    if platform.system() == 'Windows':
-        return ok, str(third_party/'ncbi-lbast-2.10.0+'/'bin'/'blastn.exe')
-    else:
-        return ok, str(third_party/'ncbi-lbast-2.10.0+'/'bin'/'blastn')
+    return ok, str(home_blast)
 
 
 def blast(query, target, perc_identity=70):

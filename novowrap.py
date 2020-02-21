@@ -680,6 +680,7 @@ def assembly_main(arg_str=None):
         arg.out(Path): output path, for UI only
     """
     log.info('Welcome to novowrap.')
+    success = False
     # check arg
     if arg_str is None:
         arg = parse_args()
@@ -692,15 +693,19 @@ def assembly_main(arg_str=None):
     else:
         log.debug('Init OK.')
     cwd = Path().cwd().absolute()
+    # novoplasty put files in current folder, have to chdir to make the folder
+    # clean
     chdir(arg.out)
     # check before run
     perl = get_perl(arg.third_party)
     if perl == '':
         log.critical('Failed to get perl. Quit.')
+        chdir(cwd)
+        return success, arg.out
     novoplasty = get_novoplasty(arg.third_party)
     if novoplasty is None:
         log.critical('Quit.')
-        success = False
+        chdir(cwd)
         return success, arg.out
     # log to file
     log_file_handler = logging.FileHandler(str(arg.log/'Log.txt'))
@@ -714,9 +719,12 @@ def assembly_main(arg_str=None):
         success = assembly(arg, novoplasty)
     else:
         table = read_table(arg)
+        success_list = []
         for i in table:
             arg.input, arg.taxon = i
-            success = assembly(arg, novoplasty)
+            s = assembly(arg, novoplasty)
+            success_list.append(s)
+        success = all(success_list)
     log.info('Bye.')
     chdir(cwd)
     return success, arg.out

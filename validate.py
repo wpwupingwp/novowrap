@@ -122,16 +122,6 @@ def divide_records(fasta, output, ref_len, tmp, len_diff=0.1):
         option_files(list(Path)):  list of divided files
         info(list): file info
     """
-    def _insert_suffix(old, suffix):
-        """
-        Insert suffix before old's suffix
-        old.old_suffix -> old.suffix.old_suffix
-        """
-        old_suffix = old.suffix
-        new = old.with_suffix(suffix)
-        new = Path(str(new)+old_suffix)
-        return new
-
     options = list(SeqIO.parse(fasta, 'fasta'))
     divided = {}
     keys = ('gb,fasta,length,LSC,IRa,SSC,IRb,missing,incomplete,'
@@ -144,7 +134,7 @@ def divide_records(fasta, output, ref_len, tmp, len_diff=0.1):
     for idx, record in enumerate(options):
         skip = False
         if len(options) > 1:
-            filename = output / _insert_suffix(fasta, f'.{idx+1}').name
+            filename = output / f'{fasta.stem}_{idx+1}{fasta.suffix}'
         else:
             filename = output / fasta.name
         divided[filename] = dict((key, '') for key in keys)

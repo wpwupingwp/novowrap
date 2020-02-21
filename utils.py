@@ -139,7 +139,6 @@ def get_full_taxon(taxon):
         name = ' '.join(split[0:2])
     else:
         name = split[0]
-    Entrez.email = 'guest@example.org'
     search = Entrez.read(Entrez.esearch(db='taxonomy', term=f'"{name}"'))
     if search['Count'] == '0':
         if ' ' not in name:
@@ -173,10 +172,17 @@ def get_ref(taxon, out, tmp=None):
         out(Path): output folder
         tmp(None or Path): temp folder
     Return:
-        ref(Path): gb file
-        ref_taxon(str): taxon of reference's, may not be same with given taxon
+        ref(Path or None): gb file, None for fail
+        ref_taxon(str or None): taxon of reference's, may not be same with given taxon
     """
     log.info(f'Try to get reference of {taxon} from NCBI Genbank.')
+    Entrez.email = 'guest@example.org'
+    try:
+        Entrez.read(Entrez.esummary(db='taxonomy', id='9606'))
+    except Exception:
+        log.critical('Failed to query on NCBI Entrez server, please check your '
+                     'Internet connection.')
+        return None, None
     if tmp is None:
         tmp = out
     lineage = get_full_taxon(taxon)

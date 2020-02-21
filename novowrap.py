@@ -720,7 +720,7 @@ def assembly_main(arg_str=None):
     log.addHandler(log_file_handler)
     # start
     if arg.list is None:
-        success = assembly(arg, novoplasty)
+        success = assembly(arg, perl, novoplasty)
     else:
         table = read_table(arg)
         success_list = []

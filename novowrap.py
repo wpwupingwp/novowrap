@@ -32,17 +32,14 @@ try:
 except ImportError:
     pass
 
-# share third party folder across file
-THIRD_PARTY = Path().home().absolute() / '.novowrap'
 
-
-def get_perl(arg):
+def get_perl(third_party):
     """
     Linux and Mac have perl already.
     For Windows user, this function help to get perl.exe .
     Only support x86_64 or amd64 machine.
     Args:
-        arg(NameSpace): args
+        third_party(Path): third_party folder, absolute path
     Return:
         success(bool): success or not
         perl(str): perl location
@@ -51,7 +48,7 @@ def get_perl(arg):
            'strawberry-perl-5.30.1.1-64bit-portable.zip')
     success = False
     # only Windows need it
-    home_perl = arg.third_party / 'perl' / 'bin' / 'perl.exe'
+    home_perl = third_party / 'perl' / 'bin' / 'perl.exe'
     # use run instead of find_executable because the later only check if exist
     # and ignore if could run
     perl = 'perl'
@@ -80,10 +77,10 @@ def get_perl(arg):
             log.critical('Cannot download Perl. Please try to manually '
                          ' install.')
             return success, ''
-        zip_file = arg.third_party / 'strawberry-perl.zip'
+        zip_file = third_party / 'strawberry-perl.zip'
         with open(zip_file, 'wb') as out:
             out.write(down.read())
-        folder = arg.third_party / 'perl'
+        folder = third_party / 'perl'
         with ZipFile(zip_file, 'r') as z:
             z.extractall(folder)
         # fixed path in zip file, should not be wrong
@@ -92,25 +89,25 @@ def get_perl(arg):
         return success, str(home_perl)
 
 
-def get_novoplasty(arg):
+def get_novoplasty(third_party):
     """
     Ensure perl and novoplasty is available.
     Return novoplasty's path or None.
     Args:
-        arg(NameSpace): args
+        third_party(Path): third_party folder, absolute path
     Return:
-        novoplasty(Path): path of perl file
+        novoplasty(Path or None): path of perl file, None for fail
     """
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.7.2.zip'
     perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
     if perl.returncode != 0:
         log.critical('Please install Perl for running NOVOPlasty.')
         return None
-    filename = 'NOVOPlasty3.7.2.pl'
-    pl = arg.third_party / filename
-    if pl.exists():
+    novoplasty = (third_party / 'NOVOPlasty-NOVOPlasty3.7.2' /
+                  'NOVOPlasty3.7.2.pl')
+    if novoplasty.exists():
         log.debug('Found NOVOPlasty in third_party folder.')
-        return pl
+        return novoplasty
     log.critical('Cannot find NOVOPlasty, try to download.')
     # license warning
     log.info('\tThe program assumes that user ACCEPT the license of '
@@ -134,14 +131,12 @@ def get_novoplasty(arg):
         log.critical('Please manually download it from '
                      'https://github.com/ndierckx/NOVOPlasty')
         return None
-    zip_file = arg.third_party / 'NOVOPlasty3.7.2.zip'
+    zip_file = third_party / 'NOVOPlasty3.7.2.zip'
     with open(zip_file, 'wb') as out:
         out.write(down.read())
     with ZipFile(zip_file, 'r') as z:
         # windows and linux both use "/"
-        z.extractall(arg.third_party)
-    novoplasty = (arg.third_party / 'NOVOPlasty-NOVOPlasty3.7.2' /
-                  'NOVOPlasty3.7.2.pl')
+        z.extractall(third_party)
     log.info(f'Got {novoplasty.stem}.')
     return novoplasty
 
@@ -703,7 +698,7 @@ def assembly_main(arg_str=None):
     cwd = Path().cwd().absolute()
     chdir(arg.out)
     # check before run
-    novoplasty = get_novoplasty(arg)
+    novoplasty = get_novoplasty(arg.third_party)
     if novoplasty is None:
         log.critical('Quit.')
         success = False

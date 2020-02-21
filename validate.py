@@ -90,10 +90,11 @@ def init_arg(arg):
             # give users one more chance
             new_name = arg.out.name + f'-{randint(0, 2020):04d}'
             arg.out = arg.out.with_name(new_name)
-            if arg.out.exists():
+            if arg.out.exists() or not accessible(arg.out, 'folder'):
                 log.critical('Cannot create output folder.')
                 return success, arg
             else:
+                arg.out.mkdir()
                 log.info(f'Use {arg.out.name} instead.')
         else:
             if not accessible(arg.out, 'folder'):

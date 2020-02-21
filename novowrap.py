@@ -540,14 +540,17 @@ def organize_out(arg, seed):
     return circularized, options, merged, contigs
 
 
-def assembly(arg, novoplasty):
+def assembly(arg, perl, novoplasty):
     """
     Assembly input file by wrapping NOVOPlasty.
+    The way to find absolute path of perl seems not good enough (I forget why
+    but I remember I tried).
     Args:
         arg(NameSpace): arguments
+        perl(str): perl location, may not be absolute path
         novoplasty(Path): novoplasty file
     Return:
-        success(Bool): success or not
+        success(bool): success or not
     """
     def _patient_log():
         # hint user every 30s to avoid long time boring waiting
@@ -621,7 +624,7 @@ def assembly(arg, novoplasty):
         hint = Thread(target=_patient_log)
         hint.start()
         # ignore bad returncode
-        run(f'perl {novoplasty} -c {config_file}', shell=True,
+        run(f'{perl} {novoplasty} -c {config_file}', shell=True,
             stdout=DEVNULL, stderr=DEVNULL)
         novoplasty_is_running = False
 
@@ -697,6 +700,7 @@ def assembly_main(arg_str=None):
     # clean
     chdir(arg.out)
     # check before run
+    # seems cannot use thread to save time
     perl = get_perl(arg.third_party)
     if perl == '':
         log.critical('Failed to get perl. Quit.')
@@ -722,7 +726,7 @@ def assembly_main(arg_str=None):
         success_list = []
         for i in table:
             arg.input, arg.taxon = i
-            s = assembly(arg, novoplasty)
+            s = assembly(arg, perl, novoplasty)
             success_list.append(s)
         success = all(success_list)
     log.info('Bye.')

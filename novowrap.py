@@ -41,32 +41,28 @@ def get_perl(third_party):
     Args:
         third_party(Path): third_party folder, absolute path
     Return:
-        success(bool): success or not
-        perl(str): perl location
+        perl(str): perl location, empty for fail
     """
     url = ('http://strawberryperl.com/download/5.30.1.1/'
            'strawberry-perl-5.30.1.1-64bit-portable.zip')
-    success = False
     # only Windows need it
     home_perl = third_party / 'perl' / 'bin' / 'perl.exe'
     # use run instead of find_executable because the later only check if exist
     # and ignore if could run
     perl = 'perl'
     if test_cmd(perl):
-        success = True
-        return success, perl
+        return perl
     if test_cmd(home_perl):
-        success = True
-        return success, str(home_perl)
+        return str(home_perl)
     if platform.system() != 'Windows':
         log.critical('Cannot find Perl. Please follow the link '
                      'https://www.perl.org/get.html to install.')
-        return success, ''
+        return ''
     else:
         log.warning('Cannot find Perl. Try to install.')
         if '64' not in platform.machine():
             log.critical(f'Unsupport machine {platform.machine()}')
-            return success, ''
+            return ''
         try:
             # file is 148mb, 148mb/3000s=~50kb/s, consider it's ok for
             # most of users
@@ -76,7 +72,7 @@ def get_perl(third_party):
         except Exception:
             log.critical('Cannot download Perl. Please try to manually '
                          ' install.')
-            return success, ''
+            return ''
         zip_file = third_party / 'strawberry-perl.zip'
         with open(zip_file, 'wb') as out:
             out.write(down.read())
@@ -85,8 +81,7 @@ def get_perl(third_party):
             z.extractall(folder)
         # fixed path in zip file, should not be wrong
         assert test_cmd(home_perl)
-        success = True
-        return success, str(home_perl)
+        return str(home_perl)
 
 
 def get_novoplasty(third_party):
@@ -99,10 +94,6 @@ def get_novoplasty(third_party):
         novoplasty(Path or None): path of perl file, None for fail
     """
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.7.2.zip'
-    perl = run('perl -v', shell=True, stdout=DEVNULL, stderr=DEVNULL)
-    if perl.returncode != 0:
-        log.critical('Please install Perl for running NOVOPlasty.')
-        return None
     novoplasty = (third_party / 'NOVOPlasty-NOVOPlasty3.7.2' /
                   'NOVOPlasty3.7.2.pl')
     if novoplasty.exists():
@@ -681,7 +672,12 @@ def assembly(arg, novoplasty):
 
 def assembly_main(arg_str=None):
     """
-    For consistence, return (success, arg.out).
+    Wrap function for assembly.
+    Args:
+        arg_str(str or None): string for parse_arg
+    Return:
+        success(bool): success or not
+        arg.out(Path): output path, for UI only
     """
     log.info('Welcome to novowrap.')
     # check arg
@@ -698,6 +694,9 @@ def assembly_main(arg_str=None):
     cwd = Path().cwd().absolute()
     chdir(arg.out)
     # check before run
+    perl = get_perl(arg.third_party)
+    if perl == '':
+        log.critical('Failed to get perl. Quit.')
     novoplasty = get_novoplasty(arg.third_party)
     if novoplasty is None:
         log.critical('Quit.')

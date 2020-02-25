@@ -7,7 +7,7 @@ from subprocess import DEVNULL, run
 from threading import Thread
 from time import sleep
 from urllib.request import urlopen
-from zipfile import ZipFile
+from shutil import unpack_archive
 import argparse
 import gzip
 import logging
@@ -46,7 +46,7 @@ def get_perl(third_party):
     url = ('http://strawberryperl.com/download/5.30.1.1/'
            'strawberry-perl-5.30.1.1-64bit-portable.zip')
     # only Windows need it
-    home_perl = third_party / 'perl' / 'bin' / 'perl.exe'
+    home_perl = third_party / 'strawberry_perl' / 'perl' / 'bin' / 'perl.exe'
     # use run instead of find_executable because the later only check if exist
     # and ignore if could run
     perl = 'perl'
@@ -76,9 +76,8 @@ def get_perl(third_party):
         zip_file = third_party / 'strawberry-perl.zip'
         with open(zip_file, 'wb') as out:
             out.write(down.read())
-        folder = third_party / 'perl'
-        with ZipFile(zip_file, 'r') as z:
-            z.extractall(folder)
+        folder = third_party / 'strawberry_perl'
+        unpack_archive(zip_file, folder)
         # fixed path in zip file, should not be wrong
         assert test_cmd(home_perl)
         return str(home_perl)

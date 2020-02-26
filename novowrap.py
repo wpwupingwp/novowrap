@@ -269,6 +269,11 @@ def init_arg(arg):
             if not i.exists():
                 log.critical(f'Input file {i} does not exists.')
                 return success, arg
+    if arg.ref is not None:
+        arg.ref = Path(arg.ref).absolute()
+        if not arg.ref.exists():
+            log.critical(f'Reference file {arg.ref} does not exists.')
+            return success, arg
     arg.out = get_output(arg)
     if arg.out is None:
         return success, arg
@@ -587,7 +592,6 @@ def assembly(arg, perl, novoplasty):
     # equal to zero or not, expose to user
     # equal to inf or not, hide inside
     have_gz = ('gz' in [get_fmt(i) for i in arg.input])
-    print('have gz', have_gz)
     if arg.split != 0:
         log.info(f'Split {arg.split} pairs of reads for assembly')
         splitted = []
@@ -641,7 +645,6 @@ def assembly(arg, perl, novoplasty):
         hint = Thread(target=_patient_log)
         hint.start()
         # ignore bad returncode
-        print(f'{perl} {novoplasty} -c {config_file}')
         run(f'{perl} {novoplasty} -c {config_file}', shell=True,
             stdout=DEVNULL, stderr=DEVNULL)
         novoplasty_is_running = False

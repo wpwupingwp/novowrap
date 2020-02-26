@@ -329,6 +329,7 @@ def split(raw, number, output):
     raw = Path(raw).absolute()
     fmt = get_fmt(raw)
     if fmt != 'gz' and number == float('inf'):
+        log.debug('Skip split for "inf" and non-gz.')
         return raw, 0
     splitted = output / raw.with_suffix(f'.{number}').name
     splitted_handle = open(splitted, 'wb')
@@ -586,6 +587,7 @@ def assembly(arg, perl, novoplasty):
     # equal to zero or not, expose to user
     # equal to inf or not, hide inside
     have_gz = ('gz' in [get_fmt(i) for i in arg.input])
+    print('have gz', have_gz)
     if arg.split != 0:
         log.info(f'Split {arg.split} pairs of reads for assembly')
         splitted = []
@@ -594,7 +596,7 @@ def assembly(arg, perl, novoplasty):
             splitted.append(new)
         arg.input = splitted
     # novoplasty calls gzip, which Windows does not have
-    elif platform == 'Windows' and have_gz:
+    elif platform.system() == 'Windows' and have_gz:
         log.debug(f'Split for gz on Windows.')
         splitted = []
         for raw in arg.input:

@@ -47,11 +47,12 @@
 46. contigs and _RC_ contigs in same link
 #47. clean blastlog
 #48. validate only validate first record in input
-49. test get_perl
+#49. test get_perl
 50. failed to rotate Pinus_NC_028552
 #51. BLAST as third_party
-52. test get_blast
+#52. test get_blast
 53. shutil instead of zipfile
-54. name error in divide
-55. novoplasty directly call gzip/bzip2 to handle zip files
+#54. name error in divide
+#55. novoplasty directly call gzip/bzip2 to handle zip files
 56. cannot find ref in local folder
+57. test in Apple

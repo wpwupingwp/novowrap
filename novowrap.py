@@ -313,20 +313,23 @@ def read_table(arg):
     return inputs
 
 
-def split(raw, number=float('inf'), output):
+def split(raw, number, output):
     """
     Split reads of original file from the beginning.
     If set number to default('inf'), extract all reads.
+    If number is "inf" and format is not gz, skip split.
     Args:
         raw(str or Path): input file, coulde be fastq or gz format
         number(int or 'inf'): number of reads to split, 'inf' for no limit
         output(Path): output folder
     Return:
         splitted(Path): splitted file, fastq format
-        count(int): reads actually got
+        count(int): reads actually got, 0 for not split
     """
     raw = Path(raw).absolute()
     fmt = get_fmt(raw)
+    if fmt != 'gz' and number == float('inf'):
+        return raw, 0
     splitted = output / raw.with_suffix(f'.{number}').name
     splitted_handle = open(splitted, 'wb')
     if fmt == 'gz':
@@ -579,11 +582,23 @@ def assembly(arg, perl, novoplasty):
     log.info(f'Maximum genome size: {arg.max}')
     log.info(f'Taxonomy: {arg.taxon}')
     log.info(f'Output folder: {arg.out}')
+    # split
+    # equal to zero or not, expose to user
+    # equal to inf or not, hide inside
+    have_gz = ('gz' in [get_fmt(i) for i in arg.input])
     if arg.split != 0:
         log.info(f'Split {arg.split} pairs of reads for assembly')
         splitted = []
         for raw in arg.input:
             new, count = split(raw, arg.split, arg.tmp)
+            splitted.append(new)
+        arg.input = splitted
+    # novoplasty calls gzip, which Windows does not have
+    elif platform == 'Windows' and have_gz:
+        log.debug(f'Split for gz on Windows.')
+        splitted = []
+        for raw in arg.input:
+            new, count = split(raw, float('inf'), arg.tmp)
             splitted.append(new)
         arg.input = splitted
     # get ref

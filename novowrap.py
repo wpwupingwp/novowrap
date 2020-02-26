@@ -313,12 +313,13 @@ def read_table(arg):
     return inputs
 
 
-def split(raw, number, output):
+def split(raw, number=float('inf'), output):
     """
     Split reads of original file from the beginning.
+    If set number to default('inf'), extract all reads.
     Args:
         raw(str or Path): input file, coulde be fastq or gz format
-        number(int): number of reads to split
+        number(int or 'inf'): number of reads to split, 'inf' for no limit
         output(Path): output folder
     Return:
         splitted(Path): splitted file, fastq format
@@ -347,6 +348,8 @@ def split(raw, number, output):
     raw_handle.close()
     splitted_handle.close()
     splitted = move(splitted, splitted.with_suffix(f'.{count}'))
+    if number == float('inf') or number != count:
+        log.warning(f'Want {number} reads, acutally got {count}.')
     return splitted, count
 
 
@@ -581,8 +584,6 @@ def assembly(arg, perl, novoplasty):
         splitted = []
         for raw in arg.input:
             new, count = split(raw, arg.split, arg.tmp)
-            if count < arg.split:
-                log.warning(f'Want {arg.split} reads, acutally got {count}.')
             splitted.append(new)
         arg.input = splitted
     # get ref
@@ -623,6 +624,7 @@ def assembly(arg, perl, novoplasty):
         hint = Thread(target=_patient_log)
         hint.start()
         # ignore bad returncode
+        print(f'{perl} {novoplasty} -c {config_file}')
         run(f'{perl} {novoplasty} -c {config_file}', shell=True,
             stdout=DEVNULL, stderr=DEVNULL)
         novoplasty_is_running = False

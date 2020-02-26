@@ -53,3 +53,4 @@
 52. test get_blast
 53. shutil instead of zipfile
 54. name error in divide
+55. novoplasty directly call gzip/bzip2 to handle zip files

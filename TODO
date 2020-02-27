@@ -51,7 +51,7 @@
 50. failed to rotate Pinus_NC_028552
 #51. BLAST as third_party
 #52. test get_blast
-53. shutil instead of zipfile
+#53. shutil instead of zipfile
 #54. name error in divide
 #55. novoplasty directly call gzip/bzip2 to handle zip files
 #56. cannot find ref in local folder

@@ -7,7 +7,7 @@ from subprocess import DEVNULL, run
 from threading import Thread
 from time import sleep
 from urllib.request import urlopen
-from shutil import unpack_archive
+from zipfile import ZipFile
 import argparse
 import gzip
 import logging
@@ -77,7 +77,8 @@ def get_perl(third_party):
         with open(zip_file, 'wb') as out:
             out.write(down.read())
         folder = third_party / 'strawberry_perl'
-        unpack_archive(zip_file, folder)
+        with ZipFile(zip_file) as z:
+            z.extractall(folder)
         # fixed path in zip file, should not be wrong
         assert test_cmd(home_perl)
         return str(home_perl)
@@ -124,8 +125,10 @@ def get_novoplasty(third_party):
     zip_file = third_party / 'NOVOPlasty3.7.2.zip'
     with open(zip_file, 'wb') as out:
         out.write(down.read())
+    # novoplasty's files have illegal character ":" which cannot be extract by
+    # shutil.unpack_archive in Windows, have to use zipfile
+    # windows and linux both use "/"
     with ZipFile(zip_file, 'r') as z:
-        # windows and linux both use "/"
         z.extractall(third_party)
     log.info(f'Got {novoplasty.stem}.')
     return novoplasty

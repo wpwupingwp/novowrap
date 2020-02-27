@@ -357,7 +357,7 @@ def split(raw, number, output):
     raw_handle.close()
     splitted_handle.close()
     splitted = move(splitted, splitted.with_suffix(f'.{count}'))
-    if number == float('inf') or number != count:
+    if number != float('inf') and number != count:
         log.warning(f'Want {number} reads, acutally got {count}.')
     return splitted, count
 

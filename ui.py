@@ -91,6 +91,16 @@ def info(message):
     messagebox.showinfo(message=message)
 
 
+def after_close(frame):
+    """
+    Deiconify root before destroy.
+    """
+    def func():
+        root.deiconify()
+        frame.destroy()
+    return func
+
+
 def open_file(title, entry, single=True, entry2=None):
     """
     Set title, fill entry 1, empty entry 2.
@@ -363,6 +373,7 @@ def assembly_ui():
     ok = tk.Button(w, text='Enter', command=submit_assembly)
     ok.grid(row=row, column=1, columnspan=2, sticky='EW', padx=40)
     advance.grid_forget()
+    wroot.protocol('WM_DELETE_WINDOW', after_close(wroot))
     return
 
 
@@ -415,6 +426,7 @@ def merge_ui():
     row += 1
     ok = tk.Button(frame, text='Enter', command=submit_merge)
     ok.grid(row=row, column=1, columnspan=3, sticky='EW', pady=10)
+    wroot.protocol('WM_DELETE_WINDOW', after_close(wroot))
     return
 
 
@@ -522,6 +534,7 @@ def validate_ui():
     row += 1
     ok = tk.Button(w, text='Enter', command=submit_validate)
     ok.grid(row=row, column=0, columnspan=3, sticky='EW', padx=50, pady=10)
+    wroot.protocol('WM_DELETE_WINDOW', after_close(wroot))
     return
 
 

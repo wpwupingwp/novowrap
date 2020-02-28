@@ -3,6 +3,7 @@
 from logging import handlers
 from pathlib import Path
 from tkinter import messagebox, simpledialog, filedialog, scrolledtext
+from tkinter import font
 import logging
 import queue
 import threading
@@ -241,7 +242,7 @@ def assembly_ui():
             arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
         # call validate
         wroot.withdraw()
-        run = tk.Toplevel(root)
+        run = tk.Toplevel(root_frame)
         run.geometry(size)
         run.title('Running...')
         run.wm_transient()
@@ -257,7 +258,7 @@ def assembly_ui():
     wroot.geometry(size)
     wroot.title('Assembly')
     w = tk.Frame(wroot)
-    w.grid(row=0, sticky='WENS', padx=30)
+    w.place(relx=0.5, rely=0.5, anchor='center')
     # use variable for easily edit
     row = 0
     inputs = tk.LabelFrame(w, text='Input')
@@ -441,7 +442,7 @@ def validate_ui():
     # on top
     # wroot.wm_transient(root)
     w = tk.Frame(wroot)
-    w.grid(row=0, sticky='WENS', padx=30)
+    w.place(relx=0.5, rely=0.5, anchor='center')
     # use variable for easily edit
     row = 0
     wlabel(w, 'Input', row=row, padx=15, pady=10)
@@ -494,22 +495,21 @@ s = min(w, h) // 2
 size = f'{s}x{int(s*0.618)}'
 small_size = f'{s}x{int(s*0.618/2)}'
 big_size = f'{s}x{int(s*0.618*2)}'
-root.geometry(small_size)
+root.geometry(size)
 root.title('novowrap')
+default_font = font.nametofont('TkDefaultFont')
+default_font_cfg = default_font.configure()
+default_font.config(size=12)
 root_frame = tk.Frame(root)
-root_frame.pack(anchor='c', fill='both')
+# in center
+root_frame.place(relx=0.5, rely=0.5, anchor='center')
 # high dpi
 #root.tk.call('tk', 'scaling', 2.0)
-assembly = tk.LabelFrame(root_frame, text='')
-assembly.pack(side='left', padx=20)
-a_button1 = tk.Button(assembly, text='Assembly sequences', command=assembly_ui)
-a_button1.pack()
-merge = tk.LabelFrame(root_frame, text='')
-merge.pack(side='left', padx=10, pady=50)
-m_button1 = tk.Button(merge, text='Merge contigs', command=merge_ui)
-m_button1.pack()
-validate = tk.LabelFrame(root_frame, text='')
-validate.pack(side='left', padx=20)
-v_button1 = tk.Button(validate, text='Validate assembly', command=validate_ui)
-v_button1.pack()
+# btn->button
+assembly_btn = tk.Button(root_frame, text='Assembly sequences', command=assembly_ui)
+assembly_btn.grid(row=0, pady=10)
+merge_button = tk.Button(root_frame, text='Merge contigs', command=merge_ui)
+merge_button.grid(row=1, pady=10)
+validate_btn = tk.Button(root_frame, text='Validate assembly', command=validate_ui)
+validate_btn.grid(row=2, pady=10)
 root.mainloop()

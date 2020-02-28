@@ -60,5 +60,5 @@
 #59. retest get_
 60. test get_ in Linux
 61. change font size
-62. ui for merge
-63. after close, reopen main ui
+#62. ui for merge
+#63. after close, reopen main ui

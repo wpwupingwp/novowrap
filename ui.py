@@ -244,7 +244,7 @@ def assembly_ui():
             arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
         # call validate
         wroot.withdraw()
-        run = tk.Toplevel(root_frame)
+        run = tk.Toplevel(root)
         run.geometry(size)
         run.title('Running...')
         run.wm_transient()
@@ -370,17 +370,51 @@ def merge_ui():
     """
     UI of merge.
     """
+    def submit_merge():
+        arg_str = input_entry.get()
+        arg_out = out_entry.get()
+        if arg_out == '"Current folder"':
+            out_path = Path('.').absolute()
+        else:
+            out_path = Path(arg_out).absolute()
+        if out_path.exists():
+            out_path = out_path / 'Output'
+        if not check_output(out_path, out_entry):
+            return
+        arg_str += f' -out {out_path}'
+        print(arg_str)
+        wroot.withdraw()
+        run = tk.Toplevel(root)
+        run.geometry(size)
+        run.title('Running...')
+        run.wm_transient()
+        frame = tk.Frame(run)
+        frame.pack(fill='both')
+        scroll_text(frame)
+        r = threading.Thread(target=thread_wrap, args=(merge_main, arg_str, wroot))
+        r.start()
+
     root.iconify()
-    inputs = filedialog.askopenfilenames()
     wroot = tk.Toplevel(root)
     wroot.geometry(small_size)
     wroot.title('Merge')
     frame = tk.Frame(wroot)
-    frame.pack(fill='both')
-    scroll_text(frame)
-    arg_str = ' '.join(inputs)
-    r = threading.Thread(target=thread_wrap, args=(merge_main, arg_str, wroot))
-    r.start()
+    frame.place(relx=0.5, rely=0.5, anchor='center')
+    row = 0
+    wlabel(frame, 'Input', row=row, column=1)
+    input_entry = fentry(frame, row=row, column=2)
+    input_button = tk.Button(frame, text='Open', command=open_file(
+        'Input file', input_entry, single=False))
+    input_button.grid(row=row, column=3)
+    row += 1
+    wlabel(frame, 'Output', row=row, column=1, pady=10)
+    out_entry = fentry(frame, row=row, column=2, default='"Current folder"')
+    o_button = tk.Button(frame, text='Open', command=open_folder('Output folder',
+                                                             out_entry))
+    o_button.grid(row=row, column=3)
+    row += 1
+    ok = tk.Button(frame, text='Enter', command=submit_merge)
+    ok.grid(row=row, column=1, columnspan=3, sticky='EW', pady=10)
     return
 
 

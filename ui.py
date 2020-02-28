@@ -10,8 +10,9 @@ import threading
 import tkinter as tk
 
 from merge import merge_main
-from validate import validate_main
 from novowrap import assembly_main
+from utils import accessible
+from validate import validate_main
 
 
 # define logger
@@ -114,7 +115,8 @@ def open_folder(title, entry):
 
 def check_output(output, out_entry):
     """
-    Check given path does not exist and writable.
+    Make sure given path does not exist and writable.
+    Create folder because init_arg in validate only consider novowrap.
     """
     output = Path(output).absolute()
     if output.exists():
@@ -122,17 +124,13 @@ def check_output(output, out_entry):
         out_entry.configure(bg='red')
         return False
     else:
-        test_file = output / 'test'
-        try:
-            output.mkdir()
-            test_file.touch()
-            test_file.unlink()
-            output.rmdir()
-        except PermissionError:
+        ok = accessible(output, 'folder')
+        if not ok:
             info(f'You do not have permission to write in given output '
                  'folder. Please try another path.')
             out_entry.configure(bg='red')
             return False
+    output.mkdir()
     return True
 
 
@@ -200,7 +198,7 @@ def assembly_ui():
         if arg_out == '"Current folder"':
             out_path = Path('.').absolute() / 'Output'
         else:
-            out_path = Path(arg_out).absolute()
+            out_path = Path(arg_out).absolute() / 'Output'
         if not check_output(out_path, out_entry):
             return
         arg_str += f' -out {out_path}'
@@ -407,9 +405,9 @@ def validate_ui():
             arg_str += f' -taxon {arg_taxon}'
         arg_out = o_entry.get()
         if arg_out == '"Current folder"':
-            out_path = Path('.').absolute()
+            out_path = Path('.').absolute() / 'Output'
         else:
-            out_path = Path(arg_out).absolute()
+            out_path = Path(arg_out).absolute() / 'Output'
         if not check_output(out_path, o_entry):
             return
         arg_str += f' -out {out_path}'

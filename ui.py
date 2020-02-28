@@ -486,15 +486,6 @@ def validate_ui():
     return
 
 
-def o():
-    pass
-    # d = simpledialog.SimpleDialog(
-    #     dialog, title='dialog test', text='this is a dialog',
-    #     buttons=['yes', 'no', 'wo bu zhidao'], cancel=3, default=1)
-    # value = d.go()
-    # print(value)
-
-
 # init window
 root = tk.Tk()
 root.attributes('-topmost', 'true')
@@ -505,26 +496,20 @@ small_size = f'{s}x{int(s*0.618/2)}'
 big_size = f'{s}x{int(s*0.618*2)}'
 root.geometry(small_size)
 root.title('novowrap')
-assembly = tk.LabelFrame(root, text='')
+root_frame = tk.Frame(root)
+root_frame.pack(anchor='c', fill='both')
+# high dpi
+#root.tk.call('tk', 'scaling', 2.0)
+assembly = tk.LabelFrame(root_frame, text='')
 assembly.pack(side='left', padx=20)
 a_button1 = tk.Button(assembly, text='Assembly sequences', command=assembly_ui)
 a_button1.pack()
-merge = tk.LabelFrame(root, text='')
+merge = tk.LabelFrame(root_frame, text='')
 merge.pack(side='left', padx=10, pady=50)
 m_button1 = tk.Button(merge, text='Merge contigs', command=merge_ui)
 m_button1.pack()
-validate = tk.LabelFrame(root, text='')
+validate = tk.LabelFrame(root_frame, text='')
 validate.pack(side='left', padx=20)
 v_button1 = tk.Button(validate, text='Validate assembly', command=validate_ui)
 v_button1.pack()
-# lf = tk.LabelFrame(validate, text='Unique')
-# lf.pack(padx=20, pady=20)
-# for i in 'first,longest,none'.split(','):
-#    r = ttk.Radiobutton(lf, text=i, variable=tk.IntVar, width=10)
-#    r.pack()
-va = tk.IntVar(root)
-vb = tk.StringVar(root)
-va.set(100)
-vc = tk.DoubleVar(root, 3.14159)
-# print([i.get() for i in (va, vb, vc)])
 root.mainloop()

@@ -336,7 +336,8 @@ def parse_blast_tab(filename):
     # empty for empty
     if filename is None:
         return []
-    with open(filename, 'r', encoding='utf-8') as raw:
+    # blastn use system's default encoding
+    with open(filename, 'r')  as raw:
         for line in raw:
             if line.startswith('# BLAST'):
                 if query:

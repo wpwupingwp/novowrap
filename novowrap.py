@@ -306,7 +306,7 @@ def read_table(arg):
         inputs(list): [[f, r], taxon]
     """
     inputs = []
-    with open(arg.list, 'r', encoding='utf-8') as raw:
+    with open(arg.list, 'r') as raw:
         for line in raw:
             try:
                 f, r, taxon = line.strip().split(',')
@@ -376,6 +376,7 @@ def get_reads_len(filename):
         handle = open(filename, 'rb')
     handle.readline()
     seq = handle.readline()
+    # normally it's safe to use utf8
     seq = seq.decode('utf-8').strip()
     length = len(seq)
     handle.close()
@@ -405,7 +406,7 @@ def get_seed(ref, output, gene):
             if gene_name in genes:
                 seq = feature.extract(gb)
                 seed_file = output / f'{gene_name}.seed'
-                with open(seed_file, 'w', encoding='utf-8') as out:
+                with open(seed_file, 'w') as out:
                     out.write(f'>{gene_name}|{organism}|{accession}\n')
                     out.write(f'{seq.seq}\n')
                 seeds[gene_name] = seed_file
@@ -473,7 +474,7 @@ Insert Range strict   = 1.3
 Use Quality Scores    = no
 """
     config_file = arg.raw / f'{seed.stem}_config.ini'
-    with open(config_file, 'w', encoding='utf-8') as out:
+    with open(config_file, 'w') as out:
         out.write(config_str)
     return config_file
 
@@ -504,7 +505,7 @@ def organize_out(arg, seed):
         clean = []
         record = []
         begin = False
-        with open(old, 'r', encoding='utf-8') as raw:
+        with open(old, 'r') as raw:
             for line in raw:
                 if line.startswith('>'):
                     clean.extend(record)
@@ -518,7 +519,7 @@ def organize_out(arg, seed):
                     record.append(line)
         clean.extend(record)
         new = Path(old).with_suffix('.fasta')
-        with open(new, 'w', encoding='utf-8') as output:
+        with open(new, 'w') as output:
             for line in clean:
                 output.write(line.replace('*', ''))
         return new

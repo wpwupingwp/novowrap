@@ -215,7 +215,7 @@ def get_ref(taxon, out, tmp=None):
         content = Entrez.efetch(db='nuccore', webenv=handle['WebEnv'],
                                 query_key=handle['QueryKey'], rettype='gb',
                                 retmode='text', retmax=1)
-        with open(ref, 'w', encoding='utf-8') as _:
+        with open(ref, 'w') as _:
             _.write(content.read())
         r_gb, r_fasta = rotate_seq(ref, tmp=tmp)
         if r_gb is None:
@@ -436,7 +436,7 @@ def get_fmt(filename):
             return 'gz'
         except OSError:
             pass
-    with open(filename, 'r', encoding='utf-8') as _:
+    with open(filename, 'r') as _:
         peek = _.readline()
         if peek.startswith('>'):
             fmt = 'fasta'
@@ -653,7 +653,7 @@ def rc_regions(gb, choice='whole'):
         new_seq = rc(raw.seq)
     new_name = '_RC_' + raw.name
     new_file = gb.with_suffix('.rc.rc')
-    with open(new_file, 'w', encoding='utf-8') as _:
+    with open(new_file, 'w') as _:
         _.write(f'>{new_name}\n')
         _.write(f'{new_seq}\n')
     return new_file

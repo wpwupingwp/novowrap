@@ -477,11 +477,11 @@ def validate_main(arg_str=None):
             log.info(f'\t{i.name}')
     output_info = arg.out / f'{arg.out.name}-results.csv'
     if not output_info.exists():
-        with open(output_info, 'w', encoding='utf-8') as csv_head:
+        with open(output_info, 'w') as csv_head:
             csv_head.write('Input,Success,Seed,Length,LSC,IRa,SSC,IRb,'
                            'Missing,Incomplete,RC_region,'
                            'Reference,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n')
-    with open(output_info, 'a', encoding='utf-8') as out:
+    with open(output_info, 'a') as out:
         for record in divided:
             # format is easier than f-string for dict
             simple = divided[record]

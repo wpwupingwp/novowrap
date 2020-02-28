@@ -100,6 +100,7 @@ def open_file(title, entry, single=True, entry2=None):
             a = filedialog.askopenfilename(title=title)
         else:
             a = filedialog.askopenfilenames(title=title)
+        entry.delete(0, 'end')
         entry.insert(0, a)
         if entry2 is not None:
             entry2.delete(0, 'end')
@@ -109,6 +110,7 @@ def open_file(title, entry, single=True, entry2=None):
 def open_folder(title, entry):
     def func():
         a = filedialog.askdirectory(title=title)
+        entry.delete(0, 'end')
         entry.insert(0, a)
     return func
 
@@ -196,9 +198,11 @@ def assembly_ui():
             arg_str += f' -taxon {arg_taxon}'
         arg_out = out_entry.get()
         if arg_out == '"Current folder"':
-            out_path = Path('.').absolute() / 'Output'
+            out_path = Path('.').absolute()
         else:
-            out_path = Path(arg_out).absolute() / 'Output'
+            out_path = Path(arg_out).absolute()
+        if out_path.exists():
+            out_path = out_path / 'Output'
         if not check_output(out_path, out_entry):
             return
         arg_str += f' -out {out_path}'
@@ -405,9 +409,11 @@ def validate_ui():
             arg_str += f' -taxon {arg_taxon}'
         arg_out = o_entry.get()
         if arg_out == '"Current folder"':
-            out_path = Path('.').absolute() / 'Output'
+            out_path = Path('.').absolute()
         else:
-            out_path = Path(arg_out).absolute() / 'Output'
+            out_path = Path(arg_out).absolute()
+        if out_path.exists():
+            out_path = out_path / 'Output'
         if not check_output(out_path, o_entry):
             return
         arg_str += f' -out {out_path}'

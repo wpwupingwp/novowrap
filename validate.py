@@ -231,25 +231,30 @@ def draw(ref_gb, seq_gb, data):
     plt.figure(1, figsize=(30, 15))
     plt.title(f'Validation of {title}', pad=20)
     plt.xlabel('Base')
+    y_max = max(ref_regions['IRb'].location.end,
+                seq_regions['IRb'].location.end)
     for key, value in ref_regions.items():
         plt.plot([value.location.start, value.location.end], [0.8, 0.8],
                  marker='+', label=key, linewidth=10)
         plt.text(value.location.start+len(value)/2, 0.78, f'{len(value)} bp',
-                 fontsize=18, ha='center')
+                 fontsize=20, ha='center')
     for key, value in seq_regions.items():
         plt.plot([value.location.end, value.location.end], [0.93, 0.97],
                  'k--', linewidth=2, alpha=0.3)
         plt.text(value.location.start+len(value)/2, 0.96, f'{len(value)} bp',
-                 fontsize=18, ha='center')
+                 fontsize=20, ha='center')
         plt.plot([value.location.end, value.location.end], [0.63, 0.67],
                  'k--', linewidth=2, alpha=0.3)
     # no repeat legend
     plt.plot(0.5, 0.5, 'r-+', linewidth=5, label='Plus')
     plt.plot(0.5, 0.5, 'g-|', linewidth=5, label='Minus')
     plt.ylim([0.5, 1.1])
-    plt.xlim(left=0)
+    plt.xlim([0, y_max])
+    # usually fine
+    if y_max > 20000:
+        plt.xticks(list(range(0, y_max, 20000)))
     plt.yticks([0.65, 0.8, 0.95], labels=['Minus', 'Reference', 'Plus'])
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower left')
     for i in data:
         qstart, qend, sstart, send, sstrand, pident = i
         if sstrand == 'plus':

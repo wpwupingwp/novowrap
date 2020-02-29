@@ -229,7 +229,7 @@ def draw(ref_gb, seq_gb, data):
     ignore_offset = len(ref_regions['IRa'])*2 + len(ref_regions['SSC'])
     plt.rcParams.update({'font.size': 20, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
-    plt.title(f'Validation of {title}', pad=20)
+    plt.title(f'Validation of {title}', pad=30)
     plt.xlabel('Base')
     y_max = max(ref_regions['IRb'].location.end,
                 seq_regions['IRb'].location.end)
@@ -239,12 +239,11 @@ def draw(ref_gb, seq_gb, data):
         plt.text(value.location.start+len(value)/2, 0.78, f'{len(value)} bp',
                  fontsize=20, ha='center')
     for key, value in seq_regions.items():
-        plt.plot([value.location.end, value.location.end], [0.93, 0.97],
-                 'k--', linewidth=2, alpha=0.3)
         plt.text(value.location.start+len(value)/2, 0.96, f'{len(value)} bp',
                  fontsize=20, ha='center')
-        plt.plot([value.location.end, value.location.end], [0.63, 0.67],
-                 'k--', linewidth=2, alpha=0.3)
+        if key != 'IRb':
+            plt.axvline(x=value.location.end, ymin=0.15, ymax=0.85,
+                        linestyle='dashdot', alpha=0.5)
     # no repeat legend
     plt.plot(0.5, 0.5, 'r-+', linewidth=5, label='Plus')
     plt.plot(0.5, 0.5, 'g-|', linewidth=5, label='Minus')

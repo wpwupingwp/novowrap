@@ -227,16 +227,20 @@ def draw(ref_gb, seq_gb, data):
     seq_regions = get_regions(seq_gb)
     title = f'{seq_gb.stem} and {ref_gb.stem}'
     ignore_offset = len(ref_regions['IRa'])*2 + len(ref_regions['SSC'])
-    plt.rcParams.update({'font.size': 16, 'font.family': 'serif'})
+    plt.rcParams.update({'font.size': 20, 'font.family': 'serif'})
     plt.figure(1, figsize=(30, 15))
-    plt.title(f'Validation of {title}', pad=10)
+    plt.title(f'Validation of {title}', pad=20)
     plt.xlabel('Base')
     for key, value in ref_regions.items():
         plt.plot([value.location.start, value.location.end], [0.8, 0.8],
                  marker='+', label=key, linewidth=10)
+        plt.text(value.location.start+len(value)/2, 0.78, f'{len(value)} bp',
+                 fontsize=18, ha='center')
     for key, value in seq_regions.items():
         plt.plot([value.location.end, value.location.end], [0.93, 0.97],
                  'k--', linewidth=2, alpha=0.3)
+        plt.text(value.location.start+len(value)/2, 0.96, f'{len(value)} bp',
+                 fontsize=18, ha='center')
         plt.plot([value.location.end, value.location.end], [0.63, 0.67],
                  'k--', linewidth=2, alpha=0.3)
     # no repeat legend

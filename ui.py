@@ -546,11 +546,17 @@ s = min(w, h) // 2
 size = f'{s}x{int(s*0.618)}'
 small_size = f'{s}x{int(s*0.618/2)}'
 big_size = f'{s}x{int(s*0.618*2)}'
-root.geometry(size)
+root.geometry(small_size)
 root.title('novowrap')
+# 1366x768
+if h < 800:
+    root.tk.call('tk', 'scaling', 0.9)
+# 2k
+elif h > 1400:
+    root.tk.call('tk', 'scaling', 2.0)
 default_font = font.nametofont('TkDefaultFont')
 default_font_cfg = default_font.configure()
-default_font.config(size=12)
+#default_font.config(size=12)
 root_frame = tk.Frame(root)
 # in center
 root_frame.place(relx=0.5, rely=0.5, anchor='center')

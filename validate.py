@@ -36,8 +36,7 @@ def parse_args(arg_list=None):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     arg.add_argument('input', help='input filename')
     arg.add_argument('-r', '-ref', dest='ref', help='reference gb')
-    arg.add_argument('-t', '-taxon', dest='taxon', default='Nicotiana tabacum',
-                     help='Taxonomy name')
+    arg.add_argument('-t', '-taxon', nargs='*', dest='taxon', help='Taxonomy name')
     options = arg.add_argument_group('Option')
     options.add_argument('-i', '-perc_identity', dest='perc_identity',
                          type=float, default=0.7,
@@ -77,6 +76,18 @@ def init_arg(arg):
     if not arg.input.exists():
         log.critical(f'Input file {arg.input} does not exist.')
         return success, arg
+    if arg.ref is None and len(arg.taxon) == 0:
+        log.warning('Nor reference either taxonomy was given, use Nicotiana '
+                    'tabacum instead.')
+        arg.taxon = 'Nicotiana tabacum'
+    if len(arg.taxon) > 1:
+        # for "Genus species var. blabla", only consider genus and species
+        arg.taxon = ' '.join(arg.taxon[:2])
+    else:
+        arg.taxon = arg.taxon[0]
+    # handle quotation mark
+    arg.taxon = arg.taxon.strip('"')
+    arg.taxon = arg.taxon.strip("'")
     if arg.out is None:
         arg.out = Path(arg.input.stem+'-out').absolute()
     else:

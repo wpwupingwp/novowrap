@@ -128,30 +128,22 @@ def get_full_taxon(taxon):
     Get full lineage of given taxon, return lineage list.
     Not only contains Kingdom, Phylum, Class, Order, Family, Genus, Species.
     Arg:
-        taxon(str): given taxon name, could be common name, use quotation mark
-        if necessary
+        taxon(str): given taxon name, could be common name
     Return:
         ok(bool): query ok or not
         lineage(list): lineage list, from lower rank to higher, empty for fail
     """
-    split = taxon.split(' ')
-    # "Genus species var. blabla"
-    if len(split) >= 2 and split[0][0].isupper() and split[0][1].islower():
-        name = ' '.join(split[0:2])
-    else:
-        name = split[0]
+    # make copy
+    name = taxon.capitalize()
     try:
         search = Entrez.read(Entrez.esearch(db='taxonomy', term=f'"{name}"'))
     except Exception:
         return False, []
     if search['Count'] == '0':
         if ' ' not in name:
-            log.critical(f'Cannot find {name} in NCBI Taxonomy database.')
-            log.warning("Please check the taxon name's spell or the Internet "
-                        "connection or NCBI server's status.")
             return False, []
         if ' ' in name:
-            name = split[0]
+            name = name.split(' ')[0]
             sleep(0.5)
             try:
                 search = Entrez.read(Entrez.esearch(db='taxonomy',
@@ -159,7 +151,6 @@ def get_full_taxon(taxon):
             except Exception:
                 return [], False
             if search['Count'] == '0':
-                log.critical(f'Cannot find {name} in NCBI Taxonomy.')
                 return False, []
     taxon_id = search['IdList'][0]
     try:
@@ -200,6 +191,8 @@ def get_ref(taxon, out, tmp=None):
         if get_taxon_ok:
             break
     if not get_taxon_ok:
+        log.critical(f'Cannot find {taxon} in NCBI Taxonomy database.')
+        log.warning("Please check the taxon name's spell.")
         return None, None
     for taxon in lineage:
         rank, taxon_name = taxon

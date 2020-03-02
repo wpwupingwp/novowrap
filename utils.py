@@ -131,7 +131,8 @@ def get_full_taxon(taxon):
         taxon(str): given taxon name, could be common name, use quotation mark
         if necessary
     Return:
-        lineage(list): lineage list, from lower rank to higher
+        ok(bool): query ok or not
+        lineage(list): lineage list, from lower rank to higher, empty for fail
     """
     split = taxon.split(' ')
     # "Genus species var. blabla"
@@ -139,28 +140,37 @@ def get_full_taxon(taxon):
         name = ' '.join(split[0:2])
     else:
         name = split[0]
-    search = Entrez.read(Entrez.esearch(db='taxonomy', term=f'"{name}"'))
+    try:
+        search = Entrez.read(Entrez.esearch(db='taxonomy', term=f'"{name}"'))
+    except Exception:
+        return False, []
     if search['Count'] == '0':
         if ' ' not in name:
             log.critical(f'Cannot find {name} in NCBI Taxonomy database.')
             log.warning("Please check the taxon name's spell or the Internet "
                         "connection or NCBI server's status.")
-            return None
+            return False, []
         if ' ' in name:
             name = split[0]
             sleep(0.5)
-            search = Entrez.read(Entrez.esearch(db='taxonomy',
-                                                term=f'"{name}"'))
+            try:
+                search = Entrez.read(Entrez.esearch(db='taxonomy',
+                                                    term=f'"{name}"'))
+            except Exception:
+                return [], False
             if search['Count'] == '0':
                 log.critical(f'Cannot find {name} in NCBI Taxonomy.')
-                return None
+                return False, []
     taxon_id = search['IdList'][0]
-    record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
+    try:
+        record = Entrez.read(Entrez.efetch(db='taxonomy', id=taxon_id))[0]
+    except Exception:
+        return False, []
     # names = [i['ScientificName'] for i in record['LineageEx']]
     full_lineage = [(i['Rank'], i['ScientificName']) for i in
                     record['LineageEx']]
     full_lineage.append((record['Rank'], record['ScientificName']))
-    return reversed(full_lineage)
+    return True, reversed(full_lineage)
 
 
 def get_ref(taxon, out, tmp=None):
@@ -185,8 +195,11 @@ def get_ref(taxon, out, tmp=None):
         return None, None
     if tmp is None:
         tmp = out
-    lineage = get_full_taxon(taxon)
-    if lineage is None:
+    for try_ in range(3):
+        get_taxon_ok, lineage = get_full_taxon(taxon)
+        if get_taxon_ok:
+            break
+    if not get_taxon_ok:
         return None, None
     for taxon in lineage:
         rank, taxon_name = taxon
@@ -202,6 +215,7 @@ def get_ref(taxon, out, tmp=None):
         query = (f'''{taxon_name}[Organism] AND refseq[filter] '''
                  f'''AND (chloroplast[filter] OR plastid[filter])''')
         log.debug(f'Query from NCBI Genbank:\t{query}')
+        # seems nuccore is more stable than taxonomy database
         handle = Entrez.read(Entrez.esearch(db='nuccore', term=query,
                                             usehistory='y'))
         count = int(handle['Count'])

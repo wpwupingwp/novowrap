@@ -543,19 +543,23 @@ root = tk.Tk()
 root.attributes('-topmost', 'true')
 w, h = root.winfo_screenwidth(), root.winfo_screenheight()
 s = min(w, h) // 2
-size = f'{s}x{int(s*0.618)}'
-small_size = f'{s}x{int(s*0.618/2)}'
+size = f'{s}x{int(s*0.618)}+{w//3}+{h//3}'
+small_size = f'{s}x{int(s*0.618/2)}+{w//3}+{h//3}'
 big_size = f'{s}x{int(s*0.618*2)}'
 root.geometry(small_size)
 root.title('novowrap')
 # 1366x768
 if h < 800:
     root.tk.call('tk', 'scaling', 0.9)
+# 1440x900
+elif h < 1000:
+    root.tk.call('tk', 'scaling', 0.95)
 # 2k
 elif h > 1400:
     root.tk.call('tk', 'scaling', 2.0)
-default_font = font.nametofont('TkDefaultFont')
-default_font_cfg = default_font.configure()
+# cross-platform font?
+#default_font = font.nametofont('TkDefaultFont')
+#default_font_cfg = default_font.configure()
 #default_font.config(size=12)
 root_frame = tk.Frame(root)
 # in center

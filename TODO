@@ -16,7 +16,7 @@
 #16. split reads
 #17. auto detect reads len
 #17. auto detect mem
-# 18. add tabacum's cp as default
+#18. add tabacum's cp as default
 #19. if cannot find close related species, use whole cp as novoplasy's author recommended
 #20. novoplasty didn't use GPL, download it when run
 #21. better name, novowrap only for cp
@@ -59,6 +59,6 @@
 #58. csv result missing head
 #59. retest get_
 60. test get_ in Linux
-61. change font size
+#61. change font size
 #62. ui for merge
 #63. after close, reopen main ui

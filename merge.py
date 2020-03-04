@@ -420,16 +420,16 @@ def merge_seq(contigs, links):
         merged(list(SeqRecord)): list of merged sequences
     """
     # give 2 circular result at most
-    MAX_CIRCLE = 2
+    max_circle = 2
     # break if too much linear
-    MAX_LINEAR = 20
+    max_linear = 20
     contigs_d = {i.id: i for i in contigs}
     circular = []
     linear_d = {}
     for link, is_circle in links:
-        if len(circular) >= MAX_CIRCLE:
+        if len(circular) >= max_circle:
             break
-        elif len(linear_d) >= MAX_LINEAR:
+        elif len(linear_d) >= max_linear:
             log.debug(f'Cannot find circular assembly. Instead found '
                       '{len(circular)} linear asseblies. Break.')
             break
@@ -458,7 +458,7 @@ def merge_seq(contigs, links):
             linear_d[len(seq)] = seq
     # keep longest
     linear_long = sorted(list(linear_d.values()), key=len,
-                         reverse=True)[:MAX_LINEAR]
+                         reverse=True)[:max_linear]
     if len(circular) != 0:
         return circular
     else:

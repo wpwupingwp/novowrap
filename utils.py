@@ -84,7 +84,7 @@ def test_cmd(program, option='-v'):
         program(Path or str): program path, could be relative path if it can
         be found in $PATH or %PATH%
         option(str): option for program, usually use "-v" to show version to
-        test
+        test the program
     Return:
         success(bool): success or not
     """
@@ -186,6 +186,8 @@ def get_ref(taxon, out, tmp=None):
         return None, None
     if tmp is None:
         tmp = out
+    get_taxon_ok = False
+    lineage = []
     for try_ in range(3):
         get_taxon_ok, lineage = get_full_taxon(taxon)
         if get_taxon_ok:
@@ -240,8 +242,6 @@ def get_blast():
     Get BLAST location.
     If BLAST was found, assume makeblastdb is found, too.
     If not found, download it.
-    Args:
-        arg(NameSpace): args
     Return:
         ok(bool): success or not
         blast(str): blast path
@@ -685,7 +685,7 @@ def main():
     arg.filename = Path(arg.filename).absolute()
     tmp = Path('.').absolute()
     new_gb, new_fasta = rotate_seq(arg.filename, min_ir=arg.min_ir, tmp=tmp)
-    return
+    return new_gb, new_fasta
 
 
 if __name__ == '__main__':

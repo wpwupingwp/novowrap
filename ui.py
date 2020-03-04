@@ -2,8 +2,7 @@
 
 from logging import handlers
 from pathlib import Path
-from tkinter import messagebox, simpledialog, filedialog, scrolledtext
-from tkinter import font
+from tkinter import messagebox, filedialog, scrolledtext
 import logging
 import queue
 import threading
@@ -53,7 +52,6 @@ def scroll_text(window):
     # give poll() time to quit
     root.after(100, log.addHandler(queue_handler))
     scroll = scrolledtext.ScrolledText(window)
-    scroll.tag_config
     scroll.tag_config('INFO', foreground='black')
     scroll.tag_config('WARNING', foreground='orange')
     scroll.tag_config('ERROR', foreground='red')
@@ -342,7 +340,7 @@ def assembly_ui():
     adv_assembly.grid(row=row, padx=5)
     row += 1
     wlabel(adv_assembly, 'K-mer (23-39, odd)', row=row, column=0)
-    kmer_entry = fentry(adv_assembly, row=row, column=1, default=39)
+    kmer_entry = fentry(adv_assembly, row=row, column=1, default='39')
     row += 1
     wlabel(adv_assembly, 'Genome Size range (bp)', row=row, column=0)
     size_entry = fentry(adv_assembly, row=row, column=1,
@@ -514,7 +512,7 @@ def validate_ui():
     r_entry = fentry(ref, row=row, column=2)
     r_button = tk.Button(ref, text='Open',
                          command=open_file('Reference file (gb/fasta format)',
-                                           r_entry, t_entry))
+                                           r_entry, entry2=t_entry))
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row, padx=10, pady=8)

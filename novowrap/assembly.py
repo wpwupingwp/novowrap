@@ -15,10 +15,10 @@ import platform
 
 from Bio import SeqIO
 
-from utils import get_fmt, get_ref, accessible
-from utils import get_third_party, move, test_cmd
-from merge import merge_main
-from validate import validate_main
+from novowrap.utils import get_fmt, get_ref, accessible
+from novowrap.utils import get_third_party, move, test_cmd
+from novowrap.merge import merge_main
+from novowrap.validate import validate_main
 
 
 # define logger

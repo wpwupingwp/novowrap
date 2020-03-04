@@ -13,8 +13,8 @@ if environ.get('DISPLAY', '') == '':
 from matplotlib import pyplot as plt
 import numpy as np
 
-from utils import get_ref, blast, parse_blast_tab, accessible, move
-from utils import get_fmt, rotate_seq, get_regions, rc_regions
+from novowrap.utils import get_ref, blast, parse_blast_tab, accessible, move
+from novowrap.utils import get_fmt, rotate_seq, get_regions, rc_regions
 
 
 # define logger

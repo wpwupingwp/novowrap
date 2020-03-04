@@ -8,13 +8,9 @@ import argparse
 import logging
 
 from Bio import SeqIO
-try:
-    from graphviz import Digraph
-    have_dot = True
-except ImportError:
-    have_dot = False
+from graphviz import Digraph
 
-from utils import blast, parse_blast_tab
+from utils import blast, parse_blast_tab, test_cmd
 
 PREFIX = '_RC_'
 
@@ -29,6 +25,12 @@ except ImportError:
     pass
 # inherit logger from novowrap
 log = logging.getLogger('novowrap')
+# test dot
+if test_cmd('dot', '-V'):
+    have_dot = True
+else:
+    have_dot = False
+    log.debug('Cannot find dot, skip graphviz.')
 
 
 def parse_args(arg_list=None):

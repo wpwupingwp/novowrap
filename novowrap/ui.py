@@ -9,7 +9,7 @@ import threading
 import tkinter as tk
 
 from merge import merge_main
-from novowrap import assembly_main
+from assembly import assembly_main
 from utils import accessible
 from validate import validate_main
 

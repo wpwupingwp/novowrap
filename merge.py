@@ -185,6 +185,8 @@ def get_overlap(contigs, contigs_and_rc_fasta):
                 # skip minus
                 continue
             overlap.append(hit)
+    blast_result.unlink()
+    blast_log.unlink()
     return overlap
 
 
@@ -387,7 +389,7 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
         for j in i[0]:
             edges['link'].add((j[0], j[1]))
     # draw
-    dot_out = contigs_and_rc_fasta.with_suffix('.dot')
+    dot_out = contigs_and_rc_fasta.with_suffix('')
     if have_dot:
         dot = Digraph(engine='dot', node_attr={'shape': 'cds'})
         for i in overlap:
@@ -405,6 +407,7 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
         for edge in edges['bubble']:
             dot.edge(*edge, color='purple')
         dot.render(dot_out)
+        dot_out.unlink()
     else:
         log.debug('Cannot find graphviz, skip drawing figure.')
     # for i in links: print('->'.join([str((j[0], j[1])) for j in i[0]]))
@@ -489,6 +492,7 @@ def merge_main(arg_str=None):
     else:
         log.info(f'Got {len(merged)} assemblies.')
         SeqIO.write(merged, arg.out, 'fasta')
+    contigs_and_rc_fasta.unlink()
     return len(merged), arg.out
 
 

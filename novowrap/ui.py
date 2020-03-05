@@ -539,39 +539,43 @@ def validate_ui():
     return
 
 
-# init window
-root = tk.Tk()
-root.attributes('-topmost', 'true')
-w, h = root.winfo_screenwidth(), root.winfo_screenheight()
-s = min(w, h) // 2
-size = f'{s}x{int(s*0.618)}+{w//3}+{h//3}'
-small_size = f'{s}x{int(s*0.618/2)}+{w//3}+{h//3}'
-big_size = f'{s}x{int(s*0.618*2)}'
-root.geometry(small_size)
-root.title('novowrap')
-# 1366x768
-if h < 800:
-    root.tk.call('tk', 'scaling', 0.9)
-# 1440x900
-elif h < 1000:
-    root.tk.call('tk', 'scaling', 0.95)
-# 2k
-elif h > 1400:
-    root.tk.call('tk', 'scaling', 2.0)
-# cross-platform font?
-#default_font = font.nametofont('TkDefaultFont')
-#default_font_cfg = default_font.configure()
-#default_font.config(size=12)
-root_frame = tk.Frame(root)
-# in center
-root_frame.place(relx=0.5, rely=0.5, anchor='center')
-# high dpi
-#root.tk.call('tk', 'scaling', 2.0)
-# btn->button
-assembly_btn = tk.Button(root_frame, text='Assembly sequences', command=assembly_ui)
-assembly_btn.grid(row=0, pady=10)
-merge_button = tk.Button(root_frame, text='Merge contigs', command=merge_ui)
-merge_button.grid(row=1, pady=10)
-validate_btn = tk.Button(root_frame, text='Validate assembly', command=validate_ui)
-validate_btn.grid(row=2, pady=10)
-root.mainloop()
+def ui_main():
+    # init window
+    root = tk.Tk()
+    root.attributes('-topmost', 'true')
+    w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+    s = min(w, h) // 2
+    size = f'{s}x{int(s*0.618)}+{w//3}+{h//3}'
+    small_size = f'{s}x{int(s*0.618/2)}+{w//3}+{h//3}'
+    big_size = f'{s}x{int(s*0.618*2)}'
+    root.geometry(small_size)
+    root.title('novowrap')
+    # 1366x768
+    if h < 800:
+        root.tk.call('tk', 'scaling', 0.9)
+    # 1440x900
+    elif h < 1000:
+        root.tk.call('tk', 'scaling', 0.95)
+    # 2k
+    elif h > 1400:
+        root.tk.call('tk', 'scaling', 2.0)
+    # cross-platform font?
+    #default_font = font.nametofont('TkDefaultFont')
+    #default_font_cfg = default_font.configure()
+    #default_font.config(size=12)
+    root_frame = tk.Frame(root)
+    # in center
+    root_frame.place(relx=0.5, rely=0.5, anchor='center')
+    # high dpi
+    #root.tk.call('tk', 'scaling', 2.0)
+    # btn->button
+    assembly_btn = tk.Button(root_frame, text='Assembly sequences', command=assembly_ui)
+    assembly_btn.grid(row=0, pady=10)
+    merge_button = tk.Button(root_frame, text='Merge contigs', command=merge_ui)
+    merge_button.grid(row=1, pady=10)
+    validate_btn = tk.Button(root_frame, text='Validate assembly', command=validate_ui)
+    validate_btn.grid(row=2, pady=10)
+    root.mainloop()
+
+if __name__ == '__main__':
+    ui_main()

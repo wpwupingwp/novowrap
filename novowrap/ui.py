@@ -541,12 +541,15 @@ def validate_ui():
 
 def ui_main():
     # init window
+    global root
     root = tk.Tk()
     root.attributes('-topmost', 'true')
     w, h = root.winfo_screenwidth(), root.winfo_screenheight()
     s = min(w, h) // 2
+    global size
     size = f'{s}x{int(s*0.618)}+{w//3}+{h//3}'
     small_size = f'{s}x{int(s*0.618/2)}+{w//3}+{h//3}'
+    global big_size
     big_size = f'{s}x{int(s*0.618*2)}'
     root.geometry(small_size)
     root.title('novowrap')

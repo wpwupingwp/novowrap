@@ -63,3 +63,4 @@
 #62. ui for merge
 #63. after close, reopen main ui
 #64. pyinstaller have to remove mpl_toolkits.pyc
+#65. currently pyinstaller cannot pack to exe if use "-F"

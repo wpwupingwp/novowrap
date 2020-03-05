@@ -548,6 +548,7 @@ def ui_main():
     s = min(w, h) // 2
     global size
     size = f'{s}x{int(s*0.618)}+{w//3}+{h//3}'
+    global small_size
     small_size = f'{s}x{int(s*0.618/2)}+{w//3}+{h//3}'
     global big_size
     big_size = f'{s}x{int(s*0.618*2)}'

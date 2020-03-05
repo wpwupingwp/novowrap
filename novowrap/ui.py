@@ -381,6 +381,9 @@ def merge_ui():
     """
     def submit_merge():
         arg_str = input_entry.get()
+        if arg_str == '':
+            info('Input is required!')
+            return
         arg_out = out_entry.get()
         if arg_out == '"Current folder"':
             out_path = Path('.').absolute()

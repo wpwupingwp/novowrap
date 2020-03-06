@@ -6,7 +6,7 @@
    Or download [this](link), unzip, and then double click novowrap.exe or
    novowrap.
 # Table of Contents
-   * [Quick start](#quickstart)
+   * [Quick start](#quick start)
    * [Feature](#feature)
       * [Function](#function)
       * [Application](#application)
@@ -14,9 +14,8 @@
       * [Hardware](#hardware)
       * [Software](#software)
    * [Installation](#installation)
-      * [Software](#software)
-      * [Python module](#python-module)
-      * [Internet](#internet)
+      * [Portable](#portable)
+      * [Install with pip](#Install with pip)
    * [Usage](#usage)
       * [Quick examples](#quick-examples)
       * [Input](#input)
@@ -57,7 +56,22 @@
      For installing from pip, [Python](https://www.python.org/downloads/) is
      required. Notice that the python version should equal to or newer than
      **3.6**.
+# Installation
+## Portable
+     Download from the [link](url), unpack and run with Internet for the first
+     time.
+## Install with pip
+     1. Install Python from the [link](https://www.python.org/downloads/). 3.6
+        or newer is required.
+     
+     2. Open command line, run
+     ```
+     pip install novowrap --user
+# Usage
+## Assembly
 
+## Validate
+## Merge
 
 
 

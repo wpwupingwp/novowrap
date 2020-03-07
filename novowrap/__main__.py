@@ -6,7 +6,7 @@ from novowrap.ui import ui_main
 
 
 def main():
-    if argv[-1] == '-h':
+    if len(argv) > 1:
         assembly_main()
     try:
         ui_main()

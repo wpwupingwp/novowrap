@@ -589,7 +589,11 @@ def assembly(arg, perl, novoplasty):
             log.info(f'Input file: {i}')
     log.info(f'Minimum genome size: {arg.min}')
     log.info(f'Maximum genome size: {arg.max}')
-    log.info(f'Taxonomy: {arg.taxon}')
+    if isinstance(arg.taxon, list):
+        t_ = ' '.join(arg.taxon)
+        log.info(f'Taxonomy: {t_}')
+    else:
+        log.info(f'Taxonomy: {arg.taxon}')
     log.info(f'Output folder: {arg.out}')
     # split
     # equal to zero or not, expose to user

@@ -178,6 +178,9 @@ def get_ref(taxon, out, tmp=None):
     """
     log.info(f'Try to get reference of {taxon} from NCBI Genbank.')
     Entrez.email = 'guest@example.org'
+    # handle quotation mark
+    taxon = taxon.strip('"')
+    taxon = taxon.strip("'")
     try:
         Entrez.read(Entrez.esummary(db='taxonomy', id='9606'))
     except Exception:

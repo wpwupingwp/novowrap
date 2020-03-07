@@ -76,17 +76,16 @@ def init_arg(arg):
         log.critical(f'Input file {arg.input} does not exist.')
         return success, arg
     if arg.ref is None and len(arg.taxon) == 0:
+        # if users only use validate, it's necessary to warn users about the
+        # default taxonomy
         log.warning('Nor reference either taxonomy was given, use Nicotiana '
                     'tabacum instead.')
         arg.taxon = 'Nicotiana tabacum'
     if len(arg.taxon) > 1:
-        # for "Genus species var. blabla", only consider genus and species
+        # for "Genus species var. blabla", ignore subspecies words
         arg.taxon = ' '.join(arg.taxon[:2])
     else:
         arg.taxon = arg.taxon[0]
-    # handle quotation mark
-    arg.taxon = arg.taxon.strip('"')
-    arg.taxon = arg.taxon.strip("'")
     if arg.out is None:
         arg.out = Path(arg.input.stem+'-out').absolute()
     else:

@@ -70,6 +70,21 @@
      ```
 # Usage
 ## Command line
+     In Linux and MacOS, Python 2 is "python2" and Python 3 is "python3".
+     However, in Windows, Python 3 is called "python", too. Please notice the
+     difference.
+
+     * Show help information of each module
+     ```
+     # Windows
+     python -m novowrap.assembly -h
+     python -m novowrap.validate -h
+     python -m novowrap.merge -h
+     # Linux and MacOS
+     python3 -m novowrap.assembly -h
+     python3 -m novowrap.validate -h
+     python3 -m novowrap.merge -h
+     ```
      * Assembly and validate
      ```
      # Windows, single sample
@@ -80,10 +95,14 @@
      python3 -m novowrap -i [input1] [input2] -taxon [taxonomy]
      # Linux and MacOS, batch mode for numerous samples
      python3 -m novowrap -l [list file]
+     ```
      * Only validate
      ```
      # Windows
-     python -m novowrap 
+     python -m novowrap.validate -input [input file] -taxon [taxonomy]
+     # Linux and MacOS
+     python3 -m novowrap.validate -input [input file] -taxon [taxonomy]
+     ```
 
 
 

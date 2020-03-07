@@ -166,7 +166,7 @@ def parse_args(arg_list=None):
     reference.add_argument('-ref',
                            help='reference file, should be "gb" format with '
                            'only one record')
-    reference.add_argument('-taxon', default='Nicotiana tabacum',
+    reference.add_argument('-taxon', nargs='*', default='Nicotiana tabacum',
                            help='Taxonomy name')
     validate = arg.add_argument_group('Validate')
     validate.add_argument('-perc_identity', type=float, default=0.7,
@@ -619,6 +619,11 @@ def assembly(arg, perl, novoplasty):
         ref = Path(arg.ref).absolute()
         ref = move(ref, arg.tmp/ref.name, copy=True)
     else:
+        if len(arg.taxon) > 1:
+        # for "Genus species var. blabla", ignore subspecies words
+            arg.taxon = ' '.join(arg.taxon[:2])
+        else:
+            arg.taxon = arg.taxon[0]
         ref, arg.taxon = get_ref(arg.taxon, arg.tmp)
         if ref is None:
             log.critical('Cannot get reference.')

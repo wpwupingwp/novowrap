@@ -1,7 +1,7 @@
 # Quick start
    ```
    pip install novowrap --user
-   python -m novowrap
+   python -m novowrap input_file_1 input_file_2 -taxon taxon name
    ```
    Or download [this](link), unzip, and then double click novowrap.exe or
    novowrap.
@@ -67,11 +67,18 @@
      2. Open command line, run
      ```
      pip install novowrap --user
+     ```
 # Usage
-## Assembly
+## Command line
+     * Assembly and validate
+     ```
+     # Windows
+     python -m novowrap [input1] [input2] -taxon [taxonomy]
 
-## Validate
-## Merge
+
+
+
+## GUI
 
 
 

@@ -1,6 +1,13 @@
+#!/usr/bin/python3
+
+from sys import argv
+from novowrap.assembly import assembly_main
+from novowrap.ui import ui_main
+
+
 def main():
-    from novowrap.assembly import assembly_main
-    from novowrap.ui import ui_main
+    if argv[-1] == '-h':
+        assembly_main()
     try:
         ui_main()
     except Exception:

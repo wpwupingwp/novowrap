@@ -17,17 +17,12 @@
       * [Portable](#portable)
       * [Install with pip](#Install with pip)
    * [Usage](#usage)
-      * [Quick examples](#quick-examples)
-      * [Input](#input)
-      * [Sequence ID](#sequence-id)
-      * [Output](#output)
+      * [Command line](#command line)
+      * [Graphical user interface](#graphical user intetface)
    * [Options](#options)
-      * [Help](#help)
-      * [General](#general)
-      * [Genbank](#genbank)
-      * [Pre-process](#preprocess)
-      * [Evaluate](#evaluate)
-      * [Primer Design](#primer-design)
+      * [Assembly](#assembly)
+      * [Validate](#validate)
+      * [Merge](#merge)
    * [Performance](#performance)
 # Feature
    * Assembly chloroplast genomes from given NGS data, with minimal parameters
@@ -103,11 +98,33 @@
      # Linux and MacOS
      python3 -m novowrap.validate -input [input file] -taxon [taxonomy]
      ```
+     * Only merge
+     ```
+     # Windows
+     python -m novowrap.merge -input [input file]
+     # Linux and MacOS
+     python3 -m novowrap.merge -input [input file]
+     ```
+## Graphical user interface
+     If installed with pip,
+     ```
+     # Windows
+     python -m novowrap
+     # Linux and MacOS
+     python3 -m novowrap
+     ```
 
+     If use portable version, just double click the "novowrap.exe" or
+     "novowrap" in the folder.
 
+     Then click the button to choose which module to use. Notice that if one
+     of the option was set to the wrong value, the program will refuse to run
+     and hint the user to correct the invalid option.
+# Options
+## Assembly
+## Validate
+## Merge
 
-
-## GUI
 
 
 

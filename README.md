@@ -72,8 +72,18 @@
 ## Command line
      * Assembly and validate
      ```
+     # Windows, single sample
+     python -m novowrap -i [input1] [input2] -taxon [taxonomy]
+     # Windows, batch mode for numerous samples
+     python -m novowrap -l [list file]
+     # Linux and MacOS, single sample
+     python3 -m novowrap -i [input1] [input2] -taxon [taxonomy]
+     # Linux and MacOS, batch mode for numerous samples
+     python3 -m novowrap -l [list file]
+     * Only validate
+     ```
      # Windows
-     python -m novowrap [input1] [input2] -taxon [taxonomy]
+     python -m novowrap 
 
 
 

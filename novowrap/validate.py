@@ -34,19 +34,18 @@ log = logging.getLogger('novowrap')
 def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    arg.add_argument('input', help='input filename')
-    arg.add_argument('-r', '-ref', dest='ref', help='reference gb')
-    arg.add_argument('-t', '-taxon', nargs='*', dest='taxon', help='Taxonomy name')
+    arg.add_argument('-input', required=True, help='input filename')
+    arg.add_argument('-ref', help='reference gb')
+    arg.add_argument('-taxon', nargs='*', help='Taxonomy name')
     options = arg.add_argument_group('Option')
-    options.add_argument('-i', '-perc_identity', dest='perc_identity',
-                         type=float, default=0.7,
+    options.add_argument('-perc_identity', type=float, default=0.7,
                          help='minimum percentage of identity of BLAST, 0-100')
-    options.add_argument('-l', '-len_diff', dest='len_diff', type=float,
-                         default=0.2, help='maximum percentage of length '
-                         'differnce of query to' 'reference, 0-100')
-    options.add_argument('-s', '-seed', dest='seed',
+    options.add_argument('-len_diff', type=float, default=0.2,
+                         help='maximum percentage of length differnce of '
+                         'query to' 'reference, 0-100')
+    options.add_argument('-seed',
                          help='seed used in assembly, only for caller')
-    options.add_argument('-o', '-out', dest='out', help='output folder')
+    options.add_argument('-out', help='output folder')
     options.add_argument('-debug', action='store_true',
                          help='print debug info')
     if arg_list is None:

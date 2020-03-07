@@ -138,11 +138,10 @@ def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     inputs = arg.add_argument_group('Input')
-    inputs.add_argument('-i', '-input', dest='input', nargs='*',
+    inputs.add_argument('-input', nargs='*',
                         help='single or pair-end input, fastq or gz format')
-    inputs.add_argument('-l', '-list', dest='list',
-                        help='csv file for batch mode')
-    inputs.add_argument('-p', dest='platform', choices=['illumina', 'ion'],
+    inputs.add_argument('-list', help='csv file for batch mode')
+    inputs.add_argument('-platform', choices=['illumina', 'ion'],
                         default='illumina', help='sequencing platform')
     inputs.add_argument('-insert_size', type=int,
                         help='insert size of sequencing library')
@@ -161,7 +160,7 @@ def parse_args(arg_list=None):
                          help='maximum genome size (KB)')
     options.add_argument('-mem', default=30, type=int,
                          help='maximum memory (GB)')
-    options.add_argument('-o', '-out', dest='out', help='output folder')
+    options.add_argument('-out', help='output folder')
     options.add_argument('-debug', action='store_true', help='debug mode')
     reference = arg.add_argument_group('Reference')
     reference.add_argument('-ref',

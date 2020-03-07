@@ -36,8 +36,8 @@ else:
 def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    arg.add_argument('input', nargs='+', help='input filenames')
-    arg.add_argument('-o', '-out', dest='out', help='output filename')
+    arg.add_argument('-input', nargs='+', required=True, help='input filenames')
+    arg.add_argument('-out', help='output filename')
     if arg_list is None:
         return arg.parse_args()
     else:

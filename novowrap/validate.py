@@ -81,7 +81,9 @@ def init_arg(arg):
         log.warning('Nor reference either taxonomy was given, use Nicotiana '
                     'tabacum instead.')
         arg.taxon = 'Nicotiana tabacum'
-    if len(arg.taxon) > 1:
+    if arg.taxon is None:
+        pass
+    elif len(arg.taxon) > 1:
         # for "Genus species var. blabla", ignore subspecies words
         arg.taxon = ' '.join(arg.taxon[:2])
     else:
@@ -386,6 +388,7 @@ def validate_main(arg_str=None):
         return validated, output_info
 
     log.info(f'Input:\t{arg.input}')
+    # prefer ref because assembly passed ref
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
         fmt = get_fmt(arg.ref)

@@ -696,7 +696,7 @@ def assembly(arg, perl, novoplasty):
         n_assembly, assembly_result = merge_main(arg_str)
         if n_assembly != 0:
             arg_str = (f'{assembly_result} -ref {ref} -seed merge '
-                       f'-o {arg.out} '
+                       f'-out {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
             validate_file, report = validate_main(arg_str)

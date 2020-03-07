@@ -671,7 +671,7 @@ def assembly(arg, perl, novoplasty):
         log.info('Validate assembly results.')
         # validate merged or not?
         for i in (*circularized, *options):
-            arg_str = (f'{i} -ref {ref} -seed {seed.stem} -o {arg.out} '
+            arg_str = (f'-input {i} -ref {ref} -seed {seed.stem} -out {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
             validate_file, report = validate_main(arg_str)

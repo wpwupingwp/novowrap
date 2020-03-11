@@ -32,13 +32,14 @@
      to set. Also support batch mode.
 
      Automatic generate uniform conformation with reference (typically, start
-     from _trnH-psbA_ and SSC/LSC region have same direction with reference).
+     from _trnH-psbA_, and, SSC/LSC region have same direction with reference).
    * Merge contigs according to overlapping region. May handle Invert-Repeat
      fragments.
    * Validate assembly results by comparing the synteny and sequence homology
      with given reference (or taxonomy name).
 # Prerequisite
 ## Hardware
+
      The assembly function will calls NOVOPlasty, which requires 2 GB memory
      for 1 GB uncompressed data.
 
@@ -49,6 +50,7 @@
      dependencies (see #software). It could works if offline, but better when
      have connection.
 ## Software
+
      For portable version, no dependencies.
 
      For installing from pip, [Python](https://www.python.org/downloads/) is
@@ -56,9 +58,11 @@
      **3.6**.
 # Installation
 ## Portable
+
      Download from the [link](url), unpack and run with Internet for the first
      time.
 ## Install with pip
+
      1. Install Python from the [link](https://www.python.org/downloads/). 3.6
         or newer is required.
      
@@ -68,6 +72,7 @@
      ```
 # Usage
 ## Command line
+
      In Linux and MacOS, Python 2 is "python2" and Python 3 is "python3".
      However, in Windows, Python 3 is called "python", too. Please notice the
      difference.
@@ -109,6 +114,7 @@
      python3 -m novowrap.merge -input [input file]
      ```
 ## Graphical user interface
+
      If installed with pip,
      ```
      # Windows
@@ -126,6 +132,7 @@
 # Options
 ## Assembly
 ### General
+
      These options are for general usage.
 
      `-h` or `-help`: print help message
@@ -158,6 +165,7 @@
      create it according to input file's name
 
 ### Advanced
+
      These options are for advanced usage. If not sure, just keep the default
      value.
 
@@ -202,6 +210,7 @@
 
 ## Validate
 ### General
+
      `-h` or `-help`: print help message
 
      `-input [filename]`: input filename. Only support `fasta` format
@@ -218,6 +227,7 @@
      `-out [folder name]`: output folder, if not set, the program will auto
      create it according to input file's name
 ### Advanced
+
      `-perc_identity [number]`: the threshold of minimum percent of identity,
      used for validation with BLAST. The default value is `0.7`. Should be
      float number between 0 and 1.
@@ -231,6 +241,7 @@
      `-debug`: print debug information if set
 
 ## Merge
+
      `-h` or `-help`: print help message
 
      `-input [filename]`: input filename. Only support `fasta` format

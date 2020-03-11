@@ -28,16 +28,16 @@ unzip, and then double click `novowrap.exe` or `novowrap`.
       * [Merge](#merge)
    * [Performance](#performance)
 # Feature
-:heart: Assembly chloroplast genomes from given NGS data, with minimal
+:heavy_check_mark: Assembly chloroplast genomes from given NGS data, with minimal
 parameters to set. Also support batch mode.  
 
 Automatic generate uniform conformation with reference (typically, start from
 _trnH-psbA_, and, SSC/LSC region have same direction with reference).
 
-:yellow_heart: Merge contigs according to overlapping region. May handle
+:heavy_check_mark: Merge contigs according to overlapping region. May handle
 Invert-Repeat fragments.
 
-:blue_heart: Validate assembly results by comparing the synteny and sequence
+:heavy_check_mark: Validate assembly results by comparing the synteny and sequence
 homology with given reference (or taxonomy name).
 # Prerequisite
 ## Hardware

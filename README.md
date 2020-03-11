@@ -1,5 +1,5 @@
 # Quick start
-   ```bash
+   ```shell
    pip install novowrap --user
    # Windows
    python -m novowrap input_file_1 input_file_2 -taxon taxon name

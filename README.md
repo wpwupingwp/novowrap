@@ -48,14 +48,19 @@ The other functions could run in normal computer and have no extra
 requirements for memory, CPU, et al.
 
 The software requires Internet for the first run to install the lacking
-dependencies (see #software). It could works if offline, but better when have
+dependencies. Then, it could works if offline, but better when have
 connection.
 ## Software
-For portable version, no dependencies.
+For portable version, nothing need to be installed manually.
 
 For installing from pip, [Python](https://www.python.org/downloads/) is
 required. Notice that the python version should equal to or newer than
 **3.6**.
+
+**All third-party dependencies will be automatically installed with Internet,
+including `biopython`, `matplotlib`, `coloredlogs`, `graphviz` (python
+packages), and [NOVOPlasty](https://github.com/ndierckx/NOVOPlasty), 
+[BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download).**
 # Installation
 ## Portable
 Download from the [link](https://github.com/wpwupingwp/novowrap/releases),
@@ -258,7 +263,3 @@ software**).
 
 # Q&A
 Please submit your questions in `Issues` page :smiley:
-
-
-
-

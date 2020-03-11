@@ -67,8 +67,8 @@ installed with Internet, including `biopython`, `matplotlib`, `coloredlogs`,
 Download from the [link](https://github.com/wpwupingwp/novowrap/releases),
 unpack and run with Internet for the first time.
 ## Install with pip
-1. Install Python from the [link](https://www.python.org/downloads/). 3.6 or
-   newer is required.
+1. Install [Python](https://www.python.org/downloads/). 3.6 or newer is
+   required.
      
 2. Open command line, run
 ```shell
@@ -263,4 +263,6 @@ The software itself is licensed under AGPL-3.0 (**not include third-party
 software**).
 
 # Q&A
-Please submit your questions in `Issues` page :smiley:
+Please submit your questions in the
+[Issue](https://github.com/wpwupingwp/novowrap/issues) page :smiley:
+

@@ -31,8 +31,8 @@ unzip, and then double click `novowrap.exe` or `novowrap`.
 :heavy_check_mark: Assembly chloroplast genomes from given NGS data, with minimal
 parameters to set. Also support batch mode.  
 
-Automatic generate uniform conformation with reference (typically, start from
-_trnH-psbA_, and, SSC/LSC region have same direction with reference).
+    Automatic generate uniform conformation with reference (typically, start from 
+    _trnH-psbA_, and, SSC/LSC region have same direction with reference).
 
 :heavy_check_mark: Merge contigs according to overlapping region. May handle
 Invert-Repeat fragments.
@@ -187,10 +187,9 @@ it's unnecessary to change it
 
 `-min [number]`: minimum genome size, default is 100 kB
 
-`-max [number]`: maximum genome size, default is 200 kB. Only change
-
-`-min` and `-max` if target genome size is out of the default range. The
-program needn't to know the precise size of the genome
+`-max [number]`: maximum genome size, default is 200 kB. Only change `-min`
+and `-max` if target genome size is out of the default range. The program
+needn't to know the precise size of the genome
 
 `-mem [number]`: memory limit, the unit is GB. For instance, `-mem 8` will
 limit the memory usage to 8 GB. Should be integer
@@ -202,7 +201,7 @@ between 0 and 1.
 `-len_diff [number]`: the threshold of maximum percent of length different of
 query and reference. Used for eliminating invalid assembly results. If the
 sequence length's difference of assembly and reference genome is larger than
-the value, the assembly result will be discard. The default value is `0.2`.
+the value, the assembly result will be discarded. The default value is `0.2`.
 Should be float number between 0 and 1.
 
 `-debug`: print debug information if set
@@ -231,7 +230,7 @@ between 0 and 1.
 `-len_diff [number]`: the threshold of maximum percent of length different of
 query and reference. Used for eliminating invalid assembly results. If the
 sequence length's difference of assembly and reference genome is larger than
-the value, the assembly result will be discard. The default value is `0.2`.
+the value, the assembly result will be discarded. The default value is `0.2`.
 Should be float number between 0 and 1.
 
 `-debug`: print debug information if set
@@ -256,7 +255,7 @@ database.
 The merge module could cost seconds or minutes. It depends on input data.
 Complex relationship of contigs requires much more time.
 
-# Reference
+# Citation
 As yet unpublished.
 # License
 The software itself is licensed under

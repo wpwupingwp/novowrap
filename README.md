@@ -259,7 +259,8 @@ Complex relationship of contigs requires much more time.
 # Reference
 As yet unpublished.
 # License
-The software itself is licensed under AGPL-3.0 (**not include third-party
+The software itself is licensed under
+[AGPL-3.0](https://github.com/wpwupingwp/novowrap/blob/master/LICENSE) (**not include third-party
 software**).
 
 # Q&A

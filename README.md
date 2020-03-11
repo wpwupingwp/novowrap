@@ -53,10 +53,11 @@ For portable version, no dependencies.
 
 For installing from pip, [Python](https://www.python.org/downloads/) is
 required. Notice that the python version should equal to or newer than
-**3.6**.  # Installation
+**3.6**.
+# Installation
 ## Portable
-Download from the [link](url), unpack and run with Internet for the first
-time.
+Download from the [link](https://github.com/wpwupingwp/novowrap/releases),
+unpack and run with Internet for the first time.
 ## Install with pip
 1. Install Python from the [link](https://www.python.org/downloads/). 3.6 or
    newer is required.
@@ -67,8 +68,8 @@ pip install novowrap --user
 ```
 # Usage
 ## Command line
-In Linux and MacOS, Python 2 is "python2" and Python 3 is "python3".  However,
-in Windows, Python 3 is called "python", too. Please notice the difference.
+:exclamation: In Linux and MacOS, Python 2 is `python2` and Python 3 is `python3`.  However,
+in Windows, Python 3 is called `python`, too. Please notice the difference.
 
  * Show help information of each module
  ```shell

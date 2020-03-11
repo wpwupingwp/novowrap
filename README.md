@@ -47,7 +47,7 @@ GB uncompressed data.
 The other functions could run in normal computer and have no extra
 requirements for memory, CPU, et al.
 
-The software requires Internet for the first run to install the lacking
+The software requires Internet for the first run to install the missing
 dependencies. Then, it could works if offline, but better when have
 connection.
 ## Software
@@ -147,13 +147,13 @@ Input 1,Input 2,Taxonomy
 ```
 If only have one input file, just leave the `Input 2` column empty.
 
-`-ref [filename]`, reference file for assembly and validate, shoud be
+`-ref [filename]`, reference file for assembly and validate, should be
 `genbank` format contains *only one* chloroplast genome sequence. Extra
 sequences will be *ignored*. For automatic running, `-taxon` is recommended
 
 `-taxon [taxonomy name]`: taxonomy name of the sample, space is allowed.  For
 instance, `-taxon Oryza sativa`, will find reference chloroplast genome of
-`_Oryza sativa_` from NCBI Refseq database. If not found, will find most related
+`_Oryza sativa_` from NCBI RefSeq database. If not found, will find most related
 species' reference, `Oryza`, `Poaceae`, `Poales` et al.
 
 If `-ref` and `-taxon` were both not set, will use `_Nicotiana tabacum_`
@@ -171,7 +171,7 @@ value.
 use ion-torrent, set `-platform ion`
 
 `-insert_size [number]`: the insert size of sequencing library, should be
-interger
+integer
 
 `-seed [names]`: gene names as seeds for assembly, separated by comma, the
 default seeds are `rbcL,psaB,psaC,rrn23`
@@ -200,8 +200,8 @@ for validation with BLAST. The default value is `0.7`. Should be float number
 between 0 and 1.
 
 `-len_diff [number]`: the threshold of maximum percent of length different of
-query and reference. Used for exliminate invalid assembly result. If the
-sequence length's differnce of assembly and reference genome is larger than
+query and reference. Used for eliminating invalid assembly results. If the
+sequence length's difference of assembly and reference genome is larger than
 the value, the assembly result will be discard. The default value is `0.2`.
 Should be float number between 0 and 1.
 
@@ -213,12 +213,12 @@ Should be float number between 0 and 1.
 
 `-input [filename]`: input filename. Only support `fasta` format
 
-`-ref [filename]`, reference file for assembly and validate, shoud be
+`-ref [filename]`, reference file for assembly and validate, should be
 `genbank` or `fasta` format that contains *only one* chloroplast genome
 sequence. Extra sequences will be *ignored*.
 
-`-taxon [taxonomy name]`: taxonomy name of the the reference's species, space
-is allowed. Recommond to use same genus or family, or higher rank if it's well
+`-taxon [taxonomy name]`: taxonomy name of the reference's species, space
+is allowed. Recommend to use same genus or family, or higher rank if it's well
 known that the target taxonomy's chloroplast genome is conserved.
 
 `-out [folder name]`: output folder, if not set, the program will auto create
@@ -229,8 +229,8 @@ for validation with BLAST. The default value is `0.7`. Should be float number
 between 0 and 1.
 
 `-len_diff [number]`: the threshold of maximum percent of length different of
-query and reference. Used for exliminate invalid assembly result. If the
-sequence length's differnce of assembly and reference genome is larger than
+query and reference. Used for eliminating invalid assembly results. If the
+sequence length's difference of assembly and reference genome is larger than
 the value, the assembly result will be discard. The default value is `0.2`.
 Should be float number between 0 and 1.
 

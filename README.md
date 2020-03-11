@@ -7,7 +7,7 @@
    python -m novowrap input_file_1 input_file_2 -taxon taxon name
    ```
    Or download [the package](https://github.com/wpwupingwp/novowrap/releases),
-   unzip, and then double click novowrap.exe or novowrap.
+   unzip, and then double click `novowrap.exe` or `novowrap`.
 # Table of Contents
    * [Quick start](#quickstart)
    * [Feature](#feature)
@@ -18,10 +18,10 @@
       * [Software](#software)
    * [Installation](#installation)
       * [Portable](#portable)
-      * [Install with pip](#Install with pip)
+      * [Install with pip](#Installwithpip)
    * [Usage](#usage)
-      * [Command line](#command line)
-      * [Graphical user interface](#graphical user intetface)
+      * [Command line](#commandline)
+      * [Graphical user interface](#graphicaluserintetface)
    * [Options](#options)
       * [Assembly](#assembly)
       * [Validate](#validate)

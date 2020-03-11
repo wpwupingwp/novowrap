@@ -28,15 +28,17 @@ unzip, and then double click `novowrap.exe` or `novowrap`.
       * [Merge](#merge)
    * [Performance](#performance)
 # Feature
-   * Assembly chloroplast genomes from given NGS data, with minimal parameters
-     to set. Also support batch mode.
+:heart: Assembly chloroplast genomes from given NGS data, with minimal
+parameters to set. Also support batch mode.  
 
-     Automatic generate uniform conformation with reference (typically, start
-     from _trnH-psbA_, and, SSC/LSC region have same direction with reference).
-   * Merge contigs according to overlapping region. May handle Invert-Repeat
-     fragments.
-   * Validate assembly results by comparing the synteny and sequence homology
-     with given reference (or taxonomy name).
+Automatic generate uniform conformation with reference (typically, start from
+_trnH-psbA_, and, SSC/LSC region have same direction with reference).
+
+:yellow_heart: Merge contigs according to overlapping region. May handle
+Invert-Repeat fragments.
+
+:blue_heart: Validate assembly results by comparing the synteny and sequence
+homology with given reference (or taxonomy name).
 # Prerequisite
 ## Hardware
 The assembly function will calls NOVOPlasty, which requires 2 GB memory for 1
@@ -116,7 +118,7 @@ python -m novowrap
 python3 -m novowrap
 ```
 
-If use portable version, just double click the "novowrap.exe" or "novowrap" in
+If use portable version, just double click the `novowrap.exe` or `novowrap` in
 the folder.
 
 Then click the button to choose which module to use. Notice that if one of the
@@ -242,15 +244,20 @@ sequencing data is plentiful enough and the computer's memory is big enough
 for the data size, the assembly will be finished in minutes.
 
 The validation step usually could finished in less than one minute. If slower,
-please check the Internet connection since the program will query the NCBI
+please check the Internet connection since the program may query the NCBI
 database.
 
 The merge module could cost seconds or minutes. It depends on input data.
 Complex relationship of contigs requires much more time.
 
 # Reference
+As yet unpublished.
 # License
+The software itself is licensed under AGPL-3.0 (**not include third-party
+software**).
+
 # Q&A
+Please submit your questions in `Issues` page :smiley:
 
 
 

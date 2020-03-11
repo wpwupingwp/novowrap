@@ -1,12 +1,15 @@
 # Quick start
    ```
    pip install novowrap --user
+   # Windows
+   python -m novowrap input_file_1 input_file_2 -taxon taxon name
+   # Linux and MacOS
    python -m novowrap input_file_1 input_file_2 -taxon taxon name
    ```
-   Or download [this](link), unzip, and then double click novowrap.exe or
-   novowrap.
+   Or download [the package](https://github.com/wpwupingwp/novowrap/releases),
+   unzip, and then double click novowrap.exe or novowrap.
 # Table of Contents
-   * [Quick start](#quick start)
+   * [Quick start](#quickstart)
    * [Feature](#feature)
       * [Function](#function)
       * [Application](#application)

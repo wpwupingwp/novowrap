@@ -2,9 +2,9 @@
    ```shell
    pip install novowrap --user
    # Windows
-   python -m novowrap -input input_file_1 input_file_2 -taxon taxon name
+   python -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
    # Linux and MacOS
-   python -m novowrap -input input_file_1 input_file_2 -taxon taxon name
+   python -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
    ```
 Or download [the package](https://github.com/wpwupingwp/novowrap/releases),
 unzip, and then double click `novowrap.exe` or `novowrap`.

@@ -2,9 +2,9 @@
    ```shell
    pip install novowrap --user
    # Windows
-   python -m novowrap input_file_1 input_file_2 -taxon taxon name
+   python -m novowrap -input input_file_1 input_file_2 -taxon taxon name
    # Linux and MacOS
-   python -m novowrap input_file_1 input_file_2 -taxon taxon name
+   python -m novowrap -input input_file_1 input_file_2 -taxon taxon name
    ```
 Or download [the package](https://github.com/wpwupingwp/novowrap/releases),
 unzip, and then double click `novowrap.exe` or `novowrap`.
@@ -57,10 +57,11 @@ For installing from pip, [Python](https://www.python.org/downloads/) is
 required. Notice that the python version should equal to or newer than
 **3.6**.
 
-**All third-party dependencies will be automatically installed with Internet,
-including `biopython`, `matplotlib`, `coloredlogs`, `graphviz` (python
-packages), and [NOVOPlasty](https://github.com/ndierckx/NOVOPlasty), 
-[BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download).**
+:white_check_mark: All third-party dependencies will be automatically
+installed with Internet, including `biopython`, `matplotlib`, `coloredlogs`,
+`graphviz` (python packages), and
+[NOVOPlasty](https://github.com/ndierckx/NOVOPlasty),
+[BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download).
 # Installation
 ## Portable
 Download from the [link](https://github.com/wpwupingwp/novowrap/releases),
@@ -92,13 +93,13 @@ in Windows, Python 3 is called `python`, too. Please notice the difference.
  * Assembly and validate
  ```shell
  # Windows, single sample
- python -m novowrap -i [input1] [input2] -taxon [taxonomy]
+ python -m novowrap -input [input1] [input2] -taxon [taxonomy]
  # Windows, batch mode for numerous samples
- python -m novowrap -l [list file]
+ python -m novowrap -list [list file]
  # Linux and MacOS, single sample
- python3 -m novowrap -i [input1] [input2] -taxon [taxonomy]
+ python3 -m novowrap -input [input1] [input2] -taxon [taxonomy]
  # Linux and MacOS, batch mode for numerous samples
- python3 -m novowrap -l [list file]
+ python3 -m novowrap -list [list file]
  ```
  * Only validate
  ```shell

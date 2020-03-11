@@ -6,8 +6,8 @@
    # Linux and MacOS
    python -m novowrap input_file_1 input_file_2 -taxon taxon name
    ```
-   Or download [the package](https://github.com/wpwupingwp/novowrap/releases),
-   unzip, and then double click `novowrap.exe` or `novowrap`.
+Or download [the package](https://github.com/wpwupingwp/novowrap/releases),
+unzip, and then double click `novowrap.exe` or `novowrap`.
 # Table of Contents
    * [Quick start](#quickstart)
    * [Feature](#feature)
@@ -39,16 +39,15 @@
      with given reference (or taxonomy name).
 # Prerequisite
 ## Hardware
+The assembly function will calls NOVOPlasty, which requires 2 GB memory for 1
+GB uncompressed data.
 
-     The assembly function will calls NOVOPlasty, which requires 2 GB memory
-     for 1 GB uncompressed data.
+The other functions could run in normal computer and have no extra
+requirements for memory, CPU, et al.
 
-     The other functions could run in normal computer and have no extra
-     requirements for memory, CPU, et al.
-
-     The software requires Internet for the first run to install the lacking
-     dependencies (see #software). It could works if offline, but better when
-     have connection.
+The software requires Internet for the first run to install the lacking
+dependencies (see #software). It could works if offline, but better when have
+connection.
 ## Software
 
      For portable version, no dependencies.

@@ -14,7 +14,7 @@ import platform
 from Bio import SeqIO
 
 from novowrap.utils import get_fmt, get_ref, accessible, move
-from novowrap.third_party import get_third_party, get_perl, get_novoplasty
+from novowrap.utils import get_third_party, get_perl, get_novoplasty
 from novowrap.merge import merge_main
 from novowrap.validate import validate_main
 

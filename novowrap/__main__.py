@@ -8,6 +8,7 @@ from novowrap.ui import ui_main
 def main():
     if len(argv) > 1:
         assembly_main()
+        return
     try:
         ui_main()
     except Exception:

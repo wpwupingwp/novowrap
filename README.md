@@ -2,9 +2,13 @@
    ```shell
    pip install novowrap --user
    # Windows
+   # Initialize, need Internet
+   python -m novowrap init
    python -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
+   # Initialize, need Internet
    # Linux and MacOS
-   python -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
+   python3 -m novowrap init
+   python3 -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
    ```
 Or download [the package](https://github.com/wpwupingwp/novowrap/releases),
 unzip, and then double click `novowrap.exe` or `novowrap`.
@@ -73,6 +77,10 @@ unpack and run with Internet for the first time.
 2. Open command line, run
 ```shell
 pip install novowrap --user
+# Windows
+python -m novowrap init
+# Linux and MacOS
+python3 -m novowrap init
 ```
 # Usage
 ## Command line

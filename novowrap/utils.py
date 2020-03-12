@@ -576,19 +576,3 @@ def parse_args():
     arg.add_argument('-min_ir', type=int, default=1000,
                      help='minimum length of IR region')
     return arg.parse_args()
-
-
-def main():
-    """
-    Utilities for novowrap.
-    If run directly, rotate input file.
-    """
-    arg = parse_args()
-    arg.filename = Path(arg.filename).absolute()
-    tmp = Path('.').absolute()
-    new_gb, new_fasta = rotate_seq(arg.filename, min_ir=arg.min_ir, tmp=tmp)
-    return new_gb, new_fasta
-
-
-if __name__ == '__main__':
-    main()

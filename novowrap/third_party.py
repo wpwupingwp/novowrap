@@ -59,19 +59,23 @@ def get_third_party():
     return success, third_party
 
 
-def get_perl():
+def get_perl(third_party=None):
     """
     Linux and Mac have perl already.
     For Windows user, this function help to get perl.exe .
     Only support x86_64 or amd64 machine.
+    Args:
+        third_party(Path or None): path for install
     Return:
         perl(str): perl location, empty for fail
     """
     url = ('http://strawberryperl.com/download/5.30.1.1/'
            'strawberry-perl-5.30.1.1-64bit-portable.zip')
-    third_party_ok, third_party = get_third_party()
-    if not third_party_ok:
-        return ''
+    # have to test for threading
+    if third_party is None:
+        third_party_ok, third_party = get_third_party()
+        if not third_party_ok:
+            return ''
     # only Windows need it
     home_perl = third_party / 'strawberry_perl' / 'perl' / 'bin' / 'perl.exe'
     # use run instead of find_executable because the later only check if exist
@@ -111,17 +115,20 @@ def get_perl():
         return str(home_perl)
 
 
-def get_novoplasty():
+def get_novoplasty(third_party=None):
     """
     Ensure perl and novoplasty is available.
     Return novoplasty's path or None.
+    Args:
+        third_party(Path or None): path for install
     Return:
         novoplasty(Path or None): path of perl file, None for fail
     """
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.7.2.zip'
-    third_party_ok, third_party = get_third_party()
-    if not third_party_ok:
-        return None
+    if third_party is None:
+        third_party_ok, third_party = get_third_party()
+        if not third_party_ok:
+            return None
     novoplasty = (third_party / 'NOVOPlasty-NOVOPlasty3.7.2' /
                   'NOVOPlasty3.7.2.pl')
     if novoplasty.exists():
@@ -162,18 +169,21 @@ def get_novoplasty():
     return novoplasty
 
 
-def get_blast():
+def get_blast(third_party=None):
     """
     Get BLAST location.
     If BLAST was found, assume makeblastdb is found, too.
     If not found, download it.
+    Args:
+        third_party(Path or None): path for install
     Return:
         ok(bool): success or not
         blast(str): blast path
     """
-    third_party_ok, third_party = get_third_party()
-    if not third_party_ok:
-        return third_party_ok, ''
+    if third_party is None:
+        third_party_ok, third_party = get_third_party()
+        if not third_party_ok:
+            return third_party_ok, ''
     home_blast = third_party / 'ncbi-blast-2.10.0+' / 'bin' / 'blastn'
     # in Windows, ".exe" can be omitted
     # win_home_blast = home_blast.with_name('blastn.exe')
@@ -222,15 +232,19 @@ def third_party_main():
     """
     Use three threads to speed up.
     """
-    perl = Thread(target=get_perl)
-    novoplasty = Thread(target=get_novoplasty)
-    blast = Thread(target=get_blast)
+    third_party_ok, third_party = get_third_party()
+    if not third_party_ok:
+        return -1
+    perl = Thread(target=get_perl, args=(third_party,))
+    novoplasty = Thread(target=get_novoplasty, args=(third_party,))
+    blast = Thread(target=get_blast, args=(third_party,))
     perl.start()
     novoplasty.start()
     blast.start()
     perl.join()
     novoplasty.join()
     blast.join()
+    log.info('Done.')
 
 
 if __name__ == '__main__':

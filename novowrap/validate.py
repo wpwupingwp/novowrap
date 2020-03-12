@@ -188,7 +188,6 @@ def compare_seq(query, reference, tmp, perc_identity):
     results = []
     blast_result, blast_log = blast(Path(query), reference, perc_identity*100)
     if blast_result is None:
-        log.critical('Failed to run BLAST.')
         return None
     # only one record in file, loop is for unpack
     for query in parse_blast_tab(blast_result):

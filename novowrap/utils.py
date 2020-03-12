@@ -396,9 +396,10 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
     # get repeat seq
     repeat_fasta = repeat(filename, fmt)
     repeat_seq = SeqIO.read(repeat_fasta, 'fasta')
+    log.setLevel(logging.INFO)
     blast_result, blast_log = blast(repeat_fasta, repeat_fasta)
+    log.setLevel(logging.CRITICAL)
     if blast_result is None:
-        log.critical(f'Failed to run BLAST. See {blast_log} for details.')
         return None, None
     # clean tmp files immediately, in case of exceptions that break clean step
     repeat_fasta.unlink()

@@ -799,6 +799,7 @@ def get_all_third_party():
     """
     Use three threads to speed up.
     """
+    log.info('Try to locate or install all third-party software.')
     third_party_ok, third_party = get_third_party()
     if not third_party_ok:
         return -1

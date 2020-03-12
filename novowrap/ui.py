@@ -8,9 +8,9 @@ import queue
 import threading
 import tkinter as tk
 
+from novowrap.utils import accessible
 from novowrap.merge import merge_main
 from novowrap.assembly import assembly_main
-from novowrap.utils import accessible
 from novowrap.validate import validate_main
 
 
@@ -191,9 +191,9 @@ def assembly_ui():
         # use dialog window to choose input, usually needn't check whether
         # exists
         elif arg_input:
-            arg_str += f'-i {arg_input}'
+            arg_str += f'-input {arg_input}'
         else:
-            arg_str += f'-l {arg_input_list}'
+            arg_str += f'-list {arg_input_list}'
         arg_ref = ref_entry.get()
         # use underscore in taxon name, which NCBI could handle
         arg_taxon = taxon_entry.get().replace(' ', '_')
@@ -221,7 +221,7 @@ def assembly_ui():
         arg_insert = insert_entry.get()
         if arg_insert:
             arg_insert += f' -insert_size {arg_insert}'
-        arg_str += f' -p {platform.get()}'
+        arg_str += f' -platform {platform.get()}'
         arg_kmer = int(kmer_entry.get())
         if arg_kmer > 39 or arg_kmer < 23 or (arg_kmer % 2 != 1):
             info('K-mer should be an odd number in (23, 39)!')
@@ -380,10 +380,12 @@ def merge_ui():
     UI of merge.
     """
     def submit_merge():
-        arg_str = input_entry.get()
-        if arg_str == '':
+        arg_str = ''
+        inputs = input_entry.get()
+        if inputs == '':
             info('Input is required!')
             return
+        arg_str += f'-input {inputs}'
         arg_out = out_entry.get()
         if arg_out == '"Current folder"':
             out_path = Path('.').absolute()
@@ -438,12 +440,12 @@ def validate_ui():
     def submit_validate():
         # prepare arg_str
         arg_str = ''
-        arg_input = i_entry.get()
-        if arg_input == '':
+        inputs = i_entry.get()
+        if inputs == '':
             info('Input is required!')
             return
         else:
-            arg_str += arg_input
+            arg_str += f'-input {inputs}'
         arg_ref = r_entry.get()
         # use underscore in taxon name, which NCBI could handle
         arg_taxon = t_entry.get().replace(' ', '_')

@@ -619,6 +619,7 @@ def assembly_main(arg_str=None):
         arg = parse_args()
     else:
         arg = parse_args(arg_str.split(' '))
+    print('asdfasdfa')
     success, arg = init_arg(arg)
     if not success:
         log.critical('Quit.')

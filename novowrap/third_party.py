@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.request import urlopen
 from zipfile import ZipFile
 from shutil import unpack_archive
+from threading import Thread
 import logging
 import platform
 
@@ -58,18 +59,19 @@ def get_third_party():
     return success, third_party
 
 
-def get_perl(third_party):
+def get_perl():
     """
     Linux and Mac have perl already.
     For Windows user, this function help to get perl.exe .
     Only support x86_64 or amd64 machine.
-    Args:
-        third_party(Path): third_party folder, absolute path
     Return:
         perl(str): perl location, empty for fail
     """
     url = ('http://strawberryperl.com/download/5.30.1.1/'
            'strawberry-perl-5.30.1.1-64bit-portable.zip')
+    third_party_ok, third_party = get_third_party()
+    if not third_party_ok:
+        return ''
     # only Windows need it
     home_perl = third_party / 'strawberry_perl' / 'perl' / 'bin' / 'perl.exe'
     # use run instead of find_executable because the later only check if exist
@@ -109,16 +111,17 @@ def get_perl(third_party):
         return str(home_perl)
 
 
-def get_novoplasty(third_party):
+def get_novoplasty():
     """
     Ensure perl and novoplasty is available.
     Return novoplasty's path or None.
-    Args:
-        third_party(Path): third_party folder, absolute path
     Return:
         novoplasty(Path or None): path of perl file, None for fail
     """
     url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.7.2.zip'
+    third_party_ok, third_party = get_third_party()
+    if not third_party_ok:
+        return None
     novoplasty = (third_party / 'NOVOPlasty-NOVOPlasty3.7.2' /
                   'NOVOPlasty3.7.2.pl')
     if novoplasty.exists():
@@ -169,11 +172,11 @@ def get_blast():
         blast(str): blast path
     """
     third_party_ok, third_party = get_third_party()
+    if not third_party_ok:
+        return third_party_ok, ''
     home_blast = third_party / 'ncbi-blast-2.10.0+' / 'bin' / 'blastn'
     # in Windows, ".exe" can be omitted
     # win_home_blast = home_blast.with_name('blastn.exe')
-    if not third_party_ok:
-        return third_party_ok, ''
     ok = False
     # older than 2.8.1 is buggy
     url = ('ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.10.0/'
@@ -215,3 +218,20 @@ def get_blast():
     return ok, str(home_blast)
 
 
+def third_party_main():
+    """
+    Use three threads to speed up.
+    """
+    perl = Thread(target=get_perl)
+    novoplasty = Thread(target=get_novoplasty)
+    blast = Thread(target=get_blast)
+    perl.start()
+    novoplasty.start()
+    blast.start()
+    perl.join()
+    novoplasty.join()
+    blast.join()
+
+
+if __name__ == '__main__':
+    third_party_main()

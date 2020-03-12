@@ -6,8 +6,6 @@ from random import randint
 from subprocess import DEVNULL, run
 from threading import Thread
 from time import sleep
-from urllib.request import urlopen
-from zipfile import ZipFile
 import argparse
 import gzip
 import logging
@@ -15,8 +13,8 @@ import platform
 
 from Bio import SeqIO
 
-from novowrap.utils import get_fmt, get_ref, accessible
-from novowrap.utils import get_third_party, move, test_cmd
+from novowrap.utils import get_fmt, get_ref, accessible, move
+from novowrap.third_party import get_third_party, get_perl, get_novoplasty
 from novowrap.merge import merge_main
 from novowrap.validate import validate_main
 
@@ -31,107 +29,6 @@ try:
     coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
 except ImportError:
     pass
-
-
-def get_perl(third_party):
-    """
-    Linux and Mac have perl already.
-    For Windows user, this function help to get perl.exe .
-    Only support x86_64 or amd64 machine.
-    Args:
-        third_party(Path): third_party folder, absolute path
-    Return:
-        perl(str): perl location, empty for fail
-    """
-    url = ('http://strawberryperl.com/download/5.30.1.1/'
-           'strawberry-perl-5.30.1.1-64bit-portable.zip')
-    # only Windows need it
-    home_perl = third_party / 'strawberry_perl' / 'perl' / 'bin' / 'perl.exe'
-    # use run instead of find_executable because the later only check if exist
-    # and ignore if could run
-    perl = 'perl'
-    if test_cmd(perl):
-        return perl
-    if test_cmd(home_perl):
-        return str(home_perl)
-    if platform.system() != 'Windows':
-        log.critical('Cannot find Perl. Please follow the link '
-                     'https://www.perl.org/get.html to install.')
-        return ''
-    else:
-        log.warning('Cannot find Perl. Try to install.')
-        if '64' not in platform.machine():
-            log.critical(f'Unsupport machine {platform.machine()}')
-            return ''
-        try:
-            # file is 148mb, 148mb/3000s=~50kb/s, consider it's ok for
-            # most of users
-            log.info('Download may be slow. Please consider manualy install '
-                     'Perl according to https://www.perl.org/get.html ')
-            down = urlopen(url, timeout=3000)
-        except Exception:
-            log.critical('Cannot download Perl. Please try to manually '
-                         ' install.')
-            return ''
-        zip_file = third_party / 'strawberry-perl.zip'
-        with open(zip_file, 'wb') as out:
-            out.write(down.read())
-        folder = third_party / 'strawberry_perl'
-        with ZipFile(zip_file) as z:
-            z.extractall(folder)
-        # fixed path in zip file, should not be wrong
-        assert test_cmd(home_perl)
-        return str(home_perl)
-
-
-def get_novoplasty(third_party):
-    """
-    Ensure perl and novoplasty is available.
-    Return novoplasty's path or None.
-    Args:
-        third_party(Path): third_party folder, absolute path
-    Return:
-        novoplasty(Path or None): path of perl file, None for fail
-    """
-    url = 'https://github.com/ndierckx/NOVOPlasty/archive/NOVOPlasty3.7.2.zip'
-    novoplasty = (third_party / 'NOVOPlasty-NOVOPlasty3.7.2' /
-                  'NOVOPlasty3.7.2.pl')
-    if novoplasty.exists():
-        log.debug('Found NOVOPlasty in third_party folder.')
-        return novoplasty
-    log.critical('Cannot find NOVOPlasty, try to download.')
-    # license warning
-    log.info('\tThe program assumes that user ACCEPT the license of '
-             'NOVOPlasty. ')
-    log.info('\tIF NOT, please terminate the running.')
-    log.info('\tSee https://raw.githubusercontent.com/'
-             'ndierckx/NOVOPlasty/ for details.')
-    try:
-        # 126kb/10s=12.6kb/s, enough for test
-        _ = urlopen('https://github.com', timeout=10)
-    except Exception:
-        log.critical('Cannot connect to github.com.')
-        log.critical('Please check your Internet connection.')
-        return None
-    log.info('Due to connection speed, may need minutes. Please be patient.')
-    try:
-        # file is ~18mb, 18mb/360s=50kb/s, consider it's ok for most of users
-        down = urlopen(url, timeout=360)
-    except Exception:
-        log.critical('Cannot download NOVOPlasty.')
-        log.critical('Please manually download it from '
-                     'https://github.com/ndierckx/NOVOPlasty')
-        return None
-    zip_file = third_party / 'NOVOPlasty3.7.2.zip'
-    with open(zip_file, 'wb') as out:
-        out.write(down.read())
-    # novoplasty's files have illegal character ":" which cannot be extract by
-    # shutil.unpack_archive in Windows, have to use zipfile
-    # windows and linux both use "/"
-    with ZipFile(zip_file, 'r') as z:
-        z.extractall(third_party)
-    log.info(f'Got {novoplasty.stem}.')
-    return novoplasty
 
 
 def parse_args(arg_list=None):

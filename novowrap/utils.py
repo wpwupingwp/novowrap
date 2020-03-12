@@ -18,6 +18,16 @@ from Bio.Seq import reverse_complement as rc
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 
+# define logger
+FMT = '%(asctime)s %(levelname)-8s %(message)s'
+DATEFMT = '%H:%M:%S'
+logging.basicConfig(format=FMT, datefmt=DATEFMT, level=logging.INFO)
+log = logging.getLogger('novowrap')
+try:
+    import coloredlogs
+    coloredlogs.install(level=logging.INFO, fmt=FMT, datefmt=DATEFMT)
+except ImportError:
+    pass
 log = logging.getLogger('novowrap')
 
 

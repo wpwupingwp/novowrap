@@ -52,8 +52,7 @@ The other functions could run in normal computer and have no extra
 requirements for memory, CPU, et al.
 
 The software requires Internet for the first run to install the missing
-dependencies. Then, it could works if offline, but better when have
-connection.
+dependencies. Then, it could works if offline, but better with connection.
 ## Software
 For portable version, nothing need to be installed manually.
 
@@ -64,8 +63,10 @@ required. Notice that the python version should equal to or newer than
 :white_check_mark: All third-party dependencies will be automatically
 installed with Internet, including `biopython`, `matplotlib`, `coloredlogs`,
 `graphviz` (python packages), and
+[perl(for Windows only)](http://strawberryperl.com/download/5.30.1.1/strawberry-perl-5.30.1.1-64bit-portable.zip), 
 [NOVOPlasty](https://github.com/ndierckx/NOVOPlasty),
 [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download).
+
 # Installation
 ## Portable
 Download from the [link](https://github.com/wpwupingwp/novowrap/releases),
@@ -273,4 +274,9 @@ software**).
 # Q&A
 Please submit your questions in the
 [Issue](https://github.com/wpwupingwp/novowrap/issues) page :smiley:
+
+* Q: I got error message that the program failed to install perl/BLAST.
+
+  A: Uncommonly, users in specified area have connection issue for those
+  website. Users have to manually download packages and install.
 

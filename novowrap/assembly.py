@@ -591,7 +591,7 @@ def assembly(arg, perl, novoplasty):
         if len(all_input) == 0:
             return success
         log.info('Try to assembly contigs generated from each seed.')
-        arg_str = f'{all_input} -o {arg.out/"Raw"/"merge_seed.fasta"}'
+        arg_str = f'-input {all_input} -o {arg.out/"Raw"/"merge_seed.fasta"}'
         n_assembly, assembly_result = merge_main(arg_str)
         if n_assembly != 0:
             arg_str = (f'{assembly_result} -ref {ref} -seed merge '

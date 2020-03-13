@@ -35,8 +35,8 @@ unzip, and then double click `novowrap.exe` or `novowrap`.
 :heavy_check_mark: Assembly chloroplast genomes from given NGS data, with minimal
 parameters to set. Also support batch mode.  
 
-    Automatic generate uniform conformation with reference (typically, start from 
-    _trnH-psbA_, and, SSC/LSC region have same direction with reference).
+Automatic generate uniform conformation with reference (typically, start from 
+_trnH-psbA_, and, SSC/LSC region have same direction with reference).
 
 :heavy_check_mark: Merge contigs according to overlapping region. May handle
 Invert-Repeat fragments.

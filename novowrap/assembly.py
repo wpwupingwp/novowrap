@@ -594,7 +594,7 @@ def assembly(arg, perl, novoplasty):
         arg_str = f'-input {all_input} -o {arg.out/"Raw"/"merge_seed.fasta"}'
         n_assembly, assembly_result = merge_main(arg_str)
         if n_assembly != 0:
-            arg_str = (f'{assembly_result} -ref {ref} -seed merge '
+            arg_str = (f'-input {assembly_result} -ref {ref} -seed merge '
                        f'-out {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')

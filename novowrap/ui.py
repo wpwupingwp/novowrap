@@ -405,7 +405,8 @@ def merge_ui():
         frame = tk.Frame(run)
         frame.pack(fill='both')
         scroll_text(frame)
-        r = threading.Thread(target=thread_wrap, args=(merge_main, arg_str, wroot))
+        r = threading.Thread(target=thread_wrap,
+                             args=(merge_main, arg_str, wroot))
         r.start()
 
     root.iconify()
@@ -417,14 +418,15 @@ def merge_ui():
     row = 0
     wlabel(frame, 'Input', row=row, column=1)
     input_entry = fentry(frame, row=row, column=2)
-    input_button = tk.Button(frame, text='Open', command=open_file(
-        'Input file', input_entry, single=False))
+    input_button = tk.Button(frame, text='Open',
+                             command=open_file('Input file', input_entry,
+                                               single=False))
     input_button.grid(row=row, column=3)
     row += 1
     wlabel(frame, 'Output', row=row, column=1, pady=10)
     out_entry = fentry(frame, row=row, column=2, default='"Current folder"')
-    o_button = tk.Button(frame, text='Open', command=open_folder('Output folder',
-                                                             out_entry))
+    o_button = tk.Button(frame, text='Open',
+                         command=open_folder('Output folder', out_entry))
     o_button.grid(row=row, column=3)
     row += 1
     ok = tk.Button(frame, text='Enter', command=submit_merge)
@@ -566,22 +568,26 @@ def ui_main():
     elif h > 1400:
         root.tk.call('tk', 'scaling', 2.0)
     # cross-platform font?
-    #default_font = font.nametofont('TkDefaultFont')
-    #default_font_cfg = default_font.configure()
-    #default_font.config(size=12)
+    # default_font = font.nametofont('TkDefaultFont')
+    # default_font_cfg = default_font.configure()
+    # default_font.config(size=12)
     root_frame = tk.Frame(root)
     # in center
     root_frame.place(relx=0.5, rely=0.5, anchor='center')
     # high dpi
-    #root.tk.call('tk', 'scaling', 2.0)
+    # root.tk.call('tk', 'scaling', 2.0)
     # btn->button
-    assembly_btn = tk.Button(root_frame, text='Assembly sequences', command=assembly_ui)
+    assembly_btn = tk.Button(root_frame, text='Assembly sequences',
+                             command=assembly_ui)
     assembly_btn.grid(row=0, pady=10)
-    merge_button = tk.Button(root_frame, text='Merge contigs', command=merge_ui)
+    merge_button = tk.Button(root_frame, text='Merge contigs',
+                             command=merge_ui)
     merge_button.grid(row=1, pady=10)
-    validate_btn = tk.Button(root_frame, text='Validate assembly', command=validate_ui)
+    validate_btn = tk.Button(root_frame, text='Validate assembly',
+                             command=validate_ui)
     validate_btn.grid(row=2, pady=10)
     root.mainloop()
+
 
 if __name__ == '__main__':
     ui_main()

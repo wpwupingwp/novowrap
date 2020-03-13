@@ -7,7 +7,6 @@ from threading import Thread
 from time import sleep
 from urllib.request import urlopen
 from zipfile import ZipFile
-import argparse
 import gzip
 import logging
 import platform
@@ -142,7 +141,8 @@ def get_ref(taxon, out, tmp=None):
         tmp(None or Path): temp folder
     Return:
         ref(Path or None): gb file, None for fail
-        ref_taxon(str or None): taxon of reference's, may not be same with given taxon
+        ref_taxon(str or None): taxon of reference's, may not be same with
+        given taxon
     """
     log.info(f'Try to get reference of {taxon} from NCBI Genbank.')
     Entrez.email = 'guest@example.org'
@@ -152,8 +152,8 @@ def get_ref(taxon, out, tmp=None):
     try:
         Entrez.read(Entrez.esummary(db='taxonomy', id='9606'))
     except Exception:
-        log.critical('Failed to query on NCBI Entrez server, please check your '
-                     'Internet connection.')
+        log.critical('Failed to query on NCBI Entrez server, please check '
+                     'your Internet connection.')
         return None, None
     if tmp is None:
         tmp = out
@@ -259,7 +259,7 @@ def parse_blast_tab(filename):
     if filename is None:
         return []
     # blastn use system's default encoding
-    with open(filename, 'r')  as raw:
+    with open(filename, 'r') as raw:
         for line in raw:
             if line.startswith('# BLAST'):
                 if query:

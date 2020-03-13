@@ -521,8 +521,8 @@ def assembly(arg, perl, novoplasty):
         ref = Path(arg.ref).absolute()
         ref = move(ref, arg.tmp/ref.name, copy=True)
     else:
-        if len(arg.taxon) > 1:
         # for "Genus species var. blabla", ignore subspecies words
+        if len(arg.taxon) > 1:
             arg.taxon = ' '.join(arg.taxon[:2])
         else:
             arg.taxon = arg.taxon[0]
@@ -569,7 +569,8 @@ def assembly(arg, perl, novoplasty):
         log.info('Validate assembly results.')
         # validate merged or not?
         for i in (*circularized, *options):
-            arg_str = (f'-input {i} -ref {ref} -seed {seed.stem} -out {arg.out} '
+            arg_str = (f'-input {i} -ref {ref} -seed {seed.stem} '
+                       f'-out {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
             validate_file, report = validate_main(arg_str)

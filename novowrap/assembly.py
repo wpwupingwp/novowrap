@@ -33,6 +33,7 @@ except ImportError:
 
 def parse_args(arg_list=None):
     arg = argparse.ArgumentParser(
+        prog='assembly.py',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     inputs = arg.add_argument_group('Input')
     inputs.add_argument('-input', nargs='*',

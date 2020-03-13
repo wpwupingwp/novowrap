@@ -24,15 +24,15 @@ def main():
     if argv[-1] == 'init':
         get_all_third_party()
         return
-    elif len(argv) > 1 and argv[-1] != '-h':
-        get_all_third_party()
-        argv.pop()
+    elif argv[-1] == '-h':
+        assembly_main()
+        return
+    elif len(argv) > 1:
         assembly_main()
         return
     try:
         ui_main()
     except Exception:
-        get_all_third_party()
         assembly_main()
 
 

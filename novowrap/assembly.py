@@ -670,6 +670,10 @@ def assembly_main(arg_str=None):
         for i in table:
             arg.input, arg.taxon = i
             # str to list
+            if arg.taxon == '':
+                arg.taxon = 'Nicotiana tabacum'
+                log.warning(f'Taxonomy for {arg.input[0]} is missing.')
+                log.info(f'Use {arg.taxon} instead.')
             arg.taxon = arg.taxon.split(' ')
             new_out = _get_name(arg.input)
             arg.out = original_out / new_out.stem

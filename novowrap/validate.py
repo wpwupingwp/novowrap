@@ -76,11 +76,8 @@ def init_arg(arg):
         log.critical(f'Input file {arg.input} does not exist.')
         return success, arg
     if arg.ref is None and len(arg.taxon) == 0:
-        # if users only use validate, it's necessary to warn users about the
-        # default taxonomy
-        log.warning('Nor reference either taxonomy was given, use Nicotiana '
-                    'tabacum instead.')
-        arg.taxon = 'Nicotiana tabacum'
+        log.warning('Nor reference either taxonomy was given.')
+        return success, arg
     if arg.taxon is None:
         pass
     elif len(arg.taxon) > 1:

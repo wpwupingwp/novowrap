@@ -133,14 +133,14 @@ def check_output(output, out_entry):
     output = Path(output).absolute()
     if output.exists():
         info('Output folder exists. Please use another folder.')
-        out_entry.configure(bg='red')
+        out_entry.configure(background='red')
         return False
     else:
         ok = accessible(output, 'folder')
         if not ok:
             info(f'You do not have permission to write in given output '
                  'folder. Please try another path.')
-            out_entry.configure(bg='red')
+            out_entry.configure(background='red')
             return False
     output.mkdir()
     return True
@@ -202,6 +202,9 @@ def assembly_ui():
         if arg_ref and arg_taxon:
             info('Please only use one of "Genbank file" and "Taxonomy"!')
             return
+        elif arg_ref == '' and arg_taxon == '':
+            info('Reference is required!')
+            return
         elif arg_ref != '' and arg_taxon == '':
             arg_str += f' -ref {arg_ref}'
         elif arg_ref == '' and arg_taxon != '':
@@ -227,13 +230,13 @@ def assembly_ui():
         arg_kmer = int(kmer_entry.get())
         if arg_kmer > 39 or arg_kmer < 23 or (arg_kmer % 2 != 1):
             info('K-mer should be an odd number in (23, 39)!')
-            kmer_entry.configure(bg='red')
+            kmer_entry.configure(background='red')
             return
         arg_str += f' -kmer {arg_kmer}'
         arg_size = size_entry.get()
         if '-' not in arg_size:
             info('Genome size should be "min-max" format!')
-            size_entry.configure(bg='red')
+            size_entry.configure(background='red')
             return
         min_size, max_size = arg_size.split('-')
         arg_str += f' -min {min_size} -max {max_size}'
@@ -247,8 +250,8 @@ def assembly_ui():
         arg_l = float(l_entry.get())
         if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:
             info('Bad value!')
-            s_entry.configure(bg='red')
-            l_entry.configure(bg='red')
+            s_entry.configure(background='red')
+            l_entry.configure(background='red')
             return
         else:
             arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
@@ -475,8 +478,8 @@ def validate_ui():
         arg_l = float(l_entry.get())
         if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:
             info('Bad value!')
-            s_entry.configure(bg='red')
-            l_entry.configure(bg='red')
+            s_entry.configure(background='red')
+            l_entry.configure(background='red')
             return
         else:
             arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'

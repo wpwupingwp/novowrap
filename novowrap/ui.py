@@ -128,7 +128,6 @@ def open_folder(title, entry):
 def check_output(output, out_entry):
     """
     Make sure given path does not exist and writable.
-    Create folder because init_arg in validate only consider novowrap.
     """
     output = Path(output).absolute()
     if output.exists():
@@ -142,7 +141,6 @@ def check_output(output, out_entry):
                  'folder. Please try another path.')
             out_entry.configure(background='red')
             return False
-    output.mkdir()
     return True
 
 
@@ -473,6 +471,10 @@ def validate_ui():
             out_path = out_path / 'Output'
         if not check_output(out_path, o_entry):
             return
+        # validate need existing out if called by others
+        out_path.mkdir()
+        out_tmp = out_path / 'Temp'
+        out_tmp.mkdir()
         arg_str += f' -out {out_path}'
         arg_s = float(s_entry.get())
         arg_l = float(l_entry.get())

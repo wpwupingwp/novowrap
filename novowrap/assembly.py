@@ -487,7 +487,9 @@ def assembly(arg, perl, novoplasty):
             log.info(f'Input file: {i}')
     log.info(f'Minimum genome size: {arg.min}')
     log.info(f'Maximum genome size: {arg.max}')
-    if isinstance(arg.taxon, list):
+    if arg.ref is not None:
+        log.info(f'Reference: {arg.ref}')
+    elif isinstance(arg.taxon, list):
         t_ = ' '.join(arg.taxon)
         log.info(f'Taxonomy: {t_}')
     else:

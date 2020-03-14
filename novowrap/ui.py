@@ -78,7 +78,7 @@ def fentry(window, row, column, default='', padx=0, pady=0):
     Generate and pack entrys.
     Fill with default string.
     """
-    entry = tk.Entry(window)
+    entry = ttk.Entry(window)
     entry.insert(0, default)
     entry.grid(row=row, column=column, padx=padx, pady=pady)
     return entry
@@ -273,7 +273,7 @@ def assembly_ui():
     w.place(relx=0.5, rely=0.5, anchor='center')
     # use variable for easily edit
     row = 0
-    inputs = tk.LabelFrame(w, text='Input')
+    inputs = ttk.LabelFrame(w, text='Input')
     inputs.grid(row=row, columnspan=4)
     row += 1
     wlabel(inputs, 'Input', row=row, column=1)
@@ -292,7 +292,7 @@ def assembly_ui():
                                               entry2=input_entry))
     list_button.grid(row=row, column=3)
     row += 1
-    ref = tk.LabelFrame(w, text='Reference')
+    ref = ttk.LabelFrame(w, text='Reference')
     ref.grid(row=row, columnspan=4)
     row += 1
     wlabel(ref, 'Taxonomy', row=row, column=1)
@@ -315,11 +315,11 @@ def assembly_ui():
     o_button.grid(row=row, column=2)
     row += 1
 
-    advance = tk.LabelFrame(w, text='Advanced settings')
+    advance = ttk.LabelFrame(w, text='Advanced settings')
     advance.grid(row=row, columnspan=3)
     advance_info = advance.grid_info()
     row += 1
-    adv_input = tk.LabelFrame(advance, text='Input')
+    adv_input = ttk.LabelFrame(advance, text='Input')
     adv_input.grid(row=row)
     row += 1
     wlabel(adv_input, 'Split reads', row=row, column=0)
@@ -338,7 +338,7 @@ def assembly_ui():
                             value='ion')
     radio2.grid(row=row, column=2)
     row += 1
-    adv_assembly = tk.LabelFrame(advance, text='Assembly')
+    adv_assembly = ttk.LabelFrame(advance, text='Assembly')
     adv_assembly.grid(row=row, padx=5)
     row += 1
     wlabel(adv_assembly, 'K-mer (23-39, odd)', row=row, column=0)
@@ -359,7 +359,7 @@ def assembly_ui():
                                               single=True))
     seed_button.grid(row=row, column=2)
 
-    adv_validate = tk.LabelFrame(advance, text='Validate')
+    adv_validate = ttk.LabelFrame(advance, text='Validate')
     adv_validate.grid(row=row)
     wlabel(adv_validate, 'Sequence similarity (0-1)', row=row, column=0)
     s_entry = fentry(adv_validate, row=row, column=1, default='0.7')
@@ -507,7 +507,7 @@ def validate_ui():
     i_button = ttk.Button(w, text='Open', command=open_file('Input file',
                                                            i_entry))
     i_button.grid(row=row, column=2)
-    ref = tk.LabelFrame(w, text='Reference')
+    ref = ttk.LabelFrame(w, text='Reference')
     row += 1
     ref.grid(row=row, column=0, columnspan=5, padx=5, pady=8)
     row += 1
@@ -530,7 +530,7 @@ def validate_ui():
                                                              o_entry))
     o_button.grid(row=row, column=2)
     row += 1
-    options = tk.LabelFrame(w, text='Options')
+    options = ttk.LabelFrame(w, text='Options')
     options.grid(row=row, padx=5, columnspan=5)
     row += 1
     wlabel(options, 'Sequence similarity (0-1)', row=row, padx=10)

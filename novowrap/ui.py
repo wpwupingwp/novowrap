@@ -515,7 +515,7 @@ def validate_ui():
     label1 = tk.Label(ref, text='OR', fg='red')
     label1.grid(row=row, column=0, columnspan=2)
     row += 1
-    wlabel(ref, 'File', row=row, column=1, padx=13)
+    wlabel(ref, 'Genbank/FASTA file', row=row, column=1, padx=13)
     r_entry = fentry(ref, row=row, column=2)
     r_button = tk.Button(ref, text='Open',
                          command=open_file('Reference file (gb/fasta format)',

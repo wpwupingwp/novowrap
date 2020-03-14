@@ -669,6 +669,8 @@ def assembly_main(arg_str=None):
         original_out = arg.out.absolute()
         for i in table:
             arg.input, arg.taxon = i
+            # str to list
+            arg.taxon = arg.taxon.split(' ')
             new_out = _get_name(arg.input)
             arg.out = original_out / new_out.stem
             arg.out.mkdir()

@@ -161,15 +161,18 @@ def init_arg(arg):
     if arg.list is None and arg.input is None:
         log.critical('Input is empty.')
         return success, arg
-    if len(arg.input) > 2:
-        log.critical('Only accept one or two input file(s).')
+    elif arg.list is not None and arg.input is not None:
+        log.critical('Cannot use both "-input" and "-list".')
         return success, arg
-    if arg.list is not None:
+    elif arg.list is not None:
+        arg.list = Path(arg.list).absolute()
         if not arg.list.exists():
             log.critical(f'Input file {arg.list} does not exists.')
             return success, arg
-        arg.list = Path(arg.list).absolute()
-    if arg.input is not None:
+    else:
+        if len(arg.input) > 2:
+            log.critical('Only accept one or two input file(s).')
+            return success, arg
         arg.input = [Path(i).absolute() for i in arg.input]
         for i in arg.input:
             if not i.exists():
@@ -220,6 +223,7 @@ def read_table(arg):
                 f_r = [f, ]
             else:
                 f_r = [f, r]
+            f_r = [Path(i).absolute() for i in f_r]
             inputs.append([f_r, taxon])
     return inputs
 
@@ -635,21 +639,15 @@ def assembly_main(arg_str=None):
         return success, arg.out
     else:
         log.debug('Init OK.')
-    cwd = Path().cwd().absolute()
-    # novoplasty put files in current folder, have to chdir to make the folder
-    # clean
-    chdir(arg.out)
     # check before run
     # seems cannot use thread to save time
     perl = get_perl(arg.third_party)
     if perl == '':
         log.critical('Failed to get perl. Quit.')
-        chdir(cwd)
         return success, arg.out
     novoplasty = get_novoplasty(arg.third_party)
     if novoplasty is None:
         log.critical('Quit.')
-        chdir(cwd)
         return success, arg.out
     # log to file
     log_file_handler = logging.FileHandler(str(arg.log/'Log.txt'))
@@ -659,18 +657,25 @@ def assembly_main(arg_str=None):
     log_file_handler.setFormatter(formatter)
     log.addHandler(log_file_handler)
     # start
+    cwd = Path().cwd().absolute()
     if arg.list is None:
+        # novoplasty put files in current folder, have to chdir to make
+        # the folder clean
+        chdir(arg.out)
         success = assembly(arg, perl, novoplasty)
     else:
         table = read_table(arg)
         success_list = []
+        original_out = arg.out.absolute()
         for i in table:
             arg.input, arg.taxon = i
             new_out = _get_name(arg.input)
-            arg.out = arg.out / new_out.stem
+            arg.out = original_out / new_out.stem
             arg.out.mkdir()
+            chdir(arg.out)
             s = assembly(arg, perl, novoplasty)
             success_list.append(s)
+            chdir(cwd)
         success = all(success_list)
     log.info('Bye.')
     chdir(cwd)

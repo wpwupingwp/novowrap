@@ -258,7 +258,7 @@ def assembly_ui():
         run.geometry(size)
         run.title('Running...')
         run.wm_transient()
-        frame = tk.Frame(run)
+        frame = ttk.Frame(run)
         frame.pack(fill='both')
         scroll_text(frame)
         r = threading.Thread(target=thread_wrap,
@@ -269,7 +269,7 @@ def assembly_ui():
     wroot = tk.Toplevel(root)
     wroot.geometry(size)
     wroot.title('Assembly')
-    w = tk.Frame(wroot)
+    w = ttk.Frame(wroot)
     w.place(relx=0.5, rely=0.5, anchor='center')
     # use variable for easily edit
     row = 0
@@ -282,14 +282,15 @@ def assembly_ui():
         'Input file', input_entry, single=False))
     input_button.grid(row=row, column=3)
     row += 1
+    # ttk label do not support 'fg'
     label1 = tk.Label(inputs, text='OR', fg='red')
     label1.grid(row=row, column=0, columnspan=2)
     row += 1
     wlabel(inputs, 'Input list', row=row, column=1)
     list_entry = fentry(inputs, row=row, column=2)
     list_button = ttk.Button(inputs, text='Open',
-                            command=open_file('List file', list_entry,
-                                              entry2=input_entry))
+                             command=open_file('List file', list_entry,
+                                               entry2=input_entry))
     list_button.grid(row=row, column=3)
     row += 1
     ref = ttk.LabelFrame(w, text='Reference')
@@ -304,14 +305,14 @@ def assembly_ui():
     wlabel(ref, 'Genbank file', row=row, column=1)
     ref_entry = fentry(ref, row=row, column=2)
     r_button = ttk.Button(ref, text='Open',
-                         command=open_file('Reference file', ref_entry,
-                                           entry2=taxon_entry))
+                          command=open_file('Reference file', ref_entry,
+                                            entry2=taxon_entry))
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row, pady=8)
     out_entry = fentry(w, row=row, column=1, default='"Current folder"')
-    o_button = ttk.Button(w, text='Open', command=open_folder('Output folder',
-                                                             out_entry))
+    o_button = ttk.Button(w, text='Open',
+                          command=open_folder('Output folder', out_entry))
     o_button.grid(row=row, column=2)
     row += 1
 
@@ -331,11 +332,11 @@ def assembly_ui():
     platform = tk.StringVar()
     platform.set('illumina')
     wlabel(adv_input, 'Sequence platform', row=row, column=0)
-    radio1 = tk.Radiobutton(adv_input, text='illumina', variable=platform,
-                            value='illumina')
+    radio1 = ttk.Radiobutton(adv_input, text='illumina', variable=platform,
+                             value='illumina')
     radio1.grid(row=row, column=1)
-    radio2 = tk.Radiobutton(adv_input, text='ion torrent', variable=platform,
-                            value='ion')
+    radio2 = ttk.Radiobutton(adv_input, text='ion torrent', variable=platform,
+                             value='ion')
     radio2.grid(row=row, column=2)
     row += 1
     adv_assembly = ttk.LabelFrame(advance, text='Assembly')
@@ -355,8 +356,8 @@ def assembly_ui():
     wlabel(adv_assembly, 'Seed file', row=row, column=0)
     seed_file_entry = fentry(adv_assembly, row=row, column=1)
     seed_button = ttk.Button(adv_assembly, text='Open',
-                            command=open_file('Seed file', seed_file_entry,
-                                              single=True))
+                             command=open_file('Seed file', seed_file_entry,
+                                               single=True))
     seed_button.grid(row=row, column=2)
 
     adv_validate = ttk.LabelFrame(advance, text='Validate')
@@ -404,7 +405,7 @@ def merge_ui():
         run.geometry(size)
         run.title('Running...')
         run.wm_transient()
-        frame = tk.Frame(run)
+        frame = ttk.Frame(run)
         frame.pack(fill='both')
         scroll_text(frame)
         r = threading.Thread(target=thread_wrap,
@@ -415,20 +416,20 @@ def merge_ui():
     wroot = tk.Toplevel(root)
     wroot.geometry(small_size)
     wroot.title('Merge')
-    frame = tk.Frame(wroot)
+    frame = ttk.Frame(wroot)
     frame.place(relx=0.5, rely=0.5, anchor='center')
     row = 0
     wlabel(frame, 'Input', row=row, column=1)
     input_entry = fentry(frame, row=row, column=2)
     input_button = ttk.Button(frame, text='Open',
-                             command=open_file('Input file', input_entry,
-                                               single=False))
+                              command=open_file('Input file', input_entry,
+                                                single=False))
     input_button.grid(row=row, column=3)
     row += 1
     wlabel(frame, 'Output', row=row, column=1, pady=10)
     out_entry = fentry(frame, row=row, column=2, default='"Current folder"')
     o_button = ttk.Button(frame, text='Open',
-                         command=open_folder('Output folder', out_entry))
+                          command=open_folder('Output folder', out_entry))
     o_button.grid(row=row, column=3)
     row += 1
     ok = ttk.Button(frame, text='Enter', command=submit_merge)
@@ -485,7 +486,7 @@ def validate_ui():
         run.geometry(size)
         run.title('Running...')
         run.wm_transient()
-        frame = tk.Frame(run)
+        frame = ttk.Frame(run)
         frame.pack(fill='both')
         scroll_text(frame)
         r = threading.Thread(target=thread_wrap,
@@ -498,14 +499,14 @@ def validate_ui():
     wroot.title('Validate')
     # on top
     # wroot.wm_transient(root)
-    w = tk.Frame(wroot)
+    w = ttk.Frame(wroot)
     w.place(relx=0.5, rely=0.5, anchor='center')
     # use variable for easily edit
     row = 0
     wlabel(w, 'Input', row=row, padx=15, pady=10)
     i_entry = fentry(w, row=row, column=1)
-    i_button = ttk.Button(w, text='Open', command=open_file('Input file',
-                                                           i_entry))
+    i_button = ttk.Button(w, text='Open',
+                          command=open_file('Input file', i_entry))
     i_button.grid(row=row, column=2)
     ref = ttk.LabelFrame(w, text='Reference')
     row += 1
@@ -520,14 +521,14 @@ def validate_ui():
     wlabel(ref, 'Genbank/FASTA file', row=row, column=1, padx=13)
     r_entry = fentry(ref, row=row, column=2)
     r_button = ttk.Button(ref, text='Open',
-                         command=open_file('Reference file (gb/fasta format)',
-                                           r_entry, entry2=t_entry))
+                          command=open_file('Reference file (gb/fasta format)',
+                                            r_entry, entry2=t_entry))
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row, padx=10, pady=8)
     o_entry = fentry(w, row=row, column=1, default='"Current folder"')
     o_button = ttk.Button(w, text='Open', command=open_folder('Output folder',
-                                                             o_entry))
+                                                              o_entry))
     o_button.grid(row=row, column=2)
     row += 1
     options = ttk.LabelFrame(w, text='Options')
@@ -573,20 +574,20 @@ def ui_main():
     # default_font = font.nametofont('TkDefaultFont')
     # default_font_cfg = default_font.configure()
     # default_font.config(size=12)
-    root_frame = tk.Frame(root)
+    root_frame = ttk.Frame(root)
     # in center
     root_frame.place(relx=0.5, rely=0.5, anchor='center')
     # high dpi
     # root.tk.call('tk', 'scaling', 2.0)
     # btn->button
     assembly_btn = ttk.Button(root_frame, text='Assembly sequences',
-                             command=assembly_ui)
+                              command=assembly_ui)
     assembly_btn.grid(row=0, pady=10)
     merge_button = ttk.Button(root_frame, text='Merge contigs',
-                             command=merge_ui)
+                              command=merge_ui)
     merge_button.grid(row=1, pady=10)
     validate_btn = ttk.Button(root_frame, text='Validate assembly',
-                             command=validate_ui)
+                              command=validate_ui)
     validate_btn.grid(row=2, pady=10)
     root.mainloop()
 

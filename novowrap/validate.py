@@ -78,6 +78,9 @@ def init_arg(arg):
     if arg.ref is None and len(arg.taxon) == 0:
         log.warning('Nor reference either taxonomy was given.')
         return success, arg
+    elif arg.ref is not None and arg.taxon is not None:
+        log.critical('Cannot use "-taxon" and "-ref" at same time.')
+        return success, arg
     if arg.taxon is None:
         pass
     elif len(arg.taxon) > 1:

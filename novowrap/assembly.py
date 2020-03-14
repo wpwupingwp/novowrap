@@ -517,8 +517,8 @@ def assembly(arg, perl, novoplasty):
     # get ref
     if arg.ref is not None:
         if get_fmt(arg.ref) != 'gb':
-            log.critical('Reference file should be genbank format, '
-                         'but {arg.ref} is not.')
+            log.critical(f'Reference file should be genbank format, '
+                         f'but {arg.ref} is not.')
             return success
         ref = Path(arg.ref).absolute()
         ref = move(ref, arg.tmp/ref.name, copy=True)

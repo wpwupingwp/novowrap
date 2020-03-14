@@ -78,6 +78,37 @@ def parse_args(arg_list=None):
         return arg.parse_args(arg_list)
 
 
+def _get_name(inputs):
+    """
+    Given list of input, return output file's name.
+    """
+    out_name = Path('Output').absolute()
+    if len(inputs) == 1:
+        # for single file, directly remove all suffixes is dangerous
+        out_name = Path(f'{Path(inputs[0]).stem}-out').absolute()
+        return out_name
+    f = Path(inputs[0])
+    r = Path(inputs[1])
+    while f.suffix == r.suffix and f.suffix != '':
+        f = f.with_suffix('')
+        r = r.with_suffix('')
+    same = 0
+    idx = 0
+    for i, j in zip(str(f), str(r)):
+        if i == j:
+            same += 1
+        else:
+            break
+        idx += 1
+    if same != 0:
+        _ = list(str(f))
+        _.pop(idx)
+        strip_ = ''.join(_).rstrip('-_')
+        if len(strip_) != 0:
+            out_name = Path(strip_).absolute()
+    return out_name
+
+
 def get_output(arg):
     """
     Get output folder.
@@ -87,39 +118,14 @@ def get_output(arg):
     Return:
         out(Path or None): output path
     """
-    def _get_name(f, r):
-        out_name = Path('Output').absolute()
-        f = Path(f)
-        r = Path(r)
-        while f.suffix == r.suffix and f.suffix != '':
-            f = f.with_suffix('')
-            r = r.with_suffix('')
-        same = 0
-        idx = 0
-        for i, j in zip(str(f), str(r)):
-            if i == j:
-                same += 1
-            else:
-                break
-            idx += 1
-        if same != 0:
-            _ = list(str(f))
-            _.pop(idx)
-            strip_ = ''.join(_).rstrip('-_')
-            if len(strip_) != 0:
-                out_name = Path(strip_).absolute()
-        return out_name
-
-    out = Path('.')
+    out = Path('.').absolute()
     if arg.out is None:
         if arg.input is not None:
-            if len(arg.input) == 2:
-                out = _get_name(arg.input[0], arg.input[1])
-            else:
-                # for single file, directly remove all suffixes is dangerous
-                out = Path(Path(arg.input[0]).stem).absolute()
+            out = _get_name(arg.input)
         elif arg.list is not None:
             out = Path(Path(arg.list).stem).absolute()
+        else:
+            raise ValueError('This should not happen.')
     else:
         out = Path(arg.out).absolute()
     if out.exists():
@@ -660,6 +666,9 @@ def assembly_main(arg_str=None):
         success_list = []
         for i in table:
             arg.input, arg.taxon = i
+            new_out = _get_name(arg.input)
+            arg.out = arg.out / new_out.stem
+            arg.out.mkdir()
             s = assembly(arg, perl, novoplasty)
             success_list.append(s)
         success = all(success_list)

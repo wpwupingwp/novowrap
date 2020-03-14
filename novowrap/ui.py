@@ -7,6 +7,7 @@ import logging
 import queue
 import threading
 import tkinter as tk
+from tkinter import ttk
 
 from novowrap.utils import accessible
 from novowrap.merge import merge_main
@@ -66,7 +67,8 @@ def wlabel(window, text, row, column=0, width=25, padx=0, pady=0, sticky='EW',
     """
     Generate and pack labels.
     """
-    label = tk.Label(window, text=text, width=width, **kargs)
+    label = ttk.Label(window, text=text, width=width, anchor=tk.CENTER,
+                      **kargs)
     label.grid(row=row, column=column, padx=padx, pady=pady, sticky=sticky)
     return label
 
@@ -276,7 +278,7 @@ def assembly_ui():
     row += 1
     wlabel(inputs, 'Input', row=row, column=1)
     input_entry = fentry(inputs, row=row, column=2)
-    input_button = tk.Button(inputs, text='Open', command=open_file(
+    input_button = ttk.Button(inputs, text='Open', command=open_file(
         'Input file', input_entry, single=False))
     input_button.grid(row=row, column=3)
     row += 1
@@ -285,7 +287,7 @@ def assembly_ui():
     row += 1
     wlabel(inputs, 'Input list', row=row, column=1)
     list_entry = fentry(inputs, row=row, column=2)
-    list_button = tk.Button(inputs, text='Open',
+    list_button = ttk.Button(inputs, text='Open',
                             command=open_file('List file', list_entry,
                                               entry2=input_entry))
     list_button.grid(row=row, column=3)
@@ -301,14 +303,14 @@ def assembly_ui():
     row += 1
     wlabel(ref, 'Genbank file', row=row, column=1)
     ref_entry = fentry(ref, row=row, column=2)
-    r_button = tk.Button(ref, text='Open',
+    r_button = ttk.Button(ref, text='Open',
                          command=open_file('Reference file', ref_entry,
                                            entry2=taxon_entry))
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row, pady=8)
     out_entry = fentry(w, row=row, column=1, default='"Current folder"')
-    o_button = tk.Button(w, text='Open', command=open_folder('Output folder',
+    o_button = ttk.Button(w, text='Open', command=open_folder('Output folder',
                                                              out_entry))
     o_button.grid(row=row, column=2)
     row += 1
@@ -352,7 +354,7 @@ def assembly_ui():
     row += 1
     wlabel(adv_assembly, 'Seed file', row=row, column=0)
     seed_file_entry = fentry(adv_assembly, row=row, column=1)
-    seed_button = tk.Button(adv_assembly, text='Open',
+    seed_button = ttk.Button(adv_assembly, text='Open',
                             command=open_file('Seed file', seed_file_entry,
                                               single=True))
     seed_button.grid(row=row, column=2)
@@ -366,9 +368,9 @@ def assembly_ui():
     l_entry = fentry(adv_validate, row=row, column=1, default='0.2')
 
     row += 1
-    show_more = tk.Button(w, text='More options', command=show_adv)
+    show_more = ttk.Button(w, text='More options', command=show_adv)
     show_more.grid(row=row, column=0, pady=10)
-    ok = tk.Button(w, text='Enter', command=submit_assembly)
+    ok = ttk.Button(w, text='Enter', command=submit_assembly)
     ok.grid(row=row, column=1, columnspan=2, sticky='EW', padx=40)
     advance.grid_forget()
     wroot.protocol('WM_DELETE_WINDOW', after_close(wroot))
@@ -418,18 +420,18 @@ def merge_ui():
     row = 0
     wlabel(frame, 'Input', row=row, column=1)
     input_entry = fentry(frame, row=row, column=2)
-    input_button = tk.Button(frame, text='Open',
+    input_button = ttk.Button(frame, text='Open',
                              command=open_file('Input file', input_entry,
                                                single=False))
     input_button.grid(row=row, column=3)
     row += 1
     wlabel(frame, 'Output', row=row, column=1, pady=10)
     out_entry = fentry(frame, row=row, column=2, default='"Current folder"')
-    o_button = tk.Button(frame, text='Open',
+    o_button = ttk.Button(frame, text='Open',
                          command=open_folder('Output folder', out_entry))
     o_button.grid(row=row, column=3)
     row += 1
-    ok = tk.Button(frame, text='Enter', command=submit_merge)
+    ok = ttk.Button(frame, text='Enter', command=submit_merge)
     ok.grid(row=row, column=1, columnspan=3, sticky='EW', pady=10)
     wroot.protocol('WM_DELETE_WINDOW', after_close(wroot))
     return
@@ -502,7 +504,7 @@ def validate_ui():
     row = 0
     wlabel(w, 'Input', row=row, padx=15, pady=10)
     i_entry = fentry(w, row=row, column=1)
-    i_button = tk.Button(w, text='Open', command=open_file('Input file',
+    i_button = ttk.Button(w, text='Open', command=open_file('Input file',
                                                            i_entry))
     i_button.grid(row=row, column=2)
     ref = tk.LabelFrame(w, text='Reference')
@@ -517,14 +519,14 @@ def validate_ui():
     row += 1
     wlabel(ref, 'Genbank/FASTA file', row=row, column=1, padx=13)
     r_entry = fentry(ref, row=row, column=2)
-    r_button = tk.Button(ref, text='Open',
+    r_button = ttk.Button(ref, text='Open',
                          command=open_file('Reference file (gb/fasta format)',
                                            r_entry, entry2=t_entry))
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row, padx=10, pady=8)
     o_entry = fentry(w, row=row, column=1, default='"Current folder"')
-    o_button = tk.Button(w, text='Open', command=open_folder('Output folder',
+    o_button = ttk.Button(w, text='Open', command=open_folder('Output folder',
                                                              o_entry))
     o_button.grid(row=row, column=2)
     row += 1
@@ -537,7 +539,7 @@ def validate_ui():
     wlabel(options, 'Length difference (0-1)', row=row, padx=10)
     l_entry = fentry(options, row=row, column=1, default='0.2')
     row += 1
-    ok = tk.Button(w, text='Enter', command=submit_validate)
+    ok = ttk.Button(w, text='Enter', command=submit_validate)
     ok.grid(row=row, column=0, columnspan=3, sticky='EW', padx=50, pady=10)
     wroot.protocol('WM_DELETE_WINDOW', after_close(wroot))
     return
@@ -577,13 +579,13 @@ def ui_main():
     # high dpi
     # root.tk.call('tk', 'scaling', 2.0)
     # btn->button
-    assembly_btn = tk.Button(root_frame, text='Assembly sequences',
+    assembly_btn = ttk.Button(root_frame, text='Assembly sequences',
                              command=assembly_ui)
     assembly_btn.grid(row=0, pady=10)
-    merge_button = tk.Button(root_frame, text='Merge contigs',
+    merge_button = ttk.Button(root_frame, text='Merge contigs',
                              command=merge_ui)
     merge_button.grid(row=1, pady=10)
-    validate_btn = tk.Button(root_frame, text='Validate assembly',
+    validate_btn = ttk.Button(root_frame, text='Validate assembly',
                              command=validate_ui)
     validate_btn.grid(row=2, pady=10)
     root.mainloop()

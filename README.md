@@ -26,6 +26,7 @@ unzip, and then double click `novowrap.exe` or `novowrap`.
    * [Usage](#usage)
       * [Command line](#commandline)
       * [Graphical user interface](#graphicaluserintetface)
+   * [Output](#output)
    * [Options](#options)
       * [Assembly](#assembly)
       * [Validate](#validate)
@@ -139,6 +140,19 @@ the folder.
 Then click the button to choose which module to use. Notice that if one of the
 option was set to the wrong value, the program will refuse to run and hint the
 user to correct the invalid option.
+# Output
+`.gb` files: **genbank** format sequence, with annotation of boundary of
+LSC/SSC/IR regions.
+
+`.rotate` files: rotated sequence with **fasta** format, start from `trnH-psbA`, same direction with
+reference
+
+`.pdf` files: figure of validation of assembly
+
+`_RC_` files: if filenames contain `_RC_`, it means one of the region of the
+sequence was adjusted according to the reference. The unadjusted sequence
+could be found in `Temp` folder
+
 # Options
 ## Assembly
 ### General

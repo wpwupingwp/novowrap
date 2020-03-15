@@ -132,14 +132,14 @@ def check_output(output, out_entry):
     output = Path(output).absolute()
     if output.exists():
         info('Output folder exists. Please use another folder.')
-        out_entry.configure(background='red')
+        out_entry.configure(style='hi.TButton')
         return False
     else:
         ok = accessible(output, 'folder')
         if not ok:
             info(f'You do not have permission to write in given output '
                  'folder. Please try another path.')
-            out_entry.configure(background='red')
+            out_entry.configure(style='hi.TButton')
             return False
     return True
 
@@ -228,13 +228,13 @@ def assembly_ui():
         arg_kmer = int(kmer_entry.get())
         if arg_kmer > 39 or arg_kmer < 23 or (arg_kmer % 2 != 1):
             info('K-mer should be an odd number in (23, 39)!')
-            kmer_entry.configure(background='red')
+            kmer_entry.configure(style='hi.TButton')
             return
         arg_str += f' -kmer {arg_kmer}'
         arg_size = size_entry.get()
         if '-' not in arg_size:
             info('Genome size should be "min-max" format!')
-            size_entry.configure(background='red')
+            size_entry.configure(style='hi.TButton')
             return
         min_size, max_size = arg_size.split('-')
         arg_str += f' -min {min_size} -max {max_size}'
@@ -248,8 +248,8 @@ def assembly_ui():
         arg_l = float(l_entry.get())
         if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:
             info('Bad value!')
-            s_entry.configure(background='red')
-            l_entry.configure(background='red')
+            s_entry.configure(style='hi.TButton')
+            l_entry.configure(style='hi.TButton')
             return
         else:
             arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
@@ -480,8 +480,8 @@ def validate_ui():
         arg_l = float(l_entry.get())
         if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:
             info('Bad value!')
-            s_entry.configure(background='red')
-            l_entry.configure(background='red')
+            s_entry.configure(style='hi.TButton')
+            l_entry.configure(style='hi.TButton')
             return
         else:
             arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
@@ -564,6 +564,9 @@ def ui_main():
     small_size = f'{s}x{int(s*0.618/2)}+{w//3}+{h//3}'
     global big_size
     big_size = f'{s}x{int(s*0.618*2)}'
+    style = ttk.Style()
+    # don't know why 'hi.TEntry' can't work
+    style.configure('hi.TButton', background='red')
     root.geometry(small_size)
     root.title('novowrap')
     # 1366x768

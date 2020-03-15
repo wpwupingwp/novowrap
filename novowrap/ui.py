@@ -213,7 +213,11 @@ def assembly_ui():
         else:
             out_path = Path(arg_out).absolute()
         if out_path.exists():
-            out_path = out_path / 'Output'
+            if out_path.is_dir():
+                out_path = out_path / 'Output'
+            else:
+                info('Invalid output folder name.')
+                return
         if not check_output(out_path, out_entry):
             return
         arg_str += f' -out {out_path}'
@@ -396,7 +400,11 @@ def merge_ui():
         else:
             out_path = Path(arg_out).absolute()
         if out_path.exists():
-            out_path = out_path / 'Output'
+            if out_path.is_dir():
+                out_path = out_path / 'Output'
+            else:
+                info('Invalid output folder name.')
+                return
         if not check_output(out_path, out_entry):
             return
         arg_str += f' -out {out_path}'
@@ -468,7 +476,11 @@ def validate_ui():
         else:
             out_path = Path(arg_out).absolute()
         if out_path.exists():
-            out_path = out_path / 'Output'
+            if out_path.is_dir():
+                out_path = out_path / 'Output'
+            else:
+                info('Invalid output folder name.')
+                return
         if not check_output(out_path, o_entry):
             return
         # validate need existing out if called by others

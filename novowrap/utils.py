@@ -812,7 +812,7 @@ def get_all_third_party():
     perl.join()
     novoplasty.join()
     blast.join()
-    log.info('Done.')
+    log.info('Finished.')
 
 
 if __name__ == '__main__':

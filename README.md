@@ -293,4 +293,15 @@ Please submit your questions in the
 
   A: Uncommonly, users in specified area have connection issue for those
   website. Users have to manually download packages and install.
+* Q: I got error message that I don't have `tkinter `module installed.
+
+  A: If you want to run GUI on Linux computer, this error may happend, because the
+  Python you used did not include tkinter as default package (kind of weird). Run
+  ```
+  # Debian and Ubuntu
+  sudo apt install python3-tk
+  # CentOS
+  yum apt install python3-tk
+  ```
+  may help.
 

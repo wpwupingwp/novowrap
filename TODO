@@ -58,10 +58,10 @@
 57. test in Apple
 #58. csv result missing head
 #59. retest get_
-60. test get_ in Linux
+#60. test get_ in Linux
 #61. change font size
 #62. ui for merge
 #63. after close, reopen main ui
 #64. pyinstaller have to remove mpl_toolkits.pyc
 #65. currently pyinstaller cannot pack to exe if use "-F"
-66. init module for all get_*
+#66. init module for all get_*

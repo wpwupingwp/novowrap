@@ -26,6 +26,7 @@ unzip, and then double click `novowrap.exe` or `novowrap`.
    * [Usage](#usage)
       * [Command line](#commandline)
       * [Graphical user interface](#graphicaluserintetface)
+   * [Input](#input)
    * [Output](#output)
    * [Options](#options)
       * [Assembly](#assembly)
@@ -140,6 +141,18 @@ the folder.
 Then click the button to choose which module to use. Notice that if one of the
 option was set to the wrong value, the program will refuse to run and hint the
 user to correct the invalid option.
+# Input
+The `assembly` module accepts `gz` or `fastq` format as input. If use `input
+list`, the list file should be `csv` format. If use `reference` file instead
+of automatically get from NCBI, the file format should be `genbank`.
+
+The `merge` module accepts `fasta` format as input.
+
+The `validate` module accepts `fasta` format as input. If use `reference` file
+instead of automatically get from NCBI, the file format could be `genbank`
+**or** `fasta` as long as it is a complete chloroplast genome.
+
+
 # Output
 `.gb` files: **genbank** format sequence, with annotation of boundary of
 LSC/SSC/IR regions.
@@ -294,7 +307,7 @@ Please submit your questions in the
 
   A: Uncommonly, users in specified area have connection issue for those
   website. Users have to manually download packages and install (see
-  [Software](##software) for the download links).
+  [Software](#software) for the download links).
 
   For Windows users, please download and unpack files into
   `%HOMEPATH%/.novowrap`.
@@ -313,4 +326,8 @@ Please submit your questions in the
   yum apt install python3-tk
   ```
   may help.
+* Q: It says my input is invalid, but I'm sure it's OK!
+
+  A: Please check your files' path. The `space` character in the folder name
+  or filename may cause this error.
 

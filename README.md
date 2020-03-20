@@ -293,7 +293,15 @@ Please submit your questions in the
   perl/BLAST/NOVOPlasty.
 
   A: Uncommonly, users in specified area have connection issue for those
-  website. Users have to manually download packages and install.
+  website. Users have to manually download packages and install (see
+  [Software](##software) for the download links).
+
+  For Windows users, please download and unpack files into
+  `%HOMEPATH%/.novowrap`.
+
+  For Linux  and MacOS users, please download and unpack files into
+  `~/.novowrap`.
+
 * Q: I got error message that I don't have `tkinter `module installed.
 
   A: If you want to run GUI on Linux computer, this error may happend, because the

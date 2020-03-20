@@ -675,8 +675,13 @@ def get_perl(third_party=None):
         with open(zip_file, 'wb') as out:
             out.write(down.read())
         folder = third_party / 'strawberry_perl'
-        with ZipFile(zip_file) as z:
-            z.extractall(folder)
+        try:
+            with ZipFile(zip_file) as z:
+                z.extractall(folder)
+        except Exception:
+            log.critical('The file is damaged.')
+            log.critical('Please check your Internet connection.')
+            return ''
         # fixed path in zip file, should not be wrong
         assert test_cmd(home_perl)
         return str(home_perl)
@@ -730,8 +735,13 @@ def get_novoplasty(third_party=None):
     # novoplasty's files have illegal character ":" which cannot be extract by
     # shutil.unpack_archive in Windows, have to use zipfile
     # windows and linux both use "/"
-    with ZipFile(zip_file, 'r') as z:
-        z.extractall(third_party)
+    try:
+        with ZipFile(zip_file, 'r') as z:
+            z.extractall(third_party)
+    except Exception:
+        log.critical('The file is damaged.')
+        log.critical('Please check your Internet connection.')
+        return None
     log.info(f'Got {novoplasty.stem}.')
     return novoplasty
 
@@ -789,7 +799,12 @@ def get_blast(third_party=None):
     down_file = third_party / 'BLAST_2.10.0.tar.gz'
     with open(down_file, 'wb') as out:
         out.write(down.read())
-    unpack_archive(down_file, third_party)
+    try:
+        unpack_archive(down_file, third_party)
+    except Exception:
+        log.critical('The file is damaged.')
+        log.critical('Please check your connection.')
+        return ok, ''
     assert test_cmd(home_blast, '-version')
     ok = True
     return ok, str(home_blast)

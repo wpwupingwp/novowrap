@@ -289,7 +289,8 @@ software**).
 Please submit your questions in the
 [Issue](https://github.com/wpwupingwp/novowrap/issues) page :smiley:
 
-* Q: I got error message that the program failed to install perl/BLAST.
+* Q: I got error message that the program failed to install
+  perl/BLAST/NOVOPlasty.
 
   A: Uncommonly, users in specified area have connection issue for those
   website. Users have to manually download packages and install.

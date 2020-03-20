@@ -65,3 +65,7 @@
 #64. pyinstaller have to remove mpl_toolkits.pyc
 #65. currently pyinstaller cannot pack to exe if use "-F"
 #66. init module for all get_*
+67. auto input list
+68. space in path
+69. install offline
+70. auto split

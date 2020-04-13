@@ -302,6 +302,11 @@ software**).
 Please submit your questions in the
 [Issue](https://github.com/wpwupingwp/novowrap/issues) page :smiley:
 
+* Q: I can't see the full UI, some part was hided.
+
+  A: Please try to drag the corner of the window to enlarge it. We got report
+  that some users in MacOS have this issue.
+
 * Q: I got error message that the program failed to install
   perl/BLAST/NOVOPlasty.
 

@@ -14,15 +14,13 @@ def parse_args():
     arg.add_argument('-step', type=int, default=50000, help='step length')
     arg.add_argument('-extend', type=int, default=40000, help='extend length')
     arg.add_argument('-overlap', type=int, default=1000, help='overlap length')
-    arg.add_argument('-o', '--out', default='out',
-                     help='output directory')
     return arg.parse_args()
 
 
-def generate(overlap, step):
+def generate(raw_extend, overlap, step):
     result = []
     i = 0
-    while i < len(raw):
+    while i < len(raw_extend, raw):
         seq = raw[i:i+step]
         seq.id = f'{i}-{i+step}'
         result.append(seq)
@@ -31,12 +29,10 @@ def generate(overlap, step):
 
 
 arg = parse_args()
-print(arg)
 raw = SeqIO.read(arg.file, 'fasta')
-raw = raw + raw[:arg.extend]
-Short = generate(overlap=arg.overlap//2, step=arg.step)
-print('Short:', len(Short))
-SeqIO.write(Short, 'Short.fasta', 'fasta')
-Long = generate(overlap=arg.overlap, step=arg.step)
-print('Long:', len(Long))
-SeqIO.write(Long, 'Long.fasta', 'fasta')
+raw_extend = raw + raw[:arg.extend]
+contigs = generate(raw_extend, overlap=arg.overlap, step=arg.step)
+print('step', arg.step, 'overlap', arg.overlap, 'extend', arg.extend,
+      'contigs', len(contigs))
+filename = f'L_{arg.step}-O_{arg.overlap}-E_{arg.extend}'
+SeqIO.write(contigs, filename, 'fasta')

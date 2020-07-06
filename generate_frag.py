@@ -20,8 +20,10 @@ def parse_args():
 def generate(raw_extend, overlap, step):
     result = []
     i = 0
-    while i < len(raw_extend, raw):
-        seq = raw[i:i+step]
+    while i < len(raw_extend):
+        seq = raw_extend[i:i+step]
+        if len(seq) == 0:
+            continue
         seq.id = f'{i}-{i+step}'
         result.append(seq)
         i = i + (step-overlap)

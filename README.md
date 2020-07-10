@@ -328,7 +328,7 @@ Please submit your questions in the
   # Debian and Ubuntu
   sudo apt install python3-tk
   # CentOS
-  yum apt install python3-tk
+  sudo yum install python3-tk
   ```
   may help.
 * Q: It says my input is invalid, but I'm sure it's OK!

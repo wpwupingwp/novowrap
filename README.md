@@ -310,7 +310,7 @@ Please submit your questions in the
 * Q: I got error message that the program failed to install
   perl/BLAST/NOVOPlasty.
 
-  A: Uncommonly, users in specified area have connection issue for those
+  A: Uncommonly, users in specific area have connection issue for those
   website. Users have to manually download packages and install (see
   [Software](#software) for the download links).
 

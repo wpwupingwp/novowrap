@@ -20,13 +20,13 @@
 #19. if cannot find close related species, use whole cp as novoplasy's author recommended
 #20. novoplasty didn't use GPL, download it when run
 #21. better name, novowrap only for cp
-22. what special for cp
+#22. what special for cp
 #23. hide warning from matplotlib
 #24. simple filename
 #25. table for batch
 #26. auto correct table's taxon
 #27. merge csv
-28. choose new seed
+#28. choose new seed
 #29. LSC has rbcL, matK, psaB, remove matK
 #30. tmp/result/seed folders
 #31. split main to make arg.list work
@@ -55,7 +55,7 @@
 #54. name error in divide
 #55. novoplasty directly call gzip/bzip2 to handle zip files
 #56. cannot find ref in local folder
-57. test in Apple
+#57. test in Apple
 #58. csv result missing head
 #59. retest get_
 #60. test get_ in Linux
@@ -68,4 +68,5 @@
 67. auto input list
 68. space in path
 69. install offline
-70. auto split
+70. auto split, or 1000w reads?
+71. daemon thread

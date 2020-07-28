@@ -4,11 +4,21 @@ matrix:
           os: linux
           language: python
           python: 3.8
+          after_install:
+              - python3 setup.py bdist_wheel
+              - pip3 install dist/*.whl
+          script:
+              - python3 -m novowrap --help
         - name: "Python 3.7 on macOS"
           os: osx
           language: shell
           osx_image: xcode11
           python: 3.8
+          after_install:
+              - python3 setup.py bdist_wheel
+              - pip3 install dist/*.whl
+          script:
+              - python3 -m novowrap --help
         - name: "Python 3.7 on Windows"
           os: windows
           language: shell
@@ -16,13 +26,15 @@ matrix:
           before_install:
               - choco install python
               - python -m pip install --upgrade pip
+          after_install: 
+              - python setup.py bdist_wheel
+              - pip3 install dist/*.whl
+          script:
+              - python3 -m novowrap --help
 install:
     - pip3 install --upgrade setuptools
     - pip3 install -r requirements.txt
     - pip3 install pyinstaller tornado
-    - python setup.py bdist_wheel || python3 setup.py bdist_whell
-    - pip3 install dist/*.whl
 script:
-    - python -m novowrap --help || python3 -m novowrap --help
     - pyinstaller novowrap/ui.py -n novowrap
     - pyinstaller novowrap/ui.py -n novowrap -w -y

@@ -30,7 +30,7 @@ matrix:
               - python setup.py bdist_wheel
               - pip3 install dist/*.whl
           script:
-              - python3 -m novowrap --help
+              - python -m novowrap --help
 install:
     - pip3 install --upgrade setuptools
     - pip3 install -r requirements.txt

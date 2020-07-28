@@ -1,13 +1,27 @@
-language: python
-python:  3.7
 os:
     - linux
     - osx
     - windows
-before_install:
+matrix:
+    include:
+        - name: "Python 3.7 on Linux"
+          os: linux
+          language: python
+          python: 3.7
+        - name: "Python 3.7 on macOS"
+          os: osx
+          language: shell
+          osx_image: xcode11
+        - name: "Python 3.7 on Windows"
+          os: windows
+          language: shell
+          before_install:
+              - choco install python
+              - python -m pip install --upgrade pip
+install:
+      pip install --upgrade setuptools
     - pip install -r requirements.txt
     - pip install pyinstaller tornado
-      pip install --upgrade setuptools
     - python setup.py bdist_wheel
     - pip install dist/*.whl
 script:

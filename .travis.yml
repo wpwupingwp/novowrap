@@ -1,12 +1,16 @@
 language: python
 python:  3.7
-install:
+os:
+    - linux
+    - osx
+    - windows
+before_install:
     - pip install -r requirements.txt
     - pip install pyinstaller tornado
       pip install --upgrade setuptools
     - python setup.py bdist_wheel
     - pip install dist/*.whl
-    - python -m novowrap --help
 script:
+    - python -m novowrap --help
     - pyinstaller novowrap/ui.py -n novowrap
     - pyinstaller novowrap/ui.py -n novowrap -w -y

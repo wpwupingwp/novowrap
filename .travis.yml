@@ -38,7 +38,8 @@ install:
 before_deploy:
     - pyinstaller novowrap/ui.py -n novowrap
     - pyinstaller novowrap/ui.py -n novowrap -w -y
-    - tar -cf novowrap-$TRAVIS_OS_NAME-$TRAVIS_TAG.zip novowrap/dist/novowrap
+    - dir
+    - tar -cf novowrap-$TRAVIS_OS_NAME-$TRAVIS_TAG.zip dist/novowrap
 deploy:
     - provider: releases
       api_key: $GITHUB_TOKEN

@@ -40,8 +40,8 @@ script:
     - pyinstaller novowrap/ui.py -n novowrap -w -y
 deploy:
     - provider: releases
-      api_key: $RELEASE_TOKEN
       local_dir: dist/novowrap
+      api_key: $GITHUB_TOKEN
       skip_cleanup: true
       draft: true
       on:

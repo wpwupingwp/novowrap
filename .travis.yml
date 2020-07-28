@@ -8,12 +8,12 @@ matrix:
           os: osx
           language: shell
           osx_image: xcode11
+          python: 3.7
         - name: "Python 3.7 on Windows"
           os: windows
           language: shell
           before_install:
               - choco install python
-              - python -m pip install --upgrade pip
 install:
     - pip install --upgrade setuptools
     - pip install -r requirements.txt

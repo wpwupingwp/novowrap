@@ -14,14 +14,15 @@ matrix:
           language: shell
           before_install:
               - choco install python
+              - python -m pip install --upgrade pip
           env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
 install:
     - pip3 install --upgrade setuptools
     - pip3 install -r requirements.txt
     - pip3 install pyinstaller tornado
-    - python setup.py bdist_wheel
+    - python3 setup.py bdist_wheel
     - pip3 install dist/*.whl
 script:
-    - python -m novowrap --help
+    - python3 -m novowrap --help
     - pyinstaller novowrap/ui.py -n novowrap
     - pyinstaller novowrap/ui.py -n novowrap -w -y

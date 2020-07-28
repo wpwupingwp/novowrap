@@ -6,5 +6,5 @@ install:
 script:
     - python setup.py bdist_wheel
     - pyinstaller novowrap/ui.py -n novowrap
-    - pyinstaller novowrap/ui.py -n novowrap -w
+    - pyinstaller novowrap/ui.py -n novowrap -w -y
     - dist/novowrap/novowrap -help

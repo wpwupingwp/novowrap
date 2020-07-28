@@ -1,0 +1,27 @@
+1.
+从www.python.org安装python3，版本为3.8
+2.
+打开终端，解压压缩包，进入第一层novowrap目录
+3.
+运行
+pip3 install --user -r requirements.txt
+安装打包依赖
+pip3 install --user pyinstaller
+安装打包工具
+pip3 install --user tornado
+安装可选组件，不然打包有可能报错
+如果下载很慢，安装前先运行
+pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+如果系统有别的版本，尝试pip3改成pip3.8运行，如果没有而且提示找不到pip3，尝试改成pip运行
+4.
+终端进入第二层novowrap目录
+5.
+运行
+pyinstaller ui.py -n novowrap
+6.
+运行
+pyinstaller ui.py -n novowrap -w
+避免一次打包时的诡异报错
+7.
+进入dist目录，双击运行novowrap
+8.没有问题，压缩dist目录下的novowrap目录，即为打包文件

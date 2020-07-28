@@ -3,8 +3,9 @@ python:  3.7
 install:
     - pip install -r requirements.txt
     - pip install pyinstaller tornado
-script:
+      pip install --upgrade setuptools
     - python setup.py bdist_wheel
+script:
     - pyinstaller novowrap/ui.py -n novowrap
     - pyinstaller novowrap/ui.py -n novowrap -w -y
     - dist/novowrap/novowrap -help

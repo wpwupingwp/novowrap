@@ -38,3 +38,13 @@ install:
 script:
     - pyinstaller novowrap/ui.py -n novowrap
     - pyinstaller novowrap/ui.py -n novowrap -w -y
+deploy:
+    - provider: releases
+      api_key: $RELEASE_TOKEN
+      local_dir: dist/novowrap
+      skip_cleanup: true
+      draft: true
+      on:
+          tags: true
+      name: $TRAVIS_TAG
+

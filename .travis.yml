@@ -20,9 +20,9 @@ install:
     - pip3 install --upgrade setuptools
     - pip3 install -r requirements.txt
     - pip3 install pyinstaller tornado
-    - python3 setup.py bdist_wheel
+    - python3 setup.py bdist_wheel || python setup.py bdist_whell
     - pip3 install dist/*.whl
 script:
-    - python3 -m novowrap --help
+    - python3 -m novowrap --help || python -m novowrap --help
     - pyinstaller novowrap/ui.py -n novowrap
     - pyinstaller novowrap/ui.py -n novowrap -w -y

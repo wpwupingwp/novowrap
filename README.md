@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/wpwupingwp/novowrap.svg?branch=master)](https://travis-ci.org/wpwupingwp/novowrap)
 # Quick start
    ```shell
    pip install novowrap --user

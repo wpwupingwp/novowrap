@@ -45,7 +45,7 @@ deploy:
     - provider: releases
       api_key: $GITHUB_TOKEN
       file_glob: true
-      file: "*.zip"
+      file: "*.tgz"
       skip_cleanup: true
       draft: true
       on:

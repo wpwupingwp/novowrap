@@ -45,8 +45,8 @@ deploy:
     - provider: releases
       api_key: $GITHUB_TOKEN
       zip_file: novowrap-$TRAVIS_OS_NAME-$TRAVIS_TAG.zip
-      file_glob: ture
-      file: *.zip
+      file_glob: true
+      file: "*.zip"
       skip_cleanup: true
       draft: true
       on:

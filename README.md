@@ -316,7 +316,7 @@ Please submit your questions in the
   [Software](#software) for the download links).
 
   For Windows users, please download and unpack files into
-  `%HOMEPATH%/.novowrap`.
+  `%HOMEDRIVE%%HOMEPATH%/.novowrap`.
 
   For Linux  and MacOS users, please download and unpack files into
   `~/.novowrap`.

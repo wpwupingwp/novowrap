@@ -34,7 +34,8 @@ matrix:
 install:
     - pip3 install --upgrade setuptools
     - pip3 install -r requirements.txt
-    - pip3 install pyinstaller tornado
+    - pip3 install tornado
+    - pip3 install pyinstaller==3.6
 before_deploy:
     - pyinstaller novowrap/ui.py -n novowrap
     - pyinstaller novowrap/ui.py -n novowrap -y

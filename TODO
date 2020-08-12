@@ -70,3 +70,4 @@
 69. install offline
 70. auto split, or 1000w reads?
 #71. daemon thread
+72. use raw string in table

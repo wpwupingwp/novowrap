@@ -5,9 +5,9 @@
 3.
 运行
 pip3 install --user -r requirements.txt
-安装打包依赖
+安装打包依赖，注意matplotlib最新版3.3.0打包有问题，使用3.2.0
 pip3 install --user pyinstaller
-安装打包工具
+安装打包工具，之前使用3.6，4.0在travis ci上报错
 pip3 install --user tornado
 安装可选组件，不然打包有可能报错
 如果下载很慢，安装前先运行

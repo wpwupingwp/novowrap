@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/wpwupingwp/novowrap.svg?branch=master)](https://travis-ci.org/wpwupingwp/novowrap)
 # Quick start
    ```shell
    pip install novowrap --user
@@ -183,6 +184,9 @@ Input 1,Input 2,Taxonomy
 ```
 If only have one input file, just leave the `Input 2` column empty.
 
+Please use *full path* of file names, for instance, `d:\data\sample-1\forward.fastq`
+instead of `forward.fastq` or `sample-1\forward.fastq`.
+
 `-ref [filename]`, reference file for assembly and validate, should be
 `genbank` format contains *only one* chloroplast genome sequence. Extra
 sequences will be *ignored*. For automatic running, `-taxon` is recommended
@@ -315,7 +319,7 @@ Please submit your questions in the
   [Software](#software) for the download links).
 
   For Windows users, please download and unpack files into
-  `%HOMEPATH%/.novowrap`.
+  `%HOMEDRIVE%%HOMEPATH%/.novowrap`.
 
   For Linux  and MacOS users, please download and unpack files into
   `~/.novowrap`.

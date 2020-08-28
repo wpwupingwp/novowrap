@@ -267,7 +267,8 @@ def assembly_ui():
         frame.pack(fill='both')
         scroll_text(frame)
         r = threading.Thread(target=thread_wrap,
-                             args=(assembly_main, arg_str, run))
+                             args=(assembly_main, arg_str, run),
+                             daemon=True)
         r.start()
 
     root.iconify()
@@ -418,7 +419,8 @@ def merge_ui():
         frame.pack(fill='both')
         scroll_text(frame)
         r = threading.Thread(target=thread_wrap,
-                             args=(merge_main, arg_str, wroot))
+                             args=(merge_main, arg_str, wroot),
+                             daemon=True)
         r.start()
 
     root.iconify()
@@ -507,7 +509,8 @@ def validate_ui():
         frame.pack(fill='both')
         scroll_text(frame)
         r = threading.Thread(target=thread_wrap,
-                             args=(validate_main, arg_str, run))
+                             args=(validate_main, arg_str, run),
+                             daemon=True)
         r.start()
 
     root.iconify()

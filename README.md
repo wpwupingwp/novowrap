@@ -26,6 +26,7 @@ unzip, and then double click `novowrap.exe` or `novowrap`.
    * [Usage](#usage)
       * [Command line](#commandline)
       * [Graphical user interface](#graphicaluserintetface)
+   * [Input](#input)
    * [Output](#output)
    * [Options](#options)
       * [Assembly](#assembly)
@@ -140,6 +141,18 @@ the folder.
 Then click the button to choose which module to use. Notice that if one of the
 option was set to the wrong value, the program will refuse to run and hint the
 user to correct the invalid option.
+# Input
+The `assembly` module accepts `gz` or `fastq` format as input. If use `input
+list`, the list file should be `csv` format. If use `reference` file instead
+of automatically get from NCBI, the file format should be `genbank`.
+
+The `merge` module accepts `fasta` format as input.
+
+The `validate` module accepts `fasta` format as input. If use `reference` file
+instead of automatically get from NCBI, the file format could be `genbank`
+**or** `fasta` as long as it is a complete chloroplast genome.
+
+
 # Output
 `.gb` files: **genbank** format sequence, with annotation of boundary of
 LSC/SSC/IR regions.
@@ -289,8 +302,37 @@ software**).
 Please submit your questions in the
 [Issue](https://github.com/wpwupingwp/novowrap/issues) page :smiley:
 
-* Q: I got error message that the program failed to install perl/BLAST.
+* Q: I can't see the full UI, some part was hided.
 
-  A: Uncommonly, users in specified area have connection issue for those
-  website. Users have to manually download packages and install.
+  A: Please try to drag the corner of the window to enlarge it. We got report
+  that some users in MacOS have this issue.
+
+* Q: I got error message that the program failed to install
+  perl/BLAST/NOVOPlasty.
+
+  A: Uncommonly, users in specific area have connection issue for those
+  website. Users have to manually download packages and install (see
+  [Software](#software) for the download links).
+
+  For Windows users, please download and unpack files into
+  `%HOMEPATH%/.novowrap`.
+
+  For Linux  and MacOS users, please download and unpack files into
+  `~/.novowrap`.
+
+* Q: I got error message that I don't have `tkinter `module installed.
+
+  A: If you want to run GUI on Linux computer, this error may happend, because the
+  Python you used did not include tkinter as default package (kind of weird). Run
+  ```
+  # Debian and Ubuntu
+  sudo apt install python3-tk
+  # CentOS
+  sudo yum install python3-tk
+  ```
+  may help.
+* Q: It says my input is invalid, but I'm sure it's OK!
+
+  A: Please check your files' path. The `space` character in the folder name
+  or filename may cause this error.
 

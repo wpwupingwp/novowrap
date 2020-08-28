@@ -157,6 +157,8 @@ def get_overlap(contigs, contigs_and_rc_fasta):
         link_info(list(blast_result)): link info of contigs
     """
     blast_result, blast_log = blast(contigs_and_rc_fasta, contigs_and_rc_fasta)
+    if blast_result is None:
+        return []
     overlap = []
     for query, sequence in zip(parse_blast_tab(blast_result), contigs):
         if len(query) == 0:
@@ -355,6 +357,9 @@ def get_link(contigs_and_rc, contigs_and_rc_fasta):
     """
     MAX_TRY = 2 ** 16
     overlap = get_overlap(contigs_and_rc, contigs_and_rc_fasta)
+    if len(overlap) == 0:
+        log.critical('Bad input. Failed to merge.')
+        return []
     overlap_clean, edges = clean_overlap(overlap)
     if len(overlap_clean) == 0:
         log.critical('Bad input. Failed to merge.')

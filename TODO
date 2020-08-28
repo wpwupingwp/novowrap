@@ -66,3 +66,4 @@
 #65. currently pyinstaller cannot pack to exe if use "-F"
 66. init module for all get_*
 67. 151660*
+68. repeat info in gb

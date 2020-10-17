@@ -71,5 +71,7 @@
 70. auto split, or 1000w reads?
 #71. daemon thread
 72. use raw string in table
-73. biopython 1.78 removed Bio.Alphabet
-74. remove IUPAC
+73. 151660*
+74. repeat info in gb
+75 biopython 1.78 removed Bio.Alphabet
+76. remove IUPAC

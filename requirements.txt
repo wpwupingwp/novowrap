@@ -1,4 +1,4 @@
-biopython>=1.76
+biopython==1.77
 coloredlogs>=10.0
 matplotlib==3.2.0
 numpy>=1.18.0

@@ -487,6 +487,7 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
         seq_SSC = slice_gb(repeat_seq, region_SSC)
         seq_IRb = slice_gb(repeat_seq, region_IRb)
         new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
+        # to be continue
         new_seq.seq.alphabet = IUPAC.ambiguous_dna
         if origin_len != len(new_seq):
             log.warning(f'\tOld and new sequences do not have save length.')

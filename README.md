@@ -16,8 +16,6 @@ unzip, and then double click `novowrap.exe` or `novowrap`.
 # Table of Contents
    * [Quick start](#quickstart)
    * [Feature](#feature)
-      * [Function](#function)
-      * [Application](#application)
    * [Prerequisite](#prerequisite)
       * [Hardware](#hardware)
       * [Software](#software)
@@ -339,4 +337,11 @@ Please submit your questions in the
 
   A: Please check your files' path. The `space` character in the folder name
   or filename may cause this error.
-
+* Q: It says `ImportError: Bio.Alphabet has been removed from Biopython` and 
+  the program failed to start.
+  
+  A: In *2020.9*, Biopython removed Bio.Alphabet module in 
+  [v1.78](https://biopython.org/wiki/Alphabet), which may cause this trouble 
+  in the old version of novowrap. Please upgrade your `novowrap` to `v0.97` 
+  or higher. If you find difficult to upgrade novowrap, please try to use the 
+  portable packages.

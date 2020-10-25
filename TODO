@@ -75,3 +75,4 @@
 74. repeat info in gb
 #75 biopython 1.78 removed Bio.Alphabet
 76. remove IUPAC
+77. fasta head too long will cause genbank format error

@@ -38,9 +38,10 @@ def parse_args(arg_list=None):
     arg.add_argument('-ref', help='reference gb')
     arg.add_argument('-taxon', nargs='*', help='Taxonomy name')
     options = arg.add_argument_group('Option')
-    options.add_argument('-mt_mode', action='store_true',
-                         help=('for plastids without quadripartite structure, '
-                               'or mitochondria (experimental)'))
+    options.add_argument('-simple_validate', action='store_true',
+                         help='for plastids with abnormal structure')
+    options.add_argument('-mt', dest='mt_mode', action='store_true',
+                         help='for mitochondria (EXPERIMENTAL)')
     options.add_argument('-perc_identity', type=float, default=0.7,
                          help='minimum percentage of identity of BLAST, 0-100')
     options.add_argument('-len_diff', type=float, default=0.2,

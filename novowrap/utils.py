@@ -131,7 +131,7 @@ def get_full_taxon(taxon):
     return True, reversed(full_lineage)
 
 
-def get_ref(taxon, out, tmp=None):
+def get_ref(taxon, out, tmp=None, mt_mode=False):
     """
     Get reference gb file.
     Only one record will be retrieved.
@@ -178,8 +178,12 @@ def get_ref(taxon, out, tmp=None):
         # Entrez has limitation on query frenquency (3 times per second)
         # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
         sleep(0.5)
-        query = (f'''{taxon_name}[Organism] AND refseq[filter] '''
-                 f'''AND (chloroplast[filter] OR plastid[filter])''')
+        if mt_mode:
+            query = (f'''{taxon_name}[Organism] AND refseq[filter] '''
+                     f'''AND mitochondrion[filter]''')
+        else:
+            query = (f'''{taxon_name}[Organism] AND refseq[filter] '''
+                     f'''AND (chloroplast[filter] OR plastid[filter])''')
         log.debug(f'Query from NCBI Genbank:\t{query}')
         # seems nuccore is more stable than taxonomy database
         handle = Entrez.read(Entrez.esearch(db='nuccore', term=query,

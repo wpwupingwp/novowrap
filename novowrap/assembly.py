@@ -59,9 +59,10 @@ def parse_args(arg_list=None):
                          help='maximum memory (GB)')
     options.add_argument('-out', help='output folder')
     options.add_argument('-debug', action='store_true', help='debug mode')
-    options.add_argument('-mt_mode', action='store_true',
-                          help=('for plastids without quadripartite structure, '
-                                'or mitochondria  genomes (experimental)'))
+    options.add_argument('-simple_validate', action='store_true',
+                         help='for plastids with abnormal structure')
+    options.add_argument('-mt', dest='mt_mode', action='store_true',
+                         help='for mitochondria (EXPERIMENTAL)')
     reference = arg.add_argument_group('Reference')
     reference.add_argument('-ref',
                            help='reference file, should be "gb" format with '
@@ -293,7 +294,7 @@ def get_reads_len(filename):
     return length
 
 
-def get_seed(ref, output, gene):
+def get_seed(ref, output, gene, mt_mode):
     """
     Use BarcodeFinder to get seed or reference sequence.
     Arg:
@@ -301,9 +302,15 @@ def get_seed(ref, output, gene):
         record
         output(Path): output folder
         gene(str): gene names, separated by comma
+        mt_mode(bool): mt_mode or not, if, only use whole.seed
     Return:
         seeds(list): seed files list
     """
+    ordered_seeds = []
+    whole = output / 'whole.seed'
+    SeqIO.convert(ref, 'gb', whole, 'fasta')
+    if mt_mode:
+        return [whole, ]
     seeds = {}
     genes = gene.split(',')
     gb = SeqIO.read(ref, 'gb')
@@ -319,12 +326,9 @@ def get_seed(ref, output, gene):
                     out.write(f'>{gene_name}|{organism}|{accession}\n')
                     out.write(f'{seq.seq}\n')
                 seeds[gene_name] = seed_file
-    ordered_seeds = []
     for i in genes:
         if i in seeds:
             ordered_seeds.append(seeds[i])
-    whole = output / 'whole.seed'
-    SeqIO.convert(ref, 'gb', whole, 'fasta')
     ordered_seeds.append(whole)
     return ordered_seeds
 
@@ -548,7 +552,7 @@ def assembly(arg, perl, novoplasty):
             ref = utils.move(ref, arg.tmp/ref.name)
     # get seed
     seeds = []
-    ordered_seeds = get_seed(ref, arg.raw, arg.seed)
+    ordered_seeds = get_seed(ref, arg.raw, arg.seed, arg.mt_mode)
     if arg.seed_file is not None:
         seeds.append(Path(arg.seed_file).absolute())
         # only add whole.seed
@@ -588,7 +592,9 @@ def assembly(arg, perl, novoplasty):
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
             if arg.mt_mode:
-                arg_str += ' -mt_mode'
+                arg_str += ' -mt_mode -simple_validate'
+            elif arg.simple_validate:
+                arg_str += ' -simple_validate'
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
             if report not in csv_files:
@@ -614,8 +620,11 @@ def assembly(arg, perl, novoplasty):
                        f'-out {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
+            # if mt, simple validate
             if arg.mt_mode:
-                arg_str += ' -mt_mode'
+                arg_str += ' -mt_mode -simple_validate'
+            elif arg.simple_validate:
+                arg_str += ' -simple_validate'
             validate_file, report = validate_main(arg_str)
             if len(validate_file) != 0:
                 success = True

@@ -193,6 +193,10 @@ def init_arg(arg):
         log.critical(f'Fail to create {arg.out}. Please contact the '
                      f'administrator.')
         return success, arg
+    # 50k for mitochondria is enough
+    if arg.mt_mode and arg.max > 50000:
+        log.warning(f'Given genome length range is {arg.min}-{arg.max}.')
+        log.warning('Is it ok for mitochondria?')
     arg.out.mkdir()
     arg.log = arg.out / 'Log'
     arg.log.mkdir()
@@ -352,10 +356,8 @@ def config(seed, arg):
         s_or_p = 'SE'
     if arg.mt_mode:
         type_ = 'mito'
-        len_range = f'12000-20000'
     else:
         type_ = 'chloro'
-        len_range = f'{arg.min}-{arg.max}'
     arg.reads_len = get_reads_len(arg.input[0])
     if arg.insert_size is None:
         arg.insert_size = arg.reads_len * 2 + 50
@@ -364,7 +366,7 @@ def config(seed, arg):
 -----------------------
 Project name          = {arg.out.name}
 Type                  = {type_}
-Genome Range          = {len_range}
+Genome Range          = {arg.min}-{arg.max}
 K-mer                 = {arg.kmer}
 Max memory            = {arg.mem}
 Extended log          = 1

@@ -60,6 +60,9 @@ def parse_args(arg_list=None):
                          help='maximum memory (GB)')
     options.add_argument('-out', help='output folder')
     options.add_argument('-debug', action='store_true', help='debug mode')
+    options.add_argument('-mt_mode', action='store_true',
+                          help=('for plastids without quadripartite structure, '
+                                'or mitochondria  genomes (experimental)'))
     reference = arg.add_argument_group('Reference')
     reference.add_argument('-ref',
                            help='reference file, should be "gb" format with '
@@ -585,6 +588,8 @@ def assembly(arg, perl, novoplasty):
                        f'-out {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
+            if arg.mt_mode:
+                arg_str += ' -mt_mode'
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
             if report not in csv_files:
@@ -610,6 +615,8 @@ def assembly(arg, perl, novoplasty):
                        f'-out {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
+            if arg.mt_mode:
+                arg_str += ' -mt_mode'
             validate_file, report = validate_main(arg_str)
             if len(validate_file) != 0:
                 success = True

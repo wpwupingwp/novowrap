@@ -350,6 +350,12 @@ def config(seed, arg):
         f = r = ''
         m = arg.input[0]
         s_or_p = 'SE'
+    if arg.mt_mode:
+        type_ = 'mito'
+        len_range = f'12000-20000'
+    else:
+        type_ = 'chloro'
+        len_range = f'{arg.min}-{arg.max}'
     arg.reads_len = get_reads_len(arg.input[0])
     if arg.insert_size is None:
         arg.insert_size = arg.reads_len * 2 + 50
@@ -357,8 +363,8 @@ def config(seed, arg):
     config_str = f"""Project:
 -----------------------
 Project name          = {arg.out.name}
-Type                  = chloro
-Genome Range          = {arg.min}-{arg.max}
+Type                  = {type_}
+Genome Range          = {len_range}
 K-mer                 = {arg.kmer}
 Max memory            = {arg.mem}
 Extended log          = 1

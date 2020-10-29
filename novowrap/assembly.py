@@ -13,8 +13,7 @@ import platform
 
 from Bio import SeqIO
 
-from novowrap.utils import get_fmt, get_ref, accessible, move
-from novowrap.utils import get_third_party, get_perl, get_novoplasty
+from novowrap import utils
 from novowrap.merge import merge_main
 from novowrap.validate import validate_main
 
@@ -189,7 +188,7 @@ def init_arg(arg):
     arg.out = get_output(arg)
     if arg.out is None:
         return success, arg
-    if not accessible(arg.out, 'folder'):
+    if not utils.accessible(arg.out, 'folder'):
         log.critical(f'Fail to create {arg.out}. Please contact the '
                      f'administrator.')
         return success, arg
@@ -200,7 +199,7 @@ def init_arg(arg):
     arg.raw.mkdir()
     arg.tmp = arg.out / 'Temp'
     arg.tmp.mkdir()
-    success, arg.third_party = get_third_party()
+    success, arg.third_party = utils.get_third_party()
     return success, arg
 
 
@@ -245,7 +244,7 @@ def split(raw, number, output):
         count(int): reads actually got, 0 for not split
     """
     raw = Path(raw).absolute()
-    fmt = get_fmt(raw)
+    fmt = utils.get_fmt(raw)
     if fmt != 'gz' and number == float('inf'):
         log.debug('Skip split for "inf" and non-gz.')
         return raw, 0
@@ -269,7 +268,7 @@ def split(raw, number, output):
         count += 1
     raw_handle.close()
     splitted_handle.close()
-    splitted = move(splitted, splitted.with_suffix(f'.{count}'))
+    splitted = utils.move(splitted, splitted.with_suffix(f'.{count}'))
     if number != float('inf') and number != count:
         log.warning(f'Want {number} reads, acutally got {count}.')
     return splitted, count
@@ -279,7 +278,7 @@ def get_reads_len(filename):
     """
     Get reads length of fastq
     """
-    fmt = get_fmt(filename)
+    fmt = utils.get_fmt(filename)
     if fmt == 'gz':
         handle = gzip.open(filename)
     else:
@@ -436,31 +435,31 @@ def organize_out(arg, seed):
 
     for i in arg.out.glob('contigs_tmp_*.txt'):
         i = i.absolute()
-        move(i, arg.tmp/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+        utils.move(i, arg.tmp/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
     for i in arg.out.glob('log_*.txt'):
         i = i.absolute()
-        move(i, arg.log/i.with_name('NOVOPlasty-'+i.name).name)
+        utils.move(i, arg.log/i.with_name('NOVOPlasty-'+i.name).name)
     contigs = []
     for i in arg.out.glob('Contigs_*.fasta'):
         i = i.absolute()
-        i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+        i = utils.move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         contigs.append(i)
     merged = []
     for i in arg.out.glob('Merged_contigs_*.txt'):
         i = i.absolute()
-        i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+        i = utils.move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         fasta = txt_to_fasta(i)
-        fasta = move(fasta, arg.raw/fasta.name)
+        fasta = utils.move(fasta, arg.raw/fasta.name)
         merged.append(fasta)
     options = []
     for i in arg.out.glob('Option_*.fasta'):
         i = i.absolute()
-        i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+        i = utils.move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         options.append(i)
     circularized = []
     for i in arg.out.glob('Circularized_assembly*.fasta'):
         i = i.absolute()
-        i = move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
+        i = utils.move(i, arg.raw/i.with_name(f'{i.stem}-{seed}{i.suffix}').name)
         circularized.append(i)
     return circularized, options, merged, contigs
 
@@ -511,7 +510,7 @@ def assembly(arg, perl, novoplasty):
     # split
     # equal to zero or not, expose to user
     # equal to inf or not, hide inside
-    have_gz = ('gz' in [get_fmt(i) for i in arg.input])
+    have_gz = ('gz' in [utils.get_fmt(i) for i in arg.input])
     if arg.split != 0:
         log.info(f'Split {arg.split} pairs of reads for assembly')
         splitted = []
@@ -529,24 +528,24 @@ def assembly(arg, perl, novoplasty):
         arg.input = splitted
     # get ref
     if arg.ref is not None:
-        if get_fmt(arg.ref) != 'gb':
+        if utils.get_fmt(arg.ref) != 'gb':
             log.critical(f'Reference file should be genbank format, '
                          f'but {arg.ref} is not.')
             return success
         ref = Path(arg.ref).absolute()
-        ref = move(ref, arg.tmp/ref.name, copy=True)
+        ref = utils.move(ref, arg.tmp/ref.name, copy=True)
     else:
         # for "Genus species var. blabla", ignore subspecies words
         if len(arg.taxon) > 1:
             arg.taxon = ' '.join(arg.taxon[:2])
         else:
             arg.taxon = arg.taxon[0]
-        ref, arg.taxon = get_ref(arg.taxon, arg.tmp)
+        ref, arg.taxon = utils.get_ref(arg.taxon, arg.tmp)
         if ref is None:
             log.critical('Cannot get reference.')
             return success
         else:
-            ref = move(ref, arg.tmp/ref.name)
+            ref = utils.move(ref, arg.tmp/ref.name)
     # get seed
     seeds = []
     ordered_seeds = get_seed(ref, arg.raw, arg.seed)
@@ -648,11 +647,11 @@ def assembly_main(arg_str=None):
         log.debug('Init OK.')
     # check before run
     # seems cannot use thread to save time
-    perl = get_perl(arg.third_party)
+    perl = utils.get_perl(arg.third_party)
     if perl == '':
         log.critical('Failed to get perl. Quit.')
         return success, arg.out
-    novoplasty = get_novoplasty(arg.third_party)
+    novoplasty = utils.get_novoplasty(arg.third_party)
     if novoplasty is None:
         log.critical('Quit.')
         return success, arg.out

@@ -76,3 +76,4 @@
 #75 biopython 1.78 removed Bio.Alphabet
 76. remove IUPAC
 77. fasta head too long will cause genbank format error
+78. biopython 1.77 SeqIO.write() with 'gb' need alphabet but 1.78 do not

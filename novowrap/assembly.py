@@ -553,7 +553,7 @@ def assembly(arg, perl, novoplasty):
             arg.taxon = ' '.join(arg.taxon[:2])
         else:
             arg.taxon = arg.taxon[0]
-        ref, arg.taxon = utils.get_ref(arg.taxon, arg.tmp)
+        ref, arg.taxon = utils.get_ref(arg.taxon, arg.tmp, arg.mt_mode)
         if ref is None:
             log.critical('Cannot get reference.')
             return success

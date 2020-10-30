@@ -676,7 +676,8 @@ def assembly_main(arg_str=None):
     # log to file
     log_file_handler = logging.FileHandler(str(arg.log/'Log.txt'))
     # more detail in file log
-    log_file_handler.setLevel(logging.DEBUG)
+    # coloredlog and logging ahve differnt levels
+    log.setLevel(logging.DEBUG)
     formatter = logging.Formatter(FMT, DATEFMT)
     log_file_handler.setFormatter(formatter)
     log.addHandler(log_file_handler)

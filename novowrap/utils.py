@@ -176,7 +176,7 @@ def get_ref(taxon: str, out: Path, tmp=None, mt_mode=False,
             log.critical('The taxonomy of the reference is not close-related.')
             log.critical('The result may be incorrect.')
         taxon_name = taxon_name.replace(' ', '_')
-        # Entrez has limitation on query frenquency (3 times per second)
+        # Entrez has limitation on query frequency (3 times per second)
         # https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen
         sleep(0.5)
         if mt_mode:

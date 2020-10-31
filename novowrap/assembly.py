@@ -37,7 +37,8 @@ def parse_args(arg_list=None):
     inputs = arg.add_argument_group('Input')
     inputs.add_argument('-input', nargs='*',
                         help='single or pair-end input, fastq or gz format')
-    inputs.add_argument('-list', help='csv file for batch mode')
+    inputs.add_argument('-list', dest='list_file',
+                        help='csv file for batch mode')
     inputs.add_argument('-platform', choices=['illumina', 'ion'],
                         default='illumina', help='sequencing platform')
     inputs.add_argument('-insert_size', type=int,
@@ -82,7 +83,7 @@ def parse_args(arg_list=None):
         return arg.parse_args(arg_list)
 
 
-def _get_name(inputs):
+def _get_name(inputs: list):
     """
     Given list of input, return output file's name.
     """
@@ -126,8 +127,8 @@ def get_output(arg):
     if arg.out is None:
         if arg.input is not None:
             out = _get_name(arg.input)
-        elif arg.list is not None:
-            out = Path(Path(arg.list).stem).absolute()
+        elif arg.list_file is not None:
+            out = Path(Path(arg.list_file).stem).absolute()
         else:
             raise ValueError('This should not happen.')
     else:
@@ -162,16 +163,16 @@ def init_arg(arg):
         except ImportError:
             pass
     success = False
-    if arg.list is None and arg.input is None:
+    if arg.list_file is None and arg.input is None:
         log.critical('Input is empty.')
         return success, arg
-    elif arg.list is not None and arg.input is not None:
+    elif arg.list_file is not None and arg.input is not None:
         log.critical('Cannot use both "-input" and "-list".')
         return success, arg
-    elif arg.list is not None:
-        arg.list = Path(arg.list).absolute()
-        if not arg.list.exists():
-            log.critical(f'Input file {arg.list} does not exists.')
+    elif arg.list_file is not None:
+        arg.list_file = Path(arg.list_file).absolute()
+        if not arg.list_file.exists():
+            log.critical(f'Input file {arg.list_file} does not exists.')
             return success, arg
     else:
         if len(arg.input) > 2:
@@ -209,18 +210,18 @@ def init_arg(arg):
     return success, arg
 
 
-def read_table(arg):
+def read_table(list_file: Path):
     """
     Read table from given csv file.
     Columns of table:
         Input, Input(optional), Taxonomy
     Args:
-        arg(NameSpace): arg generated from parse_args
+        list_file(Path): csv file
     Return:
         inputs(list): [[f, r], taxon]
     """
     inputs = []
-    with open(arg.list, 'r') as raw:
+    with open(list_file, 'r') as raw:
         for line in raw:
             try:
                 f, r, taxon = line.strip().split(',')
@@ -236,7 +237,7 @@ def read_table(arg):
     return inputs
 
 
-def split(raw, number, output):
+def split(raw, number, output: Path):
     """
     Split reads of original file from the beginning.
     If set number to default('inf'), extract all reads.
@@ -504,7 +505,7 @@ def assembly(arg, perl, novoplasty):
     log.info('')
     for i in arg.input:
         test = Path(i)
-        # arg.list may contains invalid file
+        # arg.list_file may contains invalid file
         if not test.exists():
             log.critical(f'Cannot find input file {i}')
             return success
@@ -685,13 +686,13 @@ def assembly_main(arg_str=None):
     log.addHandler(log_file_handler)
     # start
     cwd = Path().cwd().absolute()
-    if arg.list is None:
+    if arg.list_file is None:
         # novoplasty put files in current folder, have to chdir to make
         # the folder clean
         chdir(arg.out)
         success = assembly(arg, perl, novoplasty)
     else:
-        table = read_table(arg)
+        table = read_table(arg.list_file)
         success_list = []
         original_out = arg.out.absolute()
         for i in table:

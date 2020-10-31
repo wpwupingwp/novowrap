@@ -30,7 +30,7 @@ except ImportError:
 log = logging.getLogger('novowrap')
 
 
-def accessible(name, type_):
+def accessible(name: Path, type_: str):
     """
     Check given path is accessible or not.
     Given path does not exist.
@@ -61,7 +61,7 @@ def accessible(name, type_):
     return ok
 
 
-def move(source, dest, copy=False):
+def move(source: Path, dest, copy=False):
     """
     Move source to dest and return dest.
     If set "copy", copy source to dest instead of move.
@@ -90,7 +90,7 @@ def move(source, dest, copy=False):
     return dest
 
 
-def get_full_taxon(taxon):
+def get_full_taxon(taxon: str):
     """
     Get full lineage of given taxon, return lineage list.
     Not only contains Kingdom, Phylum, Class, Order, Family, Genus, Species.
@@ -131,7 +131,7 @@ def get_full_taxon(taxon):
     return True, reversed(full_lineage)
 
 
-def get_ref(taxon, out, tmp=None, mt_mode=False):
+def get_ref(taxon: str, out: Path, tmp=None, mt_mode=False):
     """
     Get reference gb file.
     Only one record will be retrieved.
@@ -212,7 +212,7 @@ def get_ref(taxon, out, tmp=None, mt_mode=False):
     return None, None
 
 
-def blast(query, target, perc_identity=70):
+def blast(query: Path, target: Path, perc_identity=70):
     """
     Use simple BLAST with special output format.
     Args:
@@ -248,7 +248,7 @@ def blast(query, target, perc_identity=70):
     return blast_out, blast_log
 
 
-def parse_blast_tab(filename):
+def parse_blast_tab(filename: Path):
     """
     Parse BLAST result (tab format).
     Return [qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen,

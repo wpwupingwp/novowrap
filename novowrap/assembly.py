@@ -549,10 +549,12 @@ def assembly(arg, perl, novoplasty):
         ref = utils.move(ref, arg.tmp/ref.name, copy=True)
     else:
         # for "Genus species var. blabla", ignore subspecies words
-        if len(arg.taxon) > 1:
+        if isinstance(arg.taxon, str):
+            pass
+        elif isinstance(arg.taxon, list):
             arg.taxon = ' '.join(arg.taxon[:2])
         else:
-            arg.taxon = arg.taxon[0]
+            pass
         ref, arg.taxon = utils.get_ref(arg.taxon, arg.tmp, mt_mode=arg.mt_mode)
         if ref is None:
             log.critical('Cannot get reference.')
@@ -695,7 +697,7 @@ def assembly_main(arg_str=None):
         for i in table:
             arg.input, arg.taxon = i
             # str to list
-            if arg.taxon == '':
+            if len(arg.taxon) == 0:
                 arg.taxon = 'Nicotiana tabacum'
                 log.warning(f'Taxonomy for {arg.input[0]} is missing.')
                 log.info(f'Use {arg.taxon} instead.')

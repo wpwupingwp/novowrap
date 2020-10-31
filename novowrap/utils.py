@@ -203,8 +203,10 @@ def get_ref(taxon: str, out: Path, tmp=None, mt_mode=False,
         with open(ref, 'w') as _:
             _.write(content.read())
         # can rotate or not
+        if simple_validate:
+            return ref, taxon_name
         r_gb, r_fasta = rotate_seq(ref, tmp=tmp)
-        if r_gb is not None or simple_validate:
+        if r_gb is not None:
             r_gb.unlink()
             r_fasta.unlink()
             log.info(f'Got {ref.name} as reference.')

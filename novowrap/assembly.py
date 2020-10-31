@@ -195,8 +195,8 @@ def init_arg(arg):
         log.critical(f'Fail to create {arg.out}. Please contact the '
                      f'administrator.')
         return success, arg
-    # 50k for mitochondria is enough
-    if arg.mt_mode and arg.max > 50000:
+    if arg.mt_mode:
+        arg.simple_validate = True
         log.warning(f'Given genome length range is {arg.min}-{arg.max}.')
         log.warning('Is it ok for mitochondria?')
     arg.out.mkdir()
@@ -556,7 +556,8 @@ def assembly(arg, perl, novoplasty):
             arg.taxon = ' '.join(arg.taxon[:2])
         else:
             pass
-        ref, arg.taxon = utils.get_ref(arg.taxon, arg.tmp, mt_mode=arg.mt_mode)
+        ref, arg.taxon = utils.get_ref(arg.taxon, arg.tmp, mt_mode=arg.mt_mode,
+                                       simple_validate=arg.simple_validate)
         if ref is None:
             log.critical('Cannot get reference.')
             return success
@@ -603,9 +604,8 @@ def assembly(arg, perl, novoplasty):
                        f'-out {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
-            if arg.mt_mode:
-                arg_str += ' -mt_mode -simple_validate'
-            elif arg.simple_validate:
+            # if mt, simple validate
+            if arg.simple_validate:
                 arg_str += ' -simple_validate'
             validate_file, report = validate_main(arg_str)
             validated.extend(validate_file)
@@ -632,10 +632,7 @@ def assembly(arg, perl, novoplasty):
                        f'-out {arg.out} '
                        f'-perc_identity {arg.perc_identity} '
                        f'-len_diff {arg.len_diff}')
-            # if mt, simple validate
-            if arg.mt_mode:
-                arg_str += ' -mt_mode -simple_validate'
-            elif arg.simple_validate:
+            if arg.simple_validate:
                 arg_str += ' -simple_validate'
             validate_file, report = validate_main(arg_str)
             if len(validate_file) != 0:

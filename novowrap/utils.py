@@ -131,7 +131,8 @@ def get_full_taxon(taxon: str):
     return True, reversed(full_lineage)
 
 
-def get_ref(taxon: str, out: Path, tmp=None, mt_mode=False):
+def get_ref(taxon: str, out: Path, tmp=None, mt_mode=False,
+            simple_validate=False):
     """
     Get reference gb file.
     Only one record will be retrieved.
@@ -203,7 +204,7 @@ def get_ref(taxon: str, out: Path, tmp=None, mt_mode=False):
             _.write(content.read())
         # can rotate or not
         r_gb, r_fasta = rotate_seq(ref, tmp=tmp)
-        if r_gb is not None or mt_mode:
+        if r_gb is not None or simple_validate:
             r_gb.unlink()
             r_fasta.unlink()
             log.info(f'Got {ref.name} as reference.')

@@ -125,7 +125,8 @@ def init_arg(arg):
     return success, arg
 
 
-def divide_records(fasta, output, ref_len, tmp, len_diff=0.1):
+def divide_records(fasta: Path, output: Path, ref_len: int,
+                   tmp: Path, len_diff=0.1):
     """
     Make sure each file has only one record.
     Args:
@@ -227,7 +228,7 @@ def get_alpha(old):
     return alpha
 
 
-def draw(ref_gb, seq_gb, data):
+def draw(ref_gb: Path, seq_gb: Path, data: list):
     """
     Draw figure.
     Args:
@@ -289,7 +290,8 @@ def draw(ref_gb, seq_gb, data):
     return pdf
 
 
-def validate_regions(length, regions, compare, perc_identity=0.7):
+def validate_regions(length: int, regions: dict, compare: list,
+                     perc_identity=0.7):
     """
     Use BLAST results to validate regions.
     Args:

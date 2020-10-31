@@ -300,7 +300,7 @@ def get_reads_len(filename):
     return length
 
 
-def get_seed(ref, output, gene, mt_mode):
+def get_seed(ref: Path, output: Path, gene: str, mt_mode: bool):
     """
     Use BarcodeFinder to get seed or reference sequence.
     Arg:
@@ -339,7 +339,7 @@ def get_seed(ref, output, gene, mt_mode):
     return ordered_seeds
 
 
-def config(seed, arg):
+def config(seed: Path, arg):
     """
     Generate config file for NOVOPlasty.
     Arg:
@@ -402,7 +402,7 @@ Use Quality Scores    = no
     return config_file
 
 
-def organize_out(arg, seed):
+def organize_out(arg, seed: str):
     """
     Organize NOVOPlasty output.
         log*: log file

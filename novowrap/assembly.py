@@ -300,7 +300,7 @@ def get_reads_len(filename):
     return length
 
 
-def get_seed(ref: Path, output: Path, gene: str, mt_mode: bool):
+def get_seed(ref: Path, output: Path, gene: str):
     """
     Use BarcodeFinder to get seed or reference sequence.
     Arg:
@@ -315,8 +315,6 @@ def get_seed(ref: Path, output: Path, gene: str, mt_mode: bool):
     ordered_seeds = []
     whole = output / 'whole.seed'
     SeqIO.convert(ref, 'gb', whole, 'fasta')
-    if mt_mode:
-        return [whole, ]
     seeds = {}
     genes = gene.split(',')
     gb = SeqIO.read(ref, 'gb')
@@ -565,7 +563,7 @@ def assembly(arg, perl, novoplasty):
             ref = utils.move(ref, arg.tmp/ref.name)
     # get seed
     seeds = []
-    ordered_seeds = get_seed(ref, arg.raw, arg.seed, arg.mt_mode)
+    ordered_seeds = get_seed(ref, arg.raw, arg.seed)
     if arg.seed_file is not None:
         seeds.append(Path(arg.seed_file).absolute())
         # only add whole.seed

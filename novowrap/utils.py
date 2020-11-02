@@ -202,10 +202,10 @@ def get_ref(taxon: str, out: Path, tmp=None, mt_mode=False,
                                 retmode='text', retmax=1)
         with open(ref, 'w') as _:
             _.write(content.read())
-        # can rotate or not
         if simple_validate:
-            return ref, taxon_name
-        r_gb, r_fasta = rotate_seq(ref, tmp=tmp)
+            r_gb, r_fasta = rotate_seq_2(ref, tmp=tmp)
+        else:
+            r_gb, r_fasta = rotate_seq(ref, tmp=tmp)
         if r_gb is not None:
             r_gb.unlink()
             r_fasta.unlink()
@@ -387,7 +387,8 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
         tmp(Path or None): temporary folder
         silence(bool): print debug info or not
     Return:
-        success(bool): success or not
+        new_gb(Path): gb file
+        new_fasta(Path): fasta file
     """
     filename = Path(filename).absolute()
     if tmp is None:
@@ -539,6 +540,49 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
     if not success:
         log.critical(f'Failed to rotate {filename}.')
         return None, None
+    return new_gb, new_fasta
+
+
+def rotate_seq_2(filename: Path, tmp=None, silence=True) -> (Path, Path):
+    """
+    simple version for mitochondria or plastids without normal structure
+    Args:
+        filename: genbank file
+        tmp: tmp folder
+        silence:  print debug or not
+    Returns:
+        new_gb(Path): gb file
+        new_fasta(Path): fasta file
+    """
+    filename = Path(filename).absolute()
+    if tmp is None:
+        tmp = filename.parent
+    if silence:
+        log.setLevel(logging.CRITICAL)
+    log.info(f'Rotate {filename}...')
+    fmt = get_fmt(filename)
+    # get origin seq
+    origin_seq = list(SeqIO.parse(filename, fmt))
+    assert len(origin_seq) == 1
+    origin_seq = origin_seq[0]
+    origin_len = len(origin_seq)
+    # get repeat seq
+    repeat_fasta = repeat(filename, fmt)
+    repeat_seq = SeqIO.read(repeat_fasta, 'fasta')
+    log.setLevel(logging.INFO)
+    blast_result, blast_log = blast(repeat_fasta, repeat_fasta)
+    log.setLevel(logging.CRITICAL)
+    if blast_result is None:
+        return None, None
+    new_fasta = filename.with_suffix('.rotate')
+    if filename.suffix == '.gb':
+        new_gb = filename.with_suffix('.gb.gb')
+    else:
+        new_gb = filename.with_suffix('.gb')
+    SeqIO.write(origin_seq, new_fasta, 'fasta')
+    SeqIO.write(origin_seq, new_gb, 'gb')
+    log.debug('simple rotate completed.')
+    log.setLevel(logging.INFO)
     return new_gb, new_fasta
 
 

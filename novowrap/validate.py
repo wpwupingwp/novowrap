@@ -13,8 +13,7 @@ if environ.get('DISPLAY', '') == '':
 from matplotlib import pyplot as plt
 import numpy as np
 
-from novowrap.utils import get_ref, blast, parse_blast_tab, accessible, move
-from novowrap.utils import get_fmt, rotate_seq, get_regions, rc_regions
+from novowrap import utils
 
 
 # define logger
@@ -105,14 +104,14 @@ def init_arg(arg):
             # give users one more chance
             new_name = arg.out.name + f'-{randint(0, 2020):04d}'
             arg.out = arg.out.with_name(new_name)
-            if arg.out.exists() or not accessible(arg.out, 'folder'):
+            if arg.out.exists() or not utils.accessible(arg.out, 'folder'):
                 log.critical('Cannot create output folder.')
                 return success, arg
             else:
                 arg.out.mkdir()
                 log.info(f'Use {arg.out.name} instead.')
         else:
-            if not accessible(arg.out, 'folder'):
+            if not utils.accessible(arg.out, 'folder'):
                 log.critical(f'Failed to access output folder {arg.out}.'
                              f'Please contact the administrator.')
                 return success, arg
@@ -121,6 +120,8 @@ def init_arg(arg):
     # if called by novowrap, tmp is accessible already
     if not arg.tmp.exists():
         arg.tmp.mkdir()
+    if arg.mt_mode:
+        arg.simple_validate = True
     success = True
     return success, arg
 
@@ -166,11 +167,11 @@ def divide_records(fasta: Path, output: Path, ref_len: int,
             skip = 'undersize' if record_len_diff < 0 else 'oversize'
         SeqIO.write(record, filename, 'fasta')
         if not skip:
-            r_gb, r_fasta = rotate_seq(filename, tmp=tmp)
+            r_gb, r_fasta = utils.rotate_seq(filename, tmp=tmp)
             if r_gb is not None:
                 divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
                                           'length': record_len})
-                move(filename,
+                utils.move(filename,
                      tmp/filename.with_suffix('.raw').name)
             else:
                 skip = 'structure_unusual'
@@ -191,19 +192,20 @@ def compare_seq(query, reference, tmp, perc_identity):
         results[0][1]: BLAST data
     """
     results = []
-    blast_result, blast_log = blast(Path(query), reference, perc_identity*100)
+    blast_result, blast_log = utils.blast(Path(query), reference,
+                                          perc_identity*100)
     if blast_result is None:
         return None
     # only one record in file, loop is for unpack
-    for query in parse_blast_tab(blast_result):
+    for query in utils.parse_blast_tab(blast_result):
         record = []
         for i in query:
             (qseqid, sseqid, sstrand, qlen, slen, length, pident, gapopen,
              qstart, qend, sstart, send) = i
             record.append([qstart, qend, sstart, send, sstrand, pident])
         results.append(record)
-    move(blast_result, tmp/blast_result.name)
-    move(blast_log, tmp/blast_log.name)
+    utils.move(blast_result, tmp/blast_result.name)
+    utils.move(blast_log, tmp/blast_log.name)
     return results[0]
 
 
@@ -238,8 +240,8 @@ def draw(ref_gb: Path, seq_gb: Path, data: list):
     Return:
         pdf(Path): figure file
     """
-    ref_regions = get_regions(ref_gb)
-    seq_regions = get_regions(seq_gb)
+    ref_regions = utils.get_regions(ref_gb)
+    seq_regions = utils.get_regions(seq_gb)
     title = f'{seq_gb.stem} and {ref_gb.stem}'
     ignore_offset = len(ref_regions['IRa'])*2 + len(ref_regions['SSC'])
     plt.rcParams.update({'font.size': 20, 'font.family': 'serif'})
@@ -396,9 +398,9 @@ def validate_main(arg_str=None):
     # prefer ref because assembly passed ref
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
-        fmt = get_fmt(arg.ref)
+        fmt = utils.get_fmt(arg.ref)
         ref_gb = Path(arg.ref).absolute()
-        ref_gb = move(ref_gb, arg.tmp/ref_gb.name, copy=True)
+        ref_gb = utils.move(ref_gb, arg.tmp/ref_gb.name, copy=True)
         ref_records = list(SeqIO.parse(ref_gb, fmt))
         if len(ref_records) > 1:
             log.warning('Given reference contains more than one records, '
@@ -408,20 +410,23 @@ def validate_main(arg_str=None):
             SeqIO.write(ref_records[0], ref_gb, fmt)
     else:
         log.info(f'Taxonomy:\t{arg.taxon}')
-        ref_gb, ref_taxon = get_ref(arg.taxon, arg.tmp)
+        ref_gb, ref_taxon = utils.get_ref(arg.taxon, arg.tmp)
         if ref_gb is None:
             log.critical('Failed to get reference.')
             log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')
             return validated, output_info
-        ref_gb = move(ref_gb, arg.tmp/ref_gb.name)
+        ref_gb = utils.move(ref_gb, arg.tmp/ref_gb.name)
         fmt = 'gb'
     log.info(f'Output:\t {arg.out}')
     ref_len = len(SeqIO.read(ref_gb, fmt))
-    r_ref_gb, r_ref_fasta = rotate_seq(ref_gb, tmp=arg.tmp)
+    if not arg.simple_validate:
+        r_ref_gb, r_ref_fasta = utils.rotate_seq(ref_gb, tmp=arg.tmp)
+    else:
+        r_ref_gb, r_ref_fasta = utils.rotate_seq_2(ref_gb, tmp=arg.tmp)
     if r_ref_gb is None:
         log.critical(f'Cannot process reference sequence. Quit.')
         return validated, output_info
-    ref_regions = get_regions(r_ref_gb)
+    ref_regions = utils.get_regions(r_ref_gb)
     if r_ref_gb is None:
         log.critical('Cannot get rotated reference sequence.')
         log.critical('Please consider to use another reference.')
@@ -437,7 +442,7 @@ def validate_main(arg_str=None):
         i_gb = divided[i]['gb']
         i_fasta = divided[i]['fasta']
         log.info(f'Analyze {i_fasta}.')
-        option_regions = get_regions(i_gb)
+        option_regions = utils.get_regions(i_gb)
         # add regions info
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])
@@ -448,7 +453,7 @@ def validate_main(arg_str=None):
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
             return validated, output_info
         pdf = draw(r_ref_gb, i_gb, compare_result)
-        pdf = move(pdf, arg.out/pdf.name)
+        pdf = utils.move(pdf, arg.out/pdf.name)
         log.info('Detecting reverse complement region.')
         option_len = divided[i]['length']
         count, to_rc, strand_info, bad_region = validate_regions(
@@ -459,27 +464,27 @@ def validate_main(arg_str=None):
             continue
         if to_rc is not None:
             log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
-            rc_fasta = rc_regions(i_gb, to_rc)
+            rc_fasta = utils.rc_regions(i_gb, to_rc)
             # clean old files
-            i_fasta = move(i_fasta, arg.tmp/(i_fasta.with_name(
+            i_fasta = utils.move(i_fasta, arg.tmp/(i_fasta.with_name(
                 i_fasta.stem+'-noRC.fasta')).name)
-            i_gb = move(i_gb, arg.tmp/(i_gb.with_name(
+            i_gb = utils.move(i_gb, arg.tmp/(i_gb.with_name(
                 i_gb.stem+'-noRC.gb')).name)
-            rc_fasta = move(rc_fasta, rc_fasta.with_suffix(''))
-            r_rc_gb, r_rc_fasta = rotate_seq(rc_fasta, tmp=arg.tmp)
+            rc_fasta = utils.move(rc_fasta, rc_fasta.with_suffix(''))
+            r_rc_gb, r_rc_fasta = utils.rotate_seq(rc_fasta, tmp=arg.tmp)
             if r_rc_gb is None:
                 continue
             rc_fasta.unlink()
-            r_rc_gb = move(r_rc_gb, arg.out/r_rc_gb.with_name(
+            r_rc_gb = utils.move(r_rc_gb, arg.out/r_rc_gb.with_name(
                 r_rc_gb.stem+'_RC.gb').name)
-            r_rc_fasta = move(r_rc_fasta, arg.out/r_rc_fasta.with_name(
+            r_rc_fasta = utils.move(r_rc_fasta, arg.out/r_rc_fasta.with_name(
                 r_rc_fasta.stem+'_RC.fasta').name)
             new_compare_result = compare_seq(r_rc_fasta, r_ref_fasta, arg.tmp,
                                              arg.perc_identity)
             pdf = draw(r_ref_gb, r_rc_gb, new_compare_result)
-            pdf = move(pdf, arg.out/pdf.name)
+            pdf = utils.move(pdf, arg.out/pdf.name)
             divided[i]['fasta'] = r_rc_fasta
-            new_regions = get_regions(r_rc_gb)
+            new_regions = utils.get_regions(r_rc_gb)
             for _ in new_regions:
                 divided[i][_] = len(new_regions[_])
             # validate again
@@ -488,7 +493,7 @@ def validate_main(arg_str=None):
             if to_rc_2 is None:
                 success = True
         else:
-            i_fasta = move(i_fasta, i_fasta.with_suffix('.fasta'))
+            i_fasta = utils.move(i_fasta, i_fasta.with_suffix('.fasta'))
             success = True
         divided[i]['success'] = success
 

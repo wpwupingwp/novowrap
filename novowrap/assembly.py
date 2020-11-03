@@ -594,6 +594,10 @@ def assembly(arg, perl, novoplasty):
         if len(circularized) == 0 and len(options) == 0 and len(merged) == 0:
             log.warning(f'Assembled with {seed.stem} failed.')
             continue
+        if arg.mt_mode:
+            log.debug('Skip validation for mitochondria genomes.')
+            log.info('Assembly finished.')
+            return True
         validated = []
         log.info('Validate assembly results.')
         # validate merged or not?

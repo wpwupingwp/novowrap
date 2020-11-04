@@ -591,9 +591,9 @@ def get_regions(gb):
     Arg:
         gb(Path): rotate_seq generated gb file, only contains one record
     Return:
-        region({name: SeqFeature}): region location dict
+        region({name: SeqFeature}): region location dict, default is ''
     """
-    ref_region = {}
+    ref_region = dict().fromkeys(['LSC', 'SSC', 'IRa', 'IRb'], '')
     for feature in SeqIO.read(gb, 'gb').features:
         if (feature.type == 'misc_feature' and
                 feature.qualifiers.get('software', ['', ])[0] == 'rotate_seq'):

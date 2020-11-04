@@ -202,10 +202,8 @@ def get_ref(taxon: str, out: Path, tmp=None, mt_mode=False,
                                 retmode='text', retmax=1)
         with open(ref, 'w') as _:
             _.write(content.read())
-        if simple_validate:
-            r_gb, r_fasta = rotate_seq_2(ref, tmp=tmp)
-        else:
-            r_gb, r_fasta = rotate_seq(ref, tmp=tmp)
+        r_gb, r_fasta = rotate_seq(ref, tmp=tmp,
+                                   simple_validate=simple_validate)
         if r_gb is not None:
             r_gb.unlink()
             r_fasta.unlink()
@@ -377,7 +375,8 @@ def get_fmt(filename):
     return fmt
 
 
-def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
+def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
+               simple_validate=False):
     """
     Rotate genbank or fasta record, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Input file should only contains one record.
@@ -386,10 +385,15 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True):
         min_IR: minimum IR length
         tmp(Path or None): temporary folder
         silence(bool): print debug info or not
+        simple_validate(bool): use abnormal rotate or not
     Return:
         new_gb(Path): gb file
         new_fasta(Path): fasta file
     """
+    if simple_validate:
+        # abnormal rotate
+        return rotate_seq_2(filename, tmp=tmp)
+    # normal rotate
     filename = Path(filename).absolute()
     if tmp is None:
         tmp = filename.parent

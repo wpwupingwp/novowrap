@@ -127,7 +127,7 @@ def init_arg(arg):
 
 
 def divide_records(fasta: Path, output: Path, ref_len: int,
-                   tmp: Path, len_diff=0.1):
+                   tmp: Path, len_diff=0.1, simple_validate=False):
     """
     Make sure each file has only one record.
     Args:
@@ -136,9 +136,9 @@ def divide_records(fasta: Path, output: Path, ref_len: int,
         ref_len(int): length of reference, to filter bad records
         tmp(Path): temp folder
         len_diff: maximum allowed length difference
+        simple_validate(bool): skip normal rotate or not
     Returns:
-        option_files(list(Path)):  list of divided files
-        info(list): file info
+        divided(dict): info of divided files
     """
     options = list(SeqIO.parse(fasta, 'fasta'))
     divided = {}
@@ -167,7 +167,8 @@ def divide_records(fasta: Path, output: Path, ref_len: int,
             skip = 'undersize' if record_len_diff < 0 else 'oversize'
         SeqIO.write(record, filename, 'fasta')
         if not skip:
-            r_gb, r_fasta = utils.rotate_seq(filename, tmp=tmp)
+            r_gb, r_fasta = utils.rotate_seq(
+                filename, tmp=tmp, simple_validate=simple_validate)
             if r_gb is not None:
                 divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
                                           'length': record_len})
@@ -419,10 +420,8 @@ def validate_main(arg_str=None):
         fmt = 'gb'
     log.info(f'Output:\t {arg.out}')
     ref_len = len(SeqIO.read(ref_gb, fmt))
-    if not arg.simple_validate:
-        r_ref_gb, r_ref_fasta = utils.rotate_seq(ref_gb, tmp=arg.tmp)
-    else:
-        r_ref_gb, r_ref_fasta = utils.rotate_seq_2(ref_gb, tmp=arg.tmp)
+    r_ref_gb, r_ref_fasta = utils.rotate_seq(
+        ref_gb, tmp=arg.tmp, simple_validate=arg.simple_validate)
     if r_ref_gb is None:
         log.critical(f'Cannot process reference sequence. Quit.')
         return validated, output_info
@@ -433,7 +432,7 @@ def validate_main(arg_str=None):
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
         return validated, output_info
     divided = divide_records(arg.input, arg.out, ref_len, arg.tmp,
-                             arg.len_diff)
+                             arg.len_diff, arg.simple_validate)
     for i in divided:
         success = False
         divided[i]['success'] = success
@@ -443,6 +442,8 @@ def validate_main(arg_str=None):
         i_fasta = divided[i]['fasta']
         log.info(f'Analyze {i_fasta}.')
         option_regions = utils.get_regions(i_gb)
+        log.info('option regions')
+        log.info(option_regions.items())
         # add regions info
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])
@@ -471,7 +472,8 @@ def validate_main(arg_str=None):
             i_gb = utils.move(i_gb, arg.tmp/(i_gb.with_name(
                 i_gb.stem+'-noRC.gb')).name)
             rc_fasta = utils.move(rc_fasta, rc_fasta.with_suffix(''))
-            r_rc_gb, r_rc_fasta = utils.rotate_seq(rc_fasta, tmp=arg.tmp)
+            r_rc_gb, r_rc_fasta = utils.rotate_seq(
+                rc_fasta, tmp=arg.tmp, simple_validate=arg.simple_validate)
             if r_rc_gb is None:
                 continue
             rc_fasta.unlink()

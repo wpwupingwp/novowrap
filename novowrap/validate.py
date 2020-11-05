@@ -172,8 +172,7 @@ def divide_records(fasta: Path, output: Path, ref_len: int,
             if r_gb is not None:
                 divided[filename].update({'gb': r_gb, 'fasta': r_fasta,
                                           'length': record_len})
-                utils.move(filename,
-                     tmp/filename.with_suffix('.raw').name)
+                utils.move(filename, tmp/filename.with_suffix('.raw').name)
             else:
                 skip = 'structure_unusual'
         divided[filename]['skip'] = skip
@@ -262,6 +261,60 @@ def draw(ref_gb: Path, seq_gb: Path, data: list):
         if key != 'IRb':
             plt.axvline(x=value.location.end, ymin=0.15, ymax=0.85,
                         linestyle='dashdot', alpha=0.5)
+    # no repeat legend
+    plt.plot(0.5, 0.5, 'r-+', linewidth=5, label='Plus')
+    plt.plot(0.5, 0.5, 'g-|', linewidth=5, label='Minus')
+    plt.ylim([0.5, 1.1])
+    plt.xlim([0, y_max])
+    # usually fine
+    if y_max > 20000:
+        plt.xticks(list(range(0, y_max, 20000)))
+    plt.yticks([0.65, 0.8, 0.95], labels=['Minus', 'Reference', 'Plus'])
+    plt.legend(loc='lower left')
+    for i in data:
+        qstart, qend, sstart, send, sstrand, pident = i
+        if sstrand == 'plus':
+            plt.plot([qstart, qend], [0.95, 0.95], 'r-+', linewidth=5)
+            # ignore these line
+            if abs(qstart-sstart) > ignore_offset:
+                continue
+            plt.fill([sstart, qstart, qend, send], [0.8, 0.95, 0.95, 0.8],
+                     color='r', alpha=get_alpha(pident))
+        # minus strand
+        else:
+            plt.plot([qstart, qend], [0.65, 0.65], 'g-|', linewidth=5)
+            plt.fill([send, sstart, qend, qstart], [0.8, 0.8, 0.65, 0.65],
+                     color='#88cc88', alpha=get_alpha(pident))
+    # pdf = seq_gb.with_name(seq_gb.stem+'.pdf')
+    pdf = seq_gb.with_suffix('.pdf')
+    plt.savefig(pdf)
+    plt.close()
+    return pdf
+
+
+def simple_draw(ref_gb: Path, seq_gb: Path, data: list):
+    """
+    Draw figure of sequences without 4-parts structure.
+    Args:
+        ref_gb(Path): reference genbank file
+        seq_gb(Path): sequence genbank file
+        data(list): BLAST result
+    Return:
+        pdf(Path): figure file
+    """
+    ref_len = len(SeqIO.read(ref_gb, 'gb'))
+    seq_len = len(SeqIO.read(seq_gb, 'gb'))
+    title = f'{seq_gb.stem} and {ref_gb.stem}'
+    ignore_offset = min(ref_len, seq_len)
+    plt.rcParams.update({'font.size': 20, 'font.family': 'serif'})
+    plt.figure(1, figsize=(30, 15))
+    plt.title(f'Validation of {title}', pad=30)
+    plt.xlabel('Base')
+    y_max = max(ref_len, seq_len)
+    plt.plot([0, ref_len], [0.8, 0.8], marker='+', label='Reference',
+             linewidth=10)
+    plt.text(ref_len/2, 0.78, f'{ref_len} bp', fontsize=20, ha='center')
+    plt.text(ref_len/2, 0.96, f'{seq_len} bp', fontsize=20, ha='center')
     # no repeat legend
     plt.plot(0.5, 0.5, 'r-+', linewidth=5, label='Plus')
     plt.plot(0.5, 0.5, 'g-|', linewidth=5, label='Minus')
@@ -477,7 +530,7 @@ def normal_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
             return None
         pdf = draw(r_ref_gb, i_gb, compare_result)
-        pdf = utils.move(pdf, arg.out/pdf.name)
+        utils.move(pdf, arg.out/pdf.name)
         log.info('Detecting reverse complement region.')
         option_len = divided[i]['length']
         count, to_rc, strand_info, bad_region = validate_regions(
@@ -490,9 +543,9 @@ def normal_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
             log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
             rc_fasta = utils.rc_regions(i_gb, to_rc)
             # clean old files
-            i_fasta = utils.move(i_fasta, arg.tmp/(i_fasta.with_name(
+            utils.move(i_fasta, arg.tmp/(i_fasta.with_name(
                 i_fasta.stem+'-noRC.fasta')).name)
-            i_gb = utils.move(i_gb, arg.tmp/(i_gb.with_name(
+            utils.move(i_gb, arg.tmp/(i_gb.with_name(
                 i_gb.stem+'-noRC.gb')).name)
             rc_fasta = utils.move(rc_fasta, rc_fasta.with_suffix(''))
             r_rc_gb, r_rc_fasta = utils.rotate_seq(
@@ -507,7 +560,7 @@ def normal_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
             new_compare_result = compare_seq(r_rc_fasta, r_ref_fasta, arg.tmp,
                                              arg.perc_identity)
             pdf = draw(r_ref_gb, r_rc_gb, new_compare_result)
-            pdf = utils.move(pdf, arg.out/pdf.name)
+            utils.move(pdf, arg.out/pdf.name)
             divided[i]['fasta'] = r_rc_fasta
             new_regions = utils.get_regions(r_rc_gb)
             for _ in new_regions:
@@ -518,7 +571,7 @@ def normal_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
             if to_rc_2 is None:
                 success = True
         else:
-            i_fasta = utils.move(i_fasta, i_fasta.with_suffix('.fasta'))
+            utils.move(i_fasta, i_fasta.with_suffix('.fasta'))
             success = True
         divided[i]['success'] = success
         return divided
@@ -546,50 +599,11 @@ def simple_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
             log.critical('Cannot run BLAST.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
             return None
-        pdf = draw(r_ref_gb, i_gb, compare_result)
-        pdf = utils.move(pdf, arg.out/pdf.name)
-        log.info('Detecting reverse complement region.')
-        option_len = divided[i]['length']
-        count, to_rc, strand_info, bad_region = validate_regions(
-            option_len, option_regions, compare_result, arg.perc_identity)
-        divided[i].update(strand_info)
-        if bad_region:
-            # skip sequences with bad region
-            continue
-        if to_rc is not None:
-            log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
-            rc_fasta = utils.rc_regions(i_gb, to_rc)
-            # clean old files
-            i_fasta = utils.move(i_fasta, arg.tmp/(i_fasta.with_name(
-                i_fasta.stem+'-noRC.fasta')).name)
-            i_gb = utils.move(i_gb, arg.tmp/(i_gb.with_name(
-                i_gb.stem+'-noRC.gb')).name)
-            rc_fasta = utils.move(rc_fasta, rc_fasta.with_suffix(''))
-            r_rc_gb, r_rc_fasta = utils.rotate_seq(
-                rc_fasta, tmp=arg.tmp, simple_validate=arg.simple_validate)
-            if r_rc_gb is None:
-                continue
-            rc_fasta.unlink()
-            r_rc_gb = utils.move(r_rc_gb, arg.out/r_rc_gb.with_name(
-                r_rc_gb.stem+'_RC.gb').name)
-            r_rc_fasta = utils.move(r_rc_fasta, arg.out/r_rc_fasta.with_name(
-                r_rc_fasta.stem+'_RC.fasta').name)
-            new_compare_result = compare_seq(r_rc_fasta, r_ref_fasta, arg.tmp,
-                                             arg.perc_identity)
-            pdf = draw(r_ref_gb, r_rc_gb, new_compare_result)
-            pdf = utils.move(pdf, arg.out/pdf.name)
-            divided[i]['fasta'] = r_rc_fasta
-            new_regions = utils.get_regions(r_rc_gb)
-            for _ in new_regions:
-                divided[i][_] = len(new_regions[_])
-            # validate again
-            count_2, to_rc_2, *_ = validate_regions(
-                option_len, new_regions, new_compare_result, arg.perc_identity)
-            if to_rc_2 is None:
-                success = True
-        else:
-            i_fasta = utils.move(i_fasta, i_fasta.with_suffix('.fasta'))
-            success = True
+        pdf = simple_draw(r_ref_gb, i_gb, compare_result)
+        utils.move(pdf, arg.out/pdf.name)
+        log.debug('Skip detecting reverse complement region.')
+        utils.move(i_fasta, i_fasta.with_suffix('.fasta'))
+        success = True
         divided[i]['success'] = success
         return divided
 

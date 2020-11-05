@@ -423,14 +423,11 @@ def validate_main(arg_str=None):
     r_ref_gb, r_ref_fasta = utils.rotate_seq(
         ref_gb, tmp=arg.tmp, simple_validate=arg.simple_validate)
     if r_ref_gb is None:
-        log.critical(f'Cannot process reference sequence. Quit.')
-        return validated, output_info
-    ref_regions = utils.get_regions(r_ref_gb)
-    if r_ref_gb is None:
-        log.critical('Cannot get rotated reference sequence.')
+        log.critical('Cannot process reference sequence.')
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
         return validated, output_info
+    ref_regions = utils.get_regions(r_ref_gb)
     divided = divide_records(arg.input, arg.out, ref_len, arg.tmp,
                              arg.len_diff, arg.simple_validate)
     for i in divided:
@@ -442,8 +439,6 @@ def validate_main(arg_str=None):
         i_fasta = divided[i]['fasta']
         log.info(f'Analyze {i_fasta}.')
         option_regions = utils.get_regions(i_gb)
-        log.info('option regions')
-        log.info(option_regions.items())
         # add regions info
         for _ in option_regions:
             divided[i][_] = len(option_regions[_])

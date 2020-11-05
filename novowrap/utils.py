@@ -547,13 +547,12 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
     return new_gb, new_fasta
 
 
-def rotate_seq_2(filename: Path, tmp=None, silence=True) -> (Path, Path):
+def rotate_seq_2(filename: Path, tmp=None) -> (Path, Path):
     """
     simple version for mitochondria or plastids without normal structure
     Args:
         filename: genbank file
         tmp: tmp folder
-        silence:  print debug or not
     Returns:
         new_gb(Path): gb file
         new_fasta(Path): fasta file
@@ -561,14 +560,13 @@ def rotate_seq_2(filename: Path, tmp=None, silence=True) -> (Path, Path):
     filename = Path(filename).absolute()
     if tmp is None:
         tmp = filename.parent
-    if silence:
-        log.setLevel(logging.CRITICAL)
-    log.info(f'Rotate {filename}...')
+    log.debug(f'Rotate {filename}...')
     fmt = get_fmt(filename)
     # get origin seq
     origin_seq = list(SeqIO.parse(filename, fmt))
     assert len(origin_seq) == 1
     origin_seq = origin_seq[0]
+    origin_seq.seq.alphabet = IUPAC.ambiguous_dna
     origin_len = len(origin_seq)
     # get repeat seq
     repeat_fasta = repeat(filename, fmt)
@@ -586,7 +584,6 @@ def rotate_seq_2(filename: Path, tmp=None, silence=True) -> (Path, Path):
     SeqIO.write(origin_seq, new_fasta, 'fasta')
     SeqIO.write(origin_seq, new_gb, 'gb')
     log.debug('simple rotate completed.')
-    log.setLevel(logging.INFO)
     return new_gb, new_fasta
 
 

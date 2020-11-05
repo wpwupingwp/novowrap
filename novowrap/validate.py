@@ -374,29 +374,18 @@ def validate_regions(length: int, regions: dict, compare: list,
     return count, to_rc, strand_info, bad_region
 
 
-def validate_main(arg_str=None):
+def process_ref(arg):
     """
-    Use BLAST to validate assembly result.
-    Args:
-        arg_str(str): arguments string
-    Return:
-        validated(list): list contains validated rotated fasta files
-        output_info(str): result csv, empty string for failed result
+    Preprocess reference
+    Prefer ref because assembly passed ref
+    Returns:
+        r_ref_gb(Path): rotated gb
+        r_ref_fasta(Path): rotated fasta
+        ref_len(int): length of the reference
     """
-    validated = []
-    output_info = ''
-
-    if arg_str is None:
-        arg = parse_args()
-    else:
-        arg = parse_args(arg_str.split(' '))
-    init_ok, arg = init_arg(arg)
-    if not init_ok:
-        log.critical('Quit.')
-        return validated, output_info
-
-    log.info(f'Input:\t{arg.input}')
-    # prefer ref because assembly passed ref
+    r_ref_gb = None
+    r_ref_fasta = None
+    ref_len = 0
     if arg.ref is not None:
         log.info(f'Reference:\t{arg.ref}')
         fmt = utils.get_fmt(arg.ref)
@@ -415,7 +404,7 @@ def validate_main(arg_str=None):
         if ref_gb is None:
             log.critical('Failed to get reference.')
             log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')
-            return validated, output_info
+            return r_ref_gb, r_ref_fasta, ref_len
         ref_gb = utils.move(ref_gb, arg.tmp/ref_gb.name)
         fmt = 'gb'
     log.info(f'Output:\t {arg.out}')
@@ -426,10 +415,49 @@ def validate_main(arg_str=None):
         log.critical('Cannot process reference sequence.')
         log.critical('Please consider to use another reference.')
         log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
-        return validated, output_info
-    ref_regions = utils.get_regions(r_ref_gb)
-    divided = divide_records(arg.input, arg.out, ref_len, arg.tmp,
-                             arg.len_diff, arg.simple_validate)
+        return r_ref_gb, r_ref_fasta, ref_len
+    return r_ref_gb, r_ref_fasta, ref_len
+
+
+def write_output(divided, r_ref_fasta, ref_len, ref_regions, arg):
+    """
+    Write output info.
+    Args:
+        divided:
+        r_ref_fasta:
+        ref_len:
+        ref_regions:
+        arg:
+    Returns:
+        output_info(Path): csv file
+    """
+    output_info = arg.out / f'{arg.out.name}-results.csv'
+    if not output_info.exists():
+        with open(output_info, 'w') as csv_head:
+            csv_head.write('Input,Success,Seed,Length,LSC,IRa,SSC,IRb,'
+                           'Missing,Incomplete,RC_region,'
+                           'Reference,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n')
+    with open(output_info, 'a') as out:
+        for record in divided:
+            # format is easier than f-string for dict
+            simple = divided[record]
+            # add seed info
+            simple['seed'] = str(arg.seed)
+            simple['fasta'] = simple['fasta'].stem
+            out.write('{fasta},{success},{seed},{length},{LSC},'
+                      '{IRa},{SSC},{IRb},{missing},{incomplete},'
+                      '{rc},'.format(**simple))
+            out.write('{},{},{},{},{},{}\n'.format(
+                r_ref_fasta.stem, ref_len, len(ref_regions['LSC']),
+                len(ref_regions['IRa']), len(ref_regions['SSC']),
+                len(ref_regions['IRb'])))
+    return output_info
+
+
+def normal_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
+    """
+    For chloroplast genomes with 4-parts structure
+    """
     for i in divided:
         success = False
         divided[i]['success'] = success
@@ -447,7 +475,7 @@ def validate_main(arg_str=None):
         if compare_result is None:
             log.critical('Cannot run BLAST.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
-            return validated, output_info
+            return None
         pdf = draw(r_ref_gb, i_gb, compare_result)
         pdf = utils.move(pdf, arg.out/pdf.name)
         log.info('Detecting reverse complement region.')
@@ -493,7 +521,112 @@ def validate_main(arg_str=None):
             i_fasta = utils.move(i_fasta, i_fasta.with_suffix('.fasta'))
             success = True
         divided[i]['success'] = success
+        return divided
 
+
+def simple_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
+    """
+    For chloroplast genomes WITHOUT 4-parts structure
+    """
+    for i in divided:
+        success = False
+        divided[i]['success'] = success
+        if divided[i]['skip']:
+            continue
+        i_gb = divided[i]['gb']
+        i_fasta = divided[i]['fasta']
+        log.info(f'Analyze {i_fasta}.')
+        option_regions = utils.get_regions(i_gb)
+        # add regions info
+        for _ in option_regions:
+            divided[i][_] = len(option_regions[_])
+        compare_result = compare_seq(i_fasta, r_ref_fasta, arg.tmp,
+                                     arg.perc_identity)
+        if compare_result is None:
+            log.critical('Cannot run BLAST.')
+            log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
+            return None
+        pdf = draw(r_ref_gb, i_gb, compare_result)
+        pdf = utils.move(pdf, arg.out/pdf.name)
+        log.info('Detecting reverse complement region.')
+        option_len = divided[i]['length']
+        count, to_rc, strand_info, bad_region = validate_regions(
+            option_len, option_regions, compare_result, arg.perc_identity)
+        divided[i].update(strand_info)
+        if bad_region:
+            # skip sequences with bad region
+            continue
+        if to_rc is not None:
+            log.warning(f'Reverse complement the {to_rc} of {i_fasta.name}.')
+            rc_fasta = utils.rc_regions(i_gb, to_rc)
+            # clean old files
+            i_fasta = utils.move(i_fasta, arg.tmp/(i_fasta.with_name(
+                i_fasta.stem+'-noRC.fasta')).name)
+            i_gb = utils.move(i_gb, arg.tmp/(i_gb.with_name(
+                i_gb.stem+'-noRC.gb')).name)
+            rc_fasta = utils.move(rc_fasta, rc_fasta.with_suffix(''))
+            r_rc_gb, r_rc_fasta = utils.rotate_seq(
+                rc_fasta, tmp=arg.tmp, simple_validate=arg.simple_validate)
+            if r_rc_gb is None:
+                continue
+            rc_fasta.unlink()
+            r_rc_gb = utils.move(r_rc_gb, arg.out/r_rc_gb.with_name(
+                r_rc_gb.stem+'_RC.gb').name)
+            r_rc_fasta = utils.move(r_rc_fasta, arg.out/r_rc_fasta.with_name(
+                r_rc_fasta.stem+'_RC.fasta').name)
+            new_compare_result = compare_seq(r_rc_fasta, r_ref_fasta, arg.tmp,
+                                             arg.perc_identity)
+            pdf = draw(r_ref_gb, r_rc_gb, new_compare_result)
+            pdf = utils.move(pdf, arg.out/pdf.name)
+            divided[i]['fasta'] = r_rc_fasta
+            new_regions = utils.get_regions(r_rc_gb)
+            for _ in new_regions:
+                divided[i][_] = len(new_regions[_])
+            # validate again
+            count_2, to_rc_2, *_ = validate_regions(
+                option_len, new_regions, new_compare_result, arg.perc_identity)
+            if to_rc_2 is None:
+                success = True
+        else:
+            i_fasta = utils.move(i_fasta, i_fasta.with_suffix('.fasta'))
+            success = True
+        divided[i]['success'] = success
+        return divided
+
+
+def validate_main(arg_str=None):
+    """
+    Use BLAST to validate assembly result.
+    Args:
+        arg_str(str): arguments string
+    Return:
+        validated(list): list contains validated rotated fasta files
+        output_info(str): result csv, empty string for failed result
+    """
+    validated = []
+    output_info = ''
+    if arg_str is None:
+        arg = parse_args()
+    else:
+        arg = parse_args(arg_str.split(' '))
+    init_ok, arg = init_arg(arg)
+    if not init_ok:
+        log.critical('Quit.')
+        return validated, output_info
+    log.info(f'Input:\t{arg.input}')
+    r_ref_gb, r_ref_fasta, ref_len = process_ref(arg)
+    if r_ref_gb is None:
+        return validated, output_info
+
+    ref_regions = utils.get_regions(r_ref_gb)
+    divided = divide_records(arg.input, arg.out, ref_len, arg.tmp,
+                             arg.len_diff, arg.simple_validate)
+    if arg.simple_validate:
+        divided = simple_validate(divided, r_ref_gb, r_ref_fasta, arg)
+    else:
+        divided = normal_validate(divided, r_ref_gb, r_ref_fasta, arg)
+    if divided is None:
+        return validated, output_info
     for i in divided:
         if divided[i]['success']:
             v_file = divided[i]['fasta']
@@ -502,26 +635,7 @@ def validate_main(arg_str=None):
         log.info('Validated sequences:')
         for i in validated:
             log.info(f'\t{i.name}')
-    output_info = arg.out / f'{arg.out.name}-results.csv'
-    if not output_info.exists():
-        with open(output_info, 'w') as csv_head:
-            csv_head.write('Input,Success,Seed,Length,LSC,IRa,SSC,IRb,'
-                           'Missing,Incomplete,RC_region,'
-                           'Reference,Ref_length,r_LSC,r_IRa,r_SSC,r_IRb\n')
-    with open(output_info, 'a') as out:
-        for record in divided:
-            # format is easier than f-string for dict
-            simple = divided[record]
-            # add seed info
-            simple['seed'] = str(arg.seed)
-            simple['fasta'] = simple['fasta'].stem
-            out.write('{fasta},{success},{seed},{length},{LSC},'
-                      '{IRa},{SSC},{IRb},{missing},{incomplete},'
-                      '{rc},'.format(**simple))
-            out.write('{},{},{},{},{},{}\n'.format(
-                r_ref_fasta.stem, ref_len, len(ref_regions['LSC']),
-                len(ref_regions['IRa']), len(ref_regions['SSC']),
-                len(ref_regions['IRb'])))
+    output_info = write_output(divided, r_ref_fasta, ref_len, ref_regions, arg)
     log.info(f'Validation result was written into {output_info}')
     return validated, output_info
 

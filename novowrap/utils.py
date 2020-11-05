@@ -390,9 +390,6 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
         new_gb(Path): gb file
         new_fasta(Path): fasta file
     """
-    if simple_validate:
-        # abnormal rotate
-        return rotate_seq_2(filename, tmp=tmp)
     # normal rotate
     filename = Path(filename).absolute()
     if tmp is None:
@@ -405,6 +402,7 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
     origin_seq = list(SeqIO.parse(filename, fmt))
     assert len(origin_seq) == 1
     origin_seq = origin_seq[0]
+    origin_seq.seq.alphabet = IUPAC.ambiguous_dna
     origin_len = len(origin_seq)
     # get repeat seq
     repeat_fasta = repeat(filename, fmt)
@@ -421,6 +419,12 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
         new_gb = filename.with_suffix('.gb.gb')
     else:
         new_gb = filename.with_suffix('.gb')
+    if simple_validate:
+        # do not rotate
+        SeqIO.write(origin_seq, new_fasta, 'fasta')
+        SeqIO.write(origin_seq, new_gb, 'gb')
+        log.debug('simple rotate completed.')
+        return new_gb, new_fasta
     success = False
     # only one record, loop just for for unpack
     for query in parse_blast_tab(blast_result):
@@ -544,46 +548,6 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
     if not success:
         log.critical(f'Failed to rotate {filename}.')
         return None, None
-    return new_gb, new_fasta
-
-
-def rotate_seq_2(filename: Path, tmp=None) -> (Path, Path):
-    """
-    simple version for mitochondria or plastids without normal structure
-    Args:
-        filename: genbank file
-        tmp: tmp folder
-    Returns:
-        new_gb(Path): gb file
-        new_fasta(Path): fasta file
-    """
-    filename = Path(filename).absolute()
-    if tmp is None:
-        tmp = filename.parent
-    log.debug(f'Rotate {filename}...')
-    fmt = get_fmt(filename)
-    # get origin seq
-    origin_seq = list(SeqIO.parse(filename, fmt))
-    assert len(origin_seq) == 1
-    origin_seq = origin_seq[0]
-    origin_seq.seq.alphabet = IUPAC.ambiguous_dna
-    origin_len = len(origin_seq)
-    # get repeat seq
-    repeat_fasta = repeat(filename, fmt)
-    repeat_seq = SeqIO.read(repeat_fasta, 'fasta')
-    log.setLevel(logging.INFO)
-    blast_result, blast_log = blast(repeat_fasta, repeat_fasta)
-    log.setLevel(logging.CRITICAL)
-    if blast_result is None:
-        return None, None
-    new_fasta = filename.with_suffix('.rotate')
-    if filename.suffix == '.gb':
-        new_gb = filename.with_suffix('.gb.gb')
-    else:
-        new_gb = filename.with_suffix('.gb')
-    SeqIO.write(origin_seq, new_fasta, 'fasta')
-    SeqIO.write(origin_seq, new_gb, 'gb')
-    log.debug('simple rotate completed.')
     return new_gb, new_fasta
 
 

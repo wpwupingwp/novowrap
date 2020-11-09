@@ -411,6 +411,7 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
     blast_result, blast_log = blast(repeat_fasta, repeat_fasta)
     log.setLevel(logging.CRITICAL)
     if blast_result is None:
+        log.setLevel(logging.INFO)
         return None, None
     # clean tmp files immediately, in case of exceptions that break clean step
     repeat_fasta.unlink()
@@ -424,6 +425,7 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
         SeqIO.write(origin_seq, new_fasta, 'fasta')
         SeqIO.write(origin_seq, new_gb, 'gb')
         log.debug('simple rotate completed.')
+        log.setLevel(logging.INFO)
         return new_gb, new_fasta
     success = False
     # only one record, loop just for for unpack

@@ -78,12 +78,14 @@ def init_arg(arg):
     if not arg.input.exists():
         log.critical(f'Input file {arg.input} does not exist.')
         return success, arg
-    if arg.ref is None and len(arg.taxon) == 0:
+    if arg.ref is None and arg.taxon is None:
         log.warning('Nor reference either taxonomy was given.')
         return success, arg
     elif arg.ref is not None and arg.taxon is not None:
         log.critical('Cannot use "-taxon" and "-ref" at same time.')
         return success, arg
+    if arg.ref is not None:
+        arg.ref = Path(arg.ref).absolute()
     if arg.taxon is None:
         pass
     elif len(arg.taxon) > 1:
@@ -124,6 +126,51 @@ def init_arg(arg):
         arg.simple_validate = True
     success = True
     return success, arg
+
+
+def process_ref(arg):
+    """
+    Preprocess reference
+    Prefer ref because assembly passed ref
+    Returns:
+        r_ref_gb(Path): rotated gb
+        r_ref_fasta(Path): rotated fasta
+        ref_len(int): length of the reference
+    """
+    r_ref_gb = None
+    r_ref_fasta = None
+    ref_len = 0
+    if arg.ref is not None:
+        log.info(f'Reference:\t{arg.ref}')
+        fmt = utils.get_fmt(arg.ref)
+        ref_gb = Path(arg.ref).absolute()
+        ref_gb = utils.move(ref_gb, arg.tmp/ref_gb.name, copy=True)
+        ref_records = list(SeqIO.parse(ref_gb, fmt))
+        if len(ref_records) > 1:
+            log.warning('Given reference contains more than one records, '
+                        'only use the first.')
+            # assume given reference is ok since user refuse to auto download
+            # reference from Genbank
+            SeqIO.write(ref_records[0], ref_gb, fmt)
+    else:
+        log.info(f'Taxonomy:\t{arg.taxon}')
+        ref_gb, ref_taxon = utils.get_ref(arg.taxon, arg.tmp)
+        if ref_gb is None:
+            log.critical('Failed to get reference.')
+            log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')
+            return r_ref_gb, r_ref_fasta, ref_len
+        ref_gb = utils.move(ref_gb, arg.tmp/ref_gb.name)
+        fmt = 'gb'
+    log.info(f'Output:\t {arg.out}')
+    ref_len = len(SeqIO.read(ref_gb, fmt))
+    r_ref_gb, r_ref_fasta = utils.rotate_seq(
+        ref_gb, tmp=arg.tmp, simple_validate=arg.simple_validate)
+    if r_ref_gb is None:
+        log.critical('Cannot process reference sequence.')
+        log.critical('Please consider to use another reference.')
+        log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
+        return r_ref_gb, r_ref_fasta, ref_len
+    return r_ref_gb, r_ref_fasta, ref_len
 
 
 def divide_records(fasta: Path, output: Path, ref_len: int,
@@ -425,51 +472,6 @@ def validate_regions(length: int, regions: dict, compare: list,
         else:
             pass
     return count, to_rc, strand_info, bad_region
-
-
-def process_ref(arg):
-    """
-    Preprocess reference
-    Prefer ref because assembly passed ref
-    Returns:
-        r_ref_gb(Path): rotated gb
-        r_ref_fasta(Path): rotated fasta
-        ref_len(int): length of the reference
-    """
-    r_ref_gb = None
-    r_ref_fasta = None
-    ref_len = 0
-    if arg.ref is not None:
-        log.info(f'Reference:\t{arg.ref}')
-        fmt = utils.get_fmt(arg.ref)
-        ref_gb = Path(arg.ref).absolute()
-        ref_gb = utils.move(ref_gb, arg.tmp/ref_gb.name, copy=True)
-        ref_records = list(SeqIO.parse(ref_gb, fmt))
-        if len(ref_records) > 1:
-            log.warning('Given reference contains more than one records, '
-                        'only use the first.')
-            # assume given reference is ok since user refuse to auto download
-            # reference from Genbank
-            SeqIO.write(ref_records[0], ref_gb, fmt)
-    else:
-        log.info(f'Taxonomy:\t{arg.taxon}')
-        ref_gb, ref_taxon = utils.get_ref(arg.taxon, arg.tmp)
-        if ref_gb is None:
-            log.critical('Failed to get reference.')
-            log.debug(f'{arg.input} {arg.ref} REF_NOT_FOUND\n')
-            return r_ref_gb, r_ref_fasta, ref_len
-        ref_gb = utils.move(ref_gb, arg.tmp/ref_gb.name)
-        fmt = 'gb'
-    log.info(f'Output:\t {arg.out}')
-    ref_len = len(SeqIO.read(ref_gb, fmt))
-    r_ref_gb, r_ref_fasta = utils.rotate_seq(
-        ref_gb, tmp=arg.tmp, simple_validate=arg.simple_validate)
-    if r_ref_gb is None:
-        log.critical('Cannot process reference sequence.')
-        log.critical('Please consider to use another reference.')
-        log.debug(f'{arg.input} {arg.ref} REF_CANNOT_ROTATE\n')
-        return r_ref_gb, r_ref_fasta, ref_len
-    return r_ref_gb, r_ref_fasta, ref_len
 
 
 def write_output(divided, r_ref_fasta, ref_len, ref_regions, arg):

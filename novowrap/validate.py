@@ -253,7 +253,10 @@ def compare_seq(query, reference, tmp, perc_identity):
         results.append(record)
     utils.move(blast_result, tmp/blast_result.name)
     utils.move(blast_log, tmp/blast_log.name)
-    return results[0]
+    if len(results) == 0:
+        return None
+    else:
+        return results[0]
 
 
 def get_alpha(old):
@@ -528,7 +531,7 @@ def normal_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
         compare_result = compare_seq(i_fasta, r_ref_fasta, arg.tmp,
                                      arg.perc_identity)
         if compare_result is None:
-            log.critical('Cannot run BLAST.')
+            log.critical('Bad BLAST results.')
             log.debug(f'{arg.input} {arg.ref} BLAST_FAIL\n')
             return None
         pdf = draw(r_ref_gb, i_gb, compare_result)

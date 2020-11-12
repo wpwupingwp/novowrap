@@ -249,7 +249,6 @@ def assembly_ui():
         if arg_seed_file:
             arg_str += f' -seed_file {arg_seed_file}'
         # handle checkbutton
-
         if mt_mode.get():
             simple_validation.set(True)
             size_ok = messagebox.askyesno(
@@ -355,9 +354,9 @@ def assembly_ui():
     row += 1
     mt_mode = tk.BooleanVar()
     mt_mode.set(False)
-    check1 = ttk.Checkbutton(adv_input, text='Mitochondria genome',
+    check2 = ttk.Checkbutton(adv_input, text='Mitochondria genome',
                              variable=mt_mode, onvalue=True, offvalue=False)
-    check1.grid(row=row, column=1, sticky='w')
+    check2.grid(row=row, column=1, sticky='w')
     row += 1
     wlabel(adv_input, 'Split reads', row=row, column=0)
     split_entry = fentry(adv_input, row=row, column=1)
@@ -516,6 +515,15 @@ def validate_ui():
                 return
         if not check_output(out_path, o_entry):
             return
+        if mt_mode.get():
+            simple_validation.set(True)
+            arg_str += ' -mt'
+        else:
+            if simple_validation.get():
+                arg_str += ' -simple_validate'
+        if simple_validation.get():
+            info('The program will skip detecting quadripartite structure and '
+                 'adjustment.')
         # validate need existing out if called by others
         out_path.mkdir()
         out_tmp = out_path / 'Temp'
@@ -577,13 +585,26 @@ def validate_ui():
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row, padx=10, pady=8)
-    o_entry = fentry(w, row=row, column=1, default='"Current folder"')
+    o_entry = fentry(w, row=row, column=1, default=str(Path('.').absolute()))
     o_button = ttk.Button(w, text='Open', command=open_folder('Output folder',
                                                               o_entry))
     o_button.grid(row=row, column=2)
     row += 1
     options = ttk.LabelFrame(w, text='Options')
     options.grid(row=row, padx=5, columnspan=5)
+    row += 1
+    simple_validation = tk.BooleanVar()
+    simple_validation.set(False)
+    check1 = ttk.Checkbutton(options, text='Simple validation',
+                             variable=simple_validation, onvalue=True,
+                             offvalue=False)
+    check1.grid(row=row, column=1, sticky='w')
+    row += 1
+    mt_mode = tk.BooleanVar()
+    mt_mode.set(False)
+    check2 = ttk.Checkbutton(options, text='Mitochondria genome',
+                             variable=mt_mode, onvalue=True, offvalue=False)
+    check2.grid(row=row, column=1, sticky='w')
     row += 1
     wlabel(options, 'Sequence similarity (0-1)', row=row, padx=10)
     s_entry = fentry(options, row=row, column=1, default='0.7')

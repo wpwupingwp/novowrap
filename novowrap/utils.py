@@ -838,9 +838,10 @@ def get_all_third_party():
     third_party_ok, third_party = get_third_party()
     if not third_party_ok:
         return -1
-    perl = Thread(target=get_perl, args=(third_party,))
-    novoplasty = Thread(target=get_novoplasty, args=(third_party,))
-    blast = Thread(target=get_blast, args=(third_party,))
+    perl = Thread(target=get_perl, args=(third_party,), daemon=True)
+    novoplasty = Thread(target=get_novoplasty, args=(third_party,),
+                        daemon=True)
+    blast = Thread(target=get_blast, args=(third_party,), daemon=True)
     perl.start()
     novoplasty.start()
     blast.start()

@@ -659,12 +659,12 @@ def ui_main():
     assembly_btn = ttk.Button(root_frame, text='Assembly sequences',
                               command=assembly_ui)
     assembly_btn.grid(row=0, pady=10)
+    validate_btn = ttk.Button(root_frame, text='Validate assemblies',
+                              command=validate_ui)
+    validate_btn.grid(row=1, pady=10)
     merge_button = ttk.Button(root_frame, text='Merge contigs',
                               command=merge_ui)
-    merge_button.grid(row=1, pady=10)
-    validate_btn = ttk.Button(root_frame, text='Validate assembly',
-                              command=validate_ui)
-    validate_btn.grid(row=2, pady=10)
+    merge_button.grid(row=2, pady=10)
     root.mainloop()
 
 

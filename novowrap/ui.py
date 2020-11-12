@@ -196,16 +196,16 @@ def assembly_ui():
             arg_str += f'-list {arg_input_list}'
         arg_ref = ref_entry.get()
         # use underscore in taxon name, which NCBI could handle
-        arg_taxon = taxon_entry.get().replace(' ', '_')
+        arg_taxon = taxon_entry.get()
         if arg_ref and arg_taxon:
             info('Please only use one of "Genbank file" and "Taxonomy"!')
             return
-        elif arg_ref == '' and arg_taxon == '':
+        elif arg_ref == '' and len(arg_taxon) == 0:
             info('Reference is required!')
             return
-        elif arg_ref != '' and arg_taxon == '':
+        elif arg_ref != '' and len(arg_taxon) == 0:
             arg_str += f' -ref {arg_ref}'
-        elif arg_ref == '' and arg_taxon != '':
+        elif arg_ref == '' and len(arg_taxon) != 0:
             arg_str += f' -taxon {arg_taxon}'
         arg_out = out_entry.get()
         if arg_out == '"Current folder"':
@@ -273,6 +273,7 @@ def assembly_ui():
             return
         else:
             arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
+        info(arg_str)
         # call validate
         wroot.withdraw()
         run = tk.Toplevel(root)

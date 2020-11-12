@@ -62,7 +62,7 @@ def scroll_text(window):
     scroll.after(0, poll)
 
 
-def wlabel(window, text, row, column=0, width=25, padx=0, pady=0, sticky='EW',
+def wlabel(window, text, row, column=0, width=25, padx=0, pady=0, sticky='ew',
            **kargs):
     """
     Generate and pack labels.
@@ -261,8 +261,10 @@ def assembly_ui():
             arg_str += ' -mt'
         else:
             if simple_validation.get():
-                arg_str += ' -simple_validation'
-        info(arg_str)
+                arg_str += ' -simple_validate'
+        if simple_validation.get():
+            info('The program will skip detecting quadripartite structure and '
+                 'adjustment.')
         arg_s = float(s_entry.get())
         arg_l = float(l_entry.get())
         if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:
@@ -349,13 +351,13 @@ def assembly_ui():
     check1 = ttk.Checkbutton(adv_input, text='Simple validation',
                              variable=simple_validation, onvalue=True,
                              offvalue=False)
-    check1.grid(row=row, column=1)
+    check1.grid(row=row, column=1, sticky='w')
     row += 1
     mt_mode = tk.BooleanVar()
     mt_mode.set(False)
     check1 = ttk.Checkbutton(adv_input, text='Mitochondria genome',
                              variable=mt_mode, onvalue=True, offvalue=False)
-    check1.grid(row=row, column=1)
+    check1.grid(row=row, column=1, sticky='w')
     row += 1
     wlabel(adv_input, 'Split reads', row=row, column=0)
     split_entry = fentry(adv_input, row=row, column=1)
@@ -368,10 +370,10 @@ def assembly_ui():
     wlabel(adv_input, 'Sequence platform', row=row, column=0)
     radio1 = ttk.Radiobutton(adv_input, text='illumina', variable=platform,
                              value='illumina')
-    radio1.grid(row=row, column=1)
+    radio1.grid(row=row, column=1, sticky='w')
     radio2 = ttk.Radiobutton(adv_input, text='ion torrent', variable=platform,
                              value='ion')
-    radio2.grid(row=row, column=2)
+    radio2.grid(row=row, column=2, sticky='w')
     row += 1
     adv_assembly = ttk.LabelFrame(advance, text='Assembly')
     adv_assembly.grid(row=row, padx=5)

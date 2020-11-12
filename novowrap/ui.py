@@ -315,7 +315,7 @@ def assembly_ui():
                                             entry2=taxon_entry))
     r_button.grid(row=row, column=3)
     row += 1
-    wlabel(w, 'Output', row=row, pady=8)
+    wlabel(w, 'Output', row=row)
     out_entry = fentry(w, row=row, column=1, default='"Current folder"')
     o_button = ttk.Button(w, text='Open',
                           command=open_folder('Output folder', out_entry))
@@ -328,6 +328,18 @@ def assembly_ui():
     row += 1
     adv_input = ttk.LabelFrame(advance, text='Input')
     adv_input.grid(row=row)
+    row += 1
+    simple_validation = tk.BooleanVar()
+    simple_validation.set(False)
+    check1 = ttk.Checkbutton(adv_input, text='Simple validation',
+                             variable=simple_validation)
+    check1.grid(row=row, column=1)
+    row += 1
+    mt_mode = tk.BooleanVar()
+    mt_mode.set(False)
+    check1 = ttk.Checkbutton(adv_input, text='Mitochondria genome',
+                             variable=mt_mode)
+    check1.grid(row=row, column=1)
     row += 1
     wlabel(adv_input, 'Split reads', row=row, column=0)
     split_entry = fentry(adv_input, row=row, column=1)

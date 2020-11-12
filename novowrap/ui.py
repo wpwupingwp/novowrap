@@ -333,7 +333,7 @@ def assembly_ui():
     r_button.grid(row=row, column=3)
     row += 1
     wlabel(w, 'Output', row=row)
-    out_entry = fentry(w, row=row, column=1, default='"Current folder"')
+    out_entry = fentry(w, row=row, column=1, default=str(Path('.').absolute()))
     o_button = ttk.Button(w, text='Open',
                           command=open_folder('Output folder', out_entry))
     o_button.grid(row=row, column=2)
@@ -376,7 +376,7 @@ def assembly_ui():
     radio2.grid(row=row, column=2, sticky='w')
     row += 1
     adv_assembly = ttk.LabelFrame(advance, text='Assembly')
-    adv_assembly.grid(row=row, padx=5)
+    adv_assembly.grid(row=row)
     row += 1
     wlabel(adv_assembly, 'K-mer (23-39, odd)', row=row, column=0)
     kmer_entry = fentry(adv_assembly, row=row, column=1, default='39')
@@ -398,10 +398,11 @@ def assembly_ui():
 
     adv_validate = ttk.LabelFrame(advance, text='Validate')
     adv_validate.grid(row=row)
+    row += 1
     wlabel(adv_validate, 'Sequence similarity (0-1)', row=row, column=0)
     s_entry = fentry(adv_validate, row=row, column=1, default='0.7')
     row += 1
-    wlabel(adv_validate, 'Length difference (0-1)', row=row)
+    wlabel(adv_validate, 'Length difference (0-1)', row=row, column=0)
     l_entry = fentry(adv_validate, row=row, column=1, default='0.2')
 
     row += 1

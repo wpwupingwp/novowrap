@@ -248,6 +248,21 @@ def assembly_ui():
         arg_seed_file = seed_file_entry.get()
         if arg_seed_file:
             arg_str += f' -seed_file {arg_seed_file}'
+        # handle checkbutton
+
+        if mt_mode.get():
+            simple_validation.set(True)
+            size_ok = messagebox.askyesno(
+                title='Warning',
+                message=(f'Given genome length range is {min_size}-{max_size}, '
+                        f'ok for mitochondria?'))
+            if not size_ok:
+                return
+            arg_str += ' -mt'
+        else:
+            if simple_validation.get():
+                arg_str += ' -simple_validation'
+        info(arg_str)
         arg_s = float(s_entry.get())
         arg_l = float(l_entry.get())
         if max(arg_s, arg_l) > 1 or min(arg_s, arg_l) <= 0:
@@ -332,13 +347,14 @@ def assembly_ui():
     simple_validation = tk.BooleanVar()
     simple_validation.set(False)
     check1 = ttk.Checkbutton(adv_input, text='Simple validation',
-                             variable=simple_validation)
+                             variable=simple_validation, onvalue=True,
+                             offvalue=False)
     check1.grid(row=row, column=1)
     row += 1
     mt_mode = tk.BooleanVar()
     mt_mode.set(False)
     check1 = ttk.Checkbutton(adv_input, text='Mitochondria genome',
-                             variable=mt_mode)
+                             variable=mt_mode, onvalue=True, offvalue=False)
     check1.grid(row=row, column=1)
     row += 1
     wlabel(adv_input, 'Split reads', row=row, column=0)

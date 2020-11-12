@@ -1,18 +1,20 @@
 [![Build Status](https://travis-ci.org/wpwupingwp/novowrap.svg?branch=master)](https://travis-ci.org/wpwupingwp/novowrap)
 # Quick start
+Download [the package](https://github.com/wpwupingwp/novowrap/releases),
+unzip, and then double-click `novowrap.exe` or `novowrap`.
+
+For commandline users, run
    ```shell
    pip install novowrap --user
    # Windows
-   # Initialize, need Internet
-   python -m novowrap init
-   python -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
-   # Initialize, need Internet
+       # Initialize, need Internet
+       python -m novowrap init
+       python -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
    # Linux and MacOS
-   python3 -m novowrap init
-   python3 -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
+       # Initialize, need Internet
+       python3 -m novowrap init
+       python3 -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
    ```
-Or download [the package](https://github.com/wpwupingwp/novowrap/releases),
-unzip, and then double click `novowrap.exe` or `novowrap`.
 # Table of Contents
    * [Quick start](#quickstart)
    * [Feature](#feature)
@@ -34,7 +36,7 @@ unzip, and then double click `novowrap.exe` or `novowrap`.
    * [Performance](#performance)
 # Feature
 :heavy_check_mark: Assembly chloroplast genomes from given NGS data, with minimal
-parameters to set. Also support batch mode.  
+parameters to set. Also, it supports batch mode.  
 
 Automatic generate uniform conformation with reference (typically, start from 
 _trnH-psbA_, and, SSC/LSC region have same direction with reference).
@@ -46,14 +48,14 @@ Invert-Repeat fragments.
 homology with given reference (or taxonomy name).
 # Prerequisite
 ## Hardware
-The assembly function will calls NOVOPlasty, which requires 2 GB memory for 1
+The assembly function will call NOVOPlasty, which requires 2 GB memory for 1
 GB uncompressed data.
 
-The other functions could run in normal computer and have no extra
+The other functions could run in normal computers and have no extra
 requirements for memory, CPU, et al.
 
 The software requires Internet for the first run to install the missing
-dependencies. Then, it could works if offline, but better with connection.
+dependencies. Then, it could work if offline, but better with connection.
 ## Software
 For portable version, nothing need to be installed manually.
 
@@ -86,8 +88,8 @@ python3 -m novowrap init
 ```
 # Usage
 ## Command line
-:exclamation: In Linux and MacOS, Python 2 is `python2` and Python 3 is `python3`.  However,
-in Windows, Python 3 is called `python`, too. Please notice the difference.
+:exclamation: In Linux and MacOS, Python2 is `python2` and Python3 is `python3`.  However,
+in Windows, Python3 is called `python`, too. Please notice the difference.
 
  * Show help information of each module
  ```shell
@@ -134,7 +136,7 @@ python -m novowrap
 python3 -m novowrap
 ```
 
-If use portable version, just double click the `novowrap.exe` or `novowrap` in
+If use the portable version, just double-click the `novowrap.exe` or `novowrap` in
 the folder.
 
 Then click the button to choose which module to use. Notice that if one of the
@@ -148,22 +150,21 @@ of automatically get from NCBI, the file format should be `genbank`.
 The `merge` module accepts `fasta` format as input.
 
 The `validate` module accepts `fasta` format as input. If use `reference` file
-instead of automatically get from NCBI, the file format could be `genbank`
+instead of automatically get from NCBI, the file format should be `genbank`
 **or** `fasta` as long as it is a complete chloroplast genome.
-
 
 # Output
 `.gb` files: **genbank** format sequence, with annotation of boundary of
 LSC/SSC/IR regions.
 
-`.rotate` files: rotated sequence with **fasta** format, start from `trnH-psbA`, same direction with
+`.rotate` files: rotated sequence as **fasta** format; start from `trnH-psbA`, same direction with
 reference
 
 `.pdf` files: figure of validation of assembly
 
 `_RC_` files: if filenames contain `_RC_`, it means one of the region of the
 sequence was adjusted according to the reference. The unadjusted sequence
-could be found in `Temp` folder
+could be found in `Temp` folder.
 
 # Options
 ## Assembly
@@ -244,6 +245,10 @@ Should be float number between 0 and 1.
 
 `-debug`: print debug information if set
 
+`-mt`: for mitochondria genomes (experimental function)
+
+`-simple_validate`: for chloroplast genomes without quadripartite structure
+
 ## Validate
 ### General
 `-h` or `-help`: print help message
@@ -273,6 +278,10 @@ Should be float number between 0 and 1.
 
 `-debug`: print debug information if set
 
+`-mt`: for mitochondria genomes (experimental function)
+
+`-simple_validate`: for chloroplast genomes without quadripartite structure
+
 ## Merge
 `-h` or `-help`: print help message
 
@@ -283,10 +292,10 @@ it according to input file's name
 
 # Performance
 The most time-consuming step is assembly. If the chloroplast genome's reads in
-sequencing data is plentiful enough and the computer's memory is big enough
+sequencing data is plentiful enough, and the computer's memory is big enough
 for the data size, the assembly will be finished in minutes.
 
-The validation step usually could finished in less than one minute. If slower,
+The validation step usually could finish in less than one minute. If slower,
 please check the Internet connection since the program may query the NCBI
 database.
 
@@ -304,16 +313,16 @@ software**).
 Please submit your questions in the
 [Issue](https://github.com/wpwupingwp/novowrap/issues) page :smiley:
 
-* Q: I can't see the full UI, some part was hided.
+* Q: I can't see the full UI, some part was missing.
 
-  A: Please try to drag the corner of the window to enlarge it. We got report
+  A: Please try to drag the corner of the window to enlarge it. We got reports
   that some users in MacOS have this issue.
 
 * Q: I got error message that the program failed to install
   perl/BLAST/NOVOPlasty.
 
   A: Uncommonly, users in specific area have connection issue for those
-  website. Users have to manually download packages and install (see
+  websites. Users have to manually download packages and install (see
   [Software](#software) for the download links).
 
   For Windows users, please download and unpack files into
@@ -324,7 +333,7 @@ Please submit your questions in the
 
 * Q: I got error message that I don't have `tkinter `module installed.
 
-  A: If you want to run GUI on Linux computer, this error may happend, because the
+  A: If you want to run GUI on Linux computer, this error may happened, because the
   Python you used did not include tkinter as default package (kind of weird). Run
   ```
   # Debian and Ubuntu
@@ -345,3 +354,15 @@ Please submit your questions in the
   in the old version of novowrap. Please upgrade your `novowrap` to `v0.97` 
   or higher. If you find difficult to upgrade novowrap, please try to use the 
   portable packages.
+* Q: I want to assemble mitochondria genomes.
+
+  A: add `-mt` option or click related checkbutton on the GUI.
+  Since mitochondria genomes do not have a stable 
+  and uniform structure like chloroplast, wet lab experiments may be necessary 
+  for verification.
+* Q: I want to assemble chloroplast genomes without quadripartite structure.
+
+  A: add `-simple_validate` option in commandline or click related checkbutton 
+  on the GUI. Note that without quadripartite structure, the Validate module 
+  will skip the adjustment of the structure of the sequences.
+

@@ -10,6 +10,7 @@ pip3 install --user pyinstaller
 安装打包工具，之前使用3.6，4.0在travis ci上报错
 pip3 install --user tornado
 安装可选组件，不然打包有可能报错
+pip3 install --user pywin32
 如果下载很慢，安装前先运行
 pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 如果系统有别的版本，尝试pip3改成pip3.8运行，如果没有而且提示找不到pip3，尝试改成pip运行

@@ -3,7 +3,9 @@
 Download [the package](https://github.com/wpwupingwp/novowrap/releases),
 unzip, and then double-click `novowrap.exe` or `novowrap`.
 
-For commandline users, run
+__OR__
+
+For command-line users, run
    ```shell
    pip install novowrap --user
    # Windows
@@ -57,11 +59,10 @@ requirements for memory, CPU, et al.
 The software requires Internet for the first run to install the missing
 dependencies. Then, it could work if offline, but better with connection.
 ## Software
-For portable version, nothing need to be installed manually.
+For the portable version, nothing need to be installed manually.
 
 For installing from pip, [Python](https://www.python.org/downloads/) is
-required. Notice that the python version should equal to or newer than
-**3.6**.
+required. Notice that the python version should be **3.6** or higher.
 
 :white_check_mark: All third-party dependencies will be automatically
 installed with Internet, including `biopython`, `matplotlib`, `coloredlogs`,

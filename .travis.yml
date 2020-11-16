@@ -38,7 +38,7 @@ install:
     - pip3 install tornado pyinstaller==4.0
 before_deploy:
     - pyinstaller novowrap/ui.py -n novowrap
-    - pyinstaller novowrap/ui.py -n novowrap -y -w
+    - pyinstaller novowrap/ui.py -n novowrap -y 
     - dir || ls
     - tar -czf novowrap-$TRAVIS_OS_NAME-$TRAVIS_TAG.tgz dist/novowrap
     - dir || ls

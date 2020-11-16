@@ -273,7 +273,7 @@ def assembly_ui():
             return
         else:
             arg_str += f' -len_diff {arg_l} -perc_identity {arg_s}'
-        info(arg_str)
+        # info(arg_str)
         # call validate
         wroot.withdraw()
         run = tk.Toplevel(root)

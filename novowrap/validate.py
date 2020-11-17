@@ -8,8 +8,8 @@ import logging
 
 from Bio import SeqIO
 from matplotlib import use as mpl_use
-if environ.get('DISPLAY', '') == '':
-    mpl_use('Agg')
+# if environ.get('DISPLAY', '') == '':
+mpl_use('Agg')
 from matplotlib import pyplot as plt
 import numpy as np
 

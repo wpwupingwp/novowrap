@@ -5,18 +5,26 @@ unzip, and then double-click `novowrap.exe` or `novowrap`.
 
 __OR__
 
-For command-line users, run
+Open terminal, run
    ```shell
+   # Install, using pip (recommended)
    pip install novowrap --user
+   # Or, use conda
+   conda install -c wpwupingwp novowrap
+
+   # Initiliaze with Internet
    # Windows
-       # Initialize, need Internet
-       python -m novowrap init
-       python -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
+   python -m novowrap init
    # Linux and MacOS
-       # Initialize, need Internet
-       python3 -m novowrap init
-       python3 -m novowrap -input input_file_1 input_file_2 -taxon taxonomy name
+   python3 -m novowrap init
+
+   # Run
+   # Windows
+   python -m novowrap
+   # Linux and MacOS
+   python3 -m novowrap
    ```
+
 # Table of Contents
    * [Quick start](#quickstart)
    * [Feature](#feature)
@@ -26,6 +34,8 @@ For command-line users, run
    * [Installation](#installation)
       * [Portable](#portable)
       * [Install with pip](#Installwithpip)
+      * [Install with conda](#Installwithconda)
+      * [Initialization](#Initialization)
    * [Usage](#usage)
       * [Command line](#commandline)
       * [Graphical user interface](#graphicaluserintetface)
@@ -82,6 +92,17 @@ unpack and run with Internet for the first time.
 2. Open command line, run
 ```shell
 pip install novowrap --user
+```
+## Install with conda
+After installed `anaconda` or `miniconda`, run
+```
+conda install -c wpwupingwp novowrap
+```
+## Initialization
+During the first running, `novowrap` will check and initialize the running environment. 
+Missing dependencies will be automatically installed.
+This step requires Internet connection.
+```shell
 # Windows
 python -m novowrap init
 # Linux and MacOS
@@ -366,4 +387,14 @@ Please submit your questions in the
   A: add `-simple_validate` option in commandline or click related checkbutton 
   on the GUI. Note that without quadripartite structure, the Validate module 
   will skip the adjustment of the structure of the sequences.
+* Q: I am a `conda` user...
+
+  A: Install `novowrap` with `conda install -c wpwupingwp novowrap` and the usage is same.
+  In order to avoid potential conflicts with other packages, it is highly recommended 
+  to create a new running environment with `conda` before installation. For example,
+  ```
+  conda create -n test
+  conda activate test
+  conda install -c wpwupingwp novowrap
+  ```
 

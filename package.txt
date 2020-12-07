@@ -26,3 +26,19 @@ pyinstaller ui.py -n novowrap -w
 7.
 进入dist目录，双击运行novowrap
 8.没有问题，压缩dist目录下的novowrap目录，即为打包文件
+# conda
+```shell
+python setup.py sdist
+twine upload
+conda create -n build
+conda activate build
+conda build purge
+# not same folder!
+pip install -r pypi/requirements.txt
+conda install anaconda-client conda-build
+# conflict version edit matplotlib==3.3.2
+conda build novowrap
+cd C:\Users\Ping\miniconda3\envs\build\conda-bld\
+conda convert --platform all win-64/novowrap-0.99-py38_0.tar.bz2 - o outputdir
+anaconda login
+anaconda upload novowrap*.bz2

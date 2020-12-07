@@ -376,7 +376,7 @@ def get_fmt(filename):
 
 
 def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
-               simple_validate=False):
+               simple_validate=False, retry=False):
     """
     Rotate genbank or fasta record, from LSC (trnH-psbA) to IRa, SSC, IRb.
     Input file should only contains one record.
@@ -386,11 +386,14 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
         tmp(Path or None): temporary folder
         silence(bool): print debug info or not
         simple_validate(bool): use abnormal rotate or not
+        retry(bool): retry with less restrictions
     Return:
         new_gb(Path): gb file
         new_fasta(Path): fasta file
     """
     # normal rotate
+    # allow 10 bases difference
+    _allowed_difference = 10
     filename = Path(filename).absolute()
     if tmp is None:
         tmp = filename.parent
@@ -432,7 +435,11 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
     for query in parse_blast_tab(blast_result):
         locations = set()
         # use fasta's description
+        # for the second round
         ambiguous_base_n = len(str(origin_seq.seq).strip('ATCGatcg'))
+        if retry:
+            ambiguous_base_n = max(ambiguous_base_n, _allowed_difference)
+            log.info(f'Allowing {ambiguous_base_n} bases difference this time.')
         # only use hit of IR to IR
         max_aln_n = 0
         # because of ambiguous base, percent of identity bases may not be 100%
@@ -548,8 +555,11 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
     blast_log.unlink()
     log.setLevel(logging.INFO)
     if not success:
-        log.critical(f'Failed to rotate {filename}.')
-        return None, None
+        log.debug('Retry with less restrictions...')
+        rotate_seq(filename, min_ir, tmp, silence, simple_validate, retry=True)
+        if retry:
+            log.critical(f'Failed to rotate {filename}.')
+            return None, None
     return new_gb, new_fasta
 
 

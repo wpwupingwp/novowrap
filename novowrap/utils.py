@@ -556,10 +556,12 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
     log.setLevel(logging.INFO)
     if not success:
         log.debug('Retry with less restrictions...')
-        rotate_seq(filename, min_ir, tmp, silence, simple_validate, retry=True)
         if retry:
             log.critical(f'Failed to rotate {filename}.')
             return None, None
+        else:
+            rotate_seq(filename, min_ir, tmp, silence, simple_validate,
+                       retry=True)
     return new_gb, new_fasta
 
 

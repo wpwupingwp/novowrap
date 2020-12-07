@@ -432,7 +432,7 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
     for query in parse_blast_tab(blast_result):
         locations = set()
         # use fasta's description
-        ambiguous_base_n = len(str(origin_seq).strip('ATCGatcg'))
+        ambiguous_base_n = len(str(origin_seq.seq).strip('ATCGatcg'))
         # only use hit of IR to IR
         max_aln_n = 0
         # because of ambiguous base, percent of identity bases may not be 100%

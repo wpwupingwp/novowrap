@@ -21,7 +21,7 @@ setuptools.setup(
     # f-string and Path-like
     python_requires='>=3.6',
     url='https://github.com/wpwupingwp/novowrap',
-    version='0.98',
+    version='0.99',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

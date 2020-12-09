@@ -487,6 +487,18 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
         locations = list(locations)
         locations.sort(key=lambda x: x[1]-x[0], reverse=True)
         locations.sort(key=lambda x: x[0])
+        if retry:
+            _ = []
+            last = -1
+            for i in locations:
+                if i[0] == last:
+                    continue
+                else:
+                    _.append(i)
+                    last = i[0]
+            locations = list(_)
+        if len(locations) < 2:
+            continue
         if len(locations) < 2:
             continue
         # remove extra hit, first two if enough

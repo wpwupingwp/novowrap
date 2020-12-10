@@ -392,8 +392,8 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
         new_fasta(Path): fasta file
     """
     # normal rotate
-    # allow 10 bases difference
-    _allowed_difference = 10
+    # allow 50 bases difference
+    _allowed_difference = 50
     filename = Path(filename).absolute()
     if tmp is None:
         tmp = filename.parent

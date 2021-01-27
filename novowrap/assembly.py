@@ -35,7 +35,7 @@ def parse_args(arg_list=None):
         prog='assembly.py',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     inputs = arg.add_argument_group('Input')
-    inputs.add_argument('-input', nargs='*',
+    inputs.add_argument('-input', nargs='*', required=True,
                         help='single or pair-end input, fastq or gz format')
     inputs.add_argument('-list', dest='list_file',
                         help='csv file for batch mode')

@@ -7,6 +7,9 @@ unzip, and then double-click `novowrap.exe` or `novowrap`.
 
 __OR__
 
+Make sure you have [Python](https://www.python.org/) (3.7 or higher) or 
+[conda](https://docs.conda.io/en/latest/miniconda.html) installed.
+
 Open terminal, run
    ```shell
    # Install, using pip (recommended)
@@ -74,7 +77,7 @@ dependencies. Then, it could work if offline, but better with connection.
 For the portable version, nothing need to be installed manually.
 
 For installing from pip, [Python](https://www.python.org/downloads/) is
-required. Notice that the python version should be **3.6** or higher.
+required. Notice that the python version should be **3.7** or higher.
 
 :white_check_mark: All third-party dependencies will be automatically
 installed with Internet, including `biopython`, `matplotlib`, `coloredlogs`,
@@ -88,7 +91,7 @@ installed with Internet, including `biopython`, `matplotlib`, `coloredlogs`,
 Download from the [link](https://github.com/wpwupingwp/novowrap/releases),
 unpack and run with Internet for the first time.
 ## Install with pip
-1. Install [Python](https://www.python.org/downloads/). 3.6 or newer is
+1. Install [Python](https://www.python.org/downloads/). *3.7 or newer* is
    required.
      
 2. Open command line, run
@@ -96,7 +99,7 @@ unpack and run with Internet for the first time.
 pip install novowrap --user
 ```
 ## Install with conda
-After installed `anaconda` or `miniconda`, run
+After installed [conda](https://docs.conda.io/en/latest/miniconda.html), run
 ```
 conda install -c wpwupingwp novowrap
 ```
@@ -357,7 +360,7 @@ Please submit your questions in the
 
 * Q: I got error message that I don't have `tkinter `module installed.
 
-  A: If you want to run GUI on Linux computer, this error may happened, because the
+  A: If you want to run GUI on Linux or macOS, this error may happened, because the
   Python you used did not include tkinter as default package (kind of weird). Run
   ```
   # Debian and Ubuntu
@@ -366,6 +369,11 @@ Please submit your questions in the
   sudo yum install python3-tk
   ```
   may help.
+  
+  For macOS users or linux users without root privilege, please try to install the 
+  newest version of Python or to use conda, see [conda](https://docs.conda.io/en/latest/miniconda.html) 
+  and [Python](https://www.python.org/download/mac/tcltk/) for details.
+  
 * Q: It says my input is invalid, but I'm sure it's OK!
 
   A: Please check your files' path. The `space` character in the folder name

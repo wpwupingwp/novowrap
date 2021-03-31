@@ -2,7 +2,6 @@
 
 from sys import argv
 from novowrap.assembly import assembly_main
-from novowrap.ui import ui_main
 from novowrap.utils import get_all_third_party
 import logging
 
@@ -31,6 +30,7 @@ def main():
         assembly_main()
         return
     try:
+        from novowrap.ui import ui_main
         ui_main()
     except Exception:
         assembly_main()

@@ -239,7 +239,7 @@ use ion-torrent, set `-platform ion`
 `-insert_size [number]`: the insert size of sequencing library, should be
 integer
 
-`-seed [names]`: gene names as seeds for assembly, separated by comma, the
+`-seed [names]`: gene names as seeds for assembly, separated by commas, the
 default seeds are `rbcL,psaB,psaC,rrn23`
 
 `-seed_file [filename]`: seed file, will overwrite `-seed` option

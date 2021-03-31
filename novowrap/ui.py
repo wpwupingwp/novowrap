@@ -2,12 +2,18 @@
 
 from logging import handlers
 from pathlib import Path
-from tkinter import messagebox, filedialog, scrolledtext
 import logging
 import queue
 import threading
-import tkinter as tk
-from tkinter import ttk
+try:
+    from tkinter import messagebox, filedialog, scrolledtext
+    import tkinter as tk
+    from tkinter import ttk
+except ImportError:
+    print('Cannot find the module tkinter, please follow the README to install it.')
+    print('Or try to use portable version https://github.com/wpwupingwp/novowrap/releases')
+    print('Or, use conda instead (see README for details)')
+    raise
 
 from novowrap.utils import accessible
 from novowrap.merge import merge_main

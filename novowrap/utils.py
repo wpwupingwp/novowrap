@@ -662,10 +662,6 @@ def get_third_party():
             log.critical(f'Failed to create {third_party}.'
                          'Please contact the administrator.')
             return success, third_party
-    if not accessible(third_party/'test', 'file'):
-        log.critical(f'Failed to access {third_party}.'
-                     f'Please contact the administrator.')
-        return success, third_party
     success = True
     return success, third_party
 

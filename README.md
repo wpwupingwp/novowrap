@@ -412,4 +412,8 @@ Please submit your questions in the
   A: Ideally, each novowrap instance is independent. However, the initialization process 
   could affect other running instances. To avoid this, please running "python3 -m novowrap init"
   one time before running in parallel.
+* Q: The assembly failed.
 
+  A: Make sure your sequencing data is okay. Otherwise, try to set the "-min" and "-max" options to 
+  restrict the size of the target genome. Sometimes it may fail due to inappropriate size values. The 
+  default size is 100-200 kb, which is okay for the common situation.

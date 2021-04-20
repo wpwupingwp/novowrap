@@ -407,6 +407,13 @@ Please submit your questions in the
   conda activate test
   conda install -c wpwupingwp novowrap
   ```
+  
+  If fail, try to download conda packages from [this link](https://github.com/wpwupingwp/novowrap/releases),
+  and run
+  ```shell
+  conda install [filename]
+
+  ```
 * Q: I want to use novowrap in parallel.
 
   A: Ideally, each novowrap instance is independent. However, the initialization process 

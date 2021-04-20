@@ -37,6 +37,7 @@ conda build purge
 pip install -r pypi/requirements.txt
 conda install anaconda-client conda-build
 # conflict version edit matplotlib==3.3.2
+# set python to >=3.7
 conda skeleton pypi nnovowrap --version 0.982
 conda build novowrap
 cd C:\Users\Ping\miniconda3\envs\build\conda-bld\

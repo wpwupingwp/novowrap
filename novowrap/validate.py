@@ -647,7 +647,7 @@ def validate_main(arg_str=None):
     if divided is None:
         return validated, output_info
     for i in divided:
-        if divided[i]['success']:
+        if divided[i].get('success', False):
             v_file = divided[i]['fasta']
             validated.append(v_file)
     if len(validated) != 0:

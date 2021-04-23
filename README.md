@@ -396,7 +396,8 @@ Please submit your questions in the
 
   A: add `-simple_validate` option in command-line or click the related checkbutton 
   on the GUI. Note that without quadripartite structure, the Validate module 
-  will skip the adjustment of the structure of the sequences.
+  will skip the adjustment of the structure of the sequences. We have test this function on
+  _Cytinus hypocistis_, a parasitic plant having a 19kb plastid genome.
 * Q: I am a `conda` user...
 
   A: Install `novowrap` with `conda install -c wpwupingwp novowrap` and the usage is the same.

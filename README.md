@@ -330,7 +330,7 @@ The merge module could cost seconds or minutes. It depends on input data.
 The complex relationship of contigs requires much more time.
 
 # Citation
-As yet unpublished.
+Wu, P., Xu, C., Chen, H., Yang, J., Zhang, X. and Zhou, S. (2021), NOVOWrap: An automated solution for plastid genome assembly and structure standardization. Molecular Ecology Resources. https://doi.org/10.1111/1755-0998.13410
 # License
 The software itself is licensed under
 [AGPL-3.0](https://github.com/wpwupingwp/novowrap/blob/master/LICENSE) (**not include third-party

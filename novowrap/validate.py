@@ -580,7 +580,7 @@ def normal_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
             utils.move(i_fasta, i_fasta.with_suffix('.fasta'))
             success = True
         divided[i]['success'] = success
-        return divided
+    return divided
 
 
 def simple_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
@@ -611,7 +611,7 @@ def simple_validate(divided: dict, r_ref_gb: Path, r_ref_fasta: Path, arg):
         utils.move(i_fasta, i_fasta.with_suffix('.fasta'))
         success = True
         divided[i]['success'] = success
-        return divided
+    return divided
 
 
 def validate_main(arg_str=None):

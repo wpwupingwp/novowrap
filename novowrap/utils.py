@@ -413,7 +413,7 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
         origin_seq.seq.alphabet = generic_dna
     else:
         pass
-    origin_seq.annotations['molecular_type'] = 'DNA'
+    origin_seq.annotations['molecule_type'] = 'DNA'
     origin_len = len(origin_seq)
     # get repeat seq
     repeat_fasta = repeat(filename, fmt)
@@ -537,7 +537,7 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
             new_seq.seq.alphabet = generic_dna
         else:
             pass
-        new_seq.annotations['molecular_type'] = 'DNA'
+        new_seq.annotations['molecule_type'] = 'DNA'
         if origin_len != len(new_seq):
             log.warning(f'\tOld and new sequences do not have save length.')
             log.info(f'Old: {origin_len}\tNew: {len(new_seq)}')

@@ -12,9 +12,12 @@ import logging
 import platform
 
 from Bio import Entrez, SeqIO
-from Bio.Alphabet import IUPAC
 from Bio.Seq import reverse_complement as rc
 from Bio.SeqFeature import SeqFeature, FeatureLocation
+try:
+    from Bio.Alphabet import generic_dna
+except ImportError:
+    generic_dna = None
 
 
 # define logger
@@ -405,7 +408,12 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
     origin_seq = list(SeqIO.parse(filename, fmt))
     assert len(origin_seq) == 1
     origin_seq = origin_seq[0]
-    origin_seq.seq.alphabet = IUPAC.ambiguous_dna
+    # handle biopython 1.78 removing alphabet
+    if generic_dna is not None:
+        origin_seq.seq.alphabet = generic_dna
+    else:
+        pass
+    origin_seq.annotations['molecular_type'] = 'DNA'
     origin_len = len(origin_seq)
     # get repeat seq
     repeat_fasta = repeat(filename, fmt)
@@ -525,8 +533,11 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
         seq_SSC = slice_gb(repeat_seq, region_SSC)
         seq_IRb = slice_gb(repeat_seq, region_IRb)
         new_seq = seq_LSC + seq_IRa + seq_SSC + seq_IRb
-        # to be continue
-        new_seq.seq.alphabet = IUPAC.ambiguous_dna
+        if generic_dna is not None:
+            new_seq.seq.alphabet = generic_dna
+        else:
+            pass
+        new_seq.annotations['molecular_type'] = 'DNA'
         if origin_len != len(new_seq):
             log.warning(f'\tOld and new sequences do not have save length.')
             log.info(f'Old: {origin_len}\tNew: {len(new_seq)}')

@@ -35,12 +35,12 @@ matrix:
 install:
     - pip3 install --upgrade setuptools
     - pip3 install -r requirements.txt
-    - pip3 install tornado pyinstaller
+    - pip3 install tornado pyinstaller==4.5.1
 before_deploy:
     - pyinstaller novowrap/ui.py -n novowrap
     - pyinstaller novowrap/ui.py -n novowrap -y -w
     - dir || ls
-    - tar -czf novowrap-$TRAVIS_OS_NAME-$TRAVIS_TAG.tgz dist/novowrap
+    - tar -czf novowrap-$TRAVIS_OS_NAME-$TRAVIS_TAG.tgz -C dist novowrap
     - dir || ls
 deploy:
     - provider: releases

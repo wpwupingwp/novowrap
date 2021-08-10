@@ -1,7 +1,7 @@
 wheel>=0.32.3
-biopython==1.77
+biopython>=1.77
 coloredlogs>=10.0
-matplotlib==3.2.0
-numpy==1.19.1
+matplotlib>=3.2.0
+numpy>=1.19.1
 pip>=18.0
 graphviz>=0.13

@@ -92,6 +92,10 @@ def _get_name(inputs: list):
         # for single file, directly remove all suffixes is dangerous
         out_name = Path(f'{Path(inputs[0]).stem}-out').absolute()
         return out_name
+    # if R1 and R2 have different name format
+    if len(inputs[0]) != len(inputs[1]):
+        out_name = Path(f'{Path(inputs[0]).stem}-out').absolute()
+        return out_name
     f = Path(inputs[0])
     r = Path(inputs[1])
     while f.suffix == r.suffix and f.suffix != '':

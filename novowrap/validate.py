@@ -203,6 +203,7 @@ def divide_records(fasta: Path, output: Path, ref_len: int,
         else:
             filename = output / fasta.name
         divided[filename] = dict((key, '') for key in keys)
+        divided[filename]['success'] = False
         record_len = len(record)
         record_len_diff = (record_len/ref_len) - 1
         divided[filename]['fasta'] = filename

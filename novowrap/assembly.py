@@ -93,7 +93,7 @@ def _get_name(inputs: list):
         out_name = Path(f'{Path(inputs[0]).stem}-out').absolute()
         return out_name
     # if R1 and R2 have different name format
-    if len(inputs[0]) != len(inputs[1]):
+    if len(str(inputs[0])) != len(str(inputs[1])):
         out_name = Path(f'{Path(inputs[0]).stem}-out').absolute()
         return out_name
     f = Path(inputs[0])

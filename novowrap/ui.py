@@ -161,7 +161,8 @@ def thread_wrap(function, arg_str, window):
     """
     try:
         result = function(arg_str)
-    except Exception:
+    except Exception as e:
+        log.exception(str(e))
         log.exception('Abort.')
         info('Abort.')
         root.deiconify()

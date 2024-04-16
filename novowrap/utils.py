@@ -562,8 +562,7 @@ def rotate_seq(filename, min_ir=1000, tmp=None, silence=True,
             features.append(SeqFeature(
                 FeatureLocation(offset+1, length+offset+1),
                 type='misc_feature',
-                qualifiers={'note': f_name, 'software': 'rotate_seq'},
-                strand=1))
+                qualifiers={'note': f_name, 'software': 'rotate_seq'}))
             offset += length
         new_seq.features.extend(features)
         # print feature

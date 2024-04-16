@@ -1,0 +1,36 @@
+[project]
+name = "novowrap"
+version = "1.30"
+description = "Assembly Plastid Genome"
+authors = [
+    {name = "Ping Wu", email = "wpwupingwp@outlook.com"},
+]
+dependencies = [
+    "wheel>=0.32.3",
+    "biopython>=1.77",
+    "coloredlogs>=10.0",
+    "matplotlib>=3.2.0",
+    "numpy>=1.19.1",
+    "pip>=18.0",
+    "graphviz>=0.13",
+]
+requires-python = ">=3.7"
+readme = "README.md"
+license = {text = "GNU AGPL v3"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+[project.urls]
+Homepage = "https://github.com/wpwupingwp/novowrap"
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true

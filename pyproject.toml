@@ -6,7 +6,6 @@ authors = [
     {name = "Ping Wu", email = "wpwupingwp@outlook.com"},
 ]
 dependencies = [
-    "wheel>=0.32.3",
     "biopython>=1.77",
     "coloredlogs>=10.0",
     "matplotlib>=3.2.0",
@@ -28,9 +27,11 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/wpwupingwp/novowrap"
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
 
-[tool.pdm]
-distribution = true
+[project.scripts]
+novowrap = 'novowrap:main'
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+

@@ -1,6 +1,6 @@
 [project]
 name = "novowrap"
-version = "1.30"
+version = "1.32"
 description = "Assembly Plastid Genome"
 authors = [
     {name = "Ping Wu", email = "wpwupingwp@outlook.com"},
